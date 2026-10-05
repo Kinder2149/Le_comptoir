@@ -1,0 +1,516 @@
+rules_version = '2';
+
+// LE COMPTOIR — règles d'accès Firestore.
+//
+// Rôles : responsable (crée l'association, Google obligatoire), gestionnaire
+// (nommé par le responsable, il active lui-même avec Google), bénévole (code de
+// l'association + prénom, sans compte). Un gestionnaire « en attente » n'a que les
+// droits d'un bénévole.
+//
+// Données :
+//   users/{uid}                                   assoId (association de cet appareil)
+//   codes/{code}                                  assoId (annuaire : on lit UN code, jamais la liste)
+//   associations/{a}                              nom, code, responsableUid, creeLe
+//     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
+//     menus/{m}                                   nom, creeLe                       (gestion seulement)
+//       produits/{p}                              nom, prixCentimes, stock?, icone?, photo?, creeLe
+//     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
+//                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
+//                                                   forcee, nbCaissesOuvertes
+//       produits/{p}                              copie des produits du menu (images comprises), SANS stock
+//       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
+//         stocks/{p}                              quantite (absent = pas de suivi de ce produit dans ce gymnase)
+//       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
+//                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
+//                                                 le stock que dans ses gymnases ; le responsable gère tout.
+//                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases : clôturer
+//                                                 l'événement exige d'être rattaché à TOUS (ou d'être responsable).
+//       caisses/{uid__g}                          une caisse par (membre, gymnase) ; membreUid, gymnaseId, prenom,
+//                                                 statut, ouverteLe, + à la clôture : récapitulatif
+//         ventes/{v}                              lignes, totalCentimes, mode, creeLe, gymnaseId, corrigeDe?,
+//                                                 + si annulée : annulee, annuleePar, annuleeParPrenom, annuleeLe
+//       ouvertes/{uid}                            gymnaseId, caisseId : la caisse ouverte de ce membre sur cet
+//                                                 événement (créé à l'ouverture, supprimé à la clôture, dans le
+//                                                 MÊME lot : un membre n'a jamais deux caisses ouvertes)
+//
+// Suppression de l'association (Paramètres) : le responsable (Google) la marque d'abord
+// « en cours de suppression » (champ suppression) ; seulement alors il peut effacer ses
+// événements, caisses, ventes, membres et produits, puis l'association. Hors de ce cas,
+// une vente ne se supprime jamais (annulation tracée). Le responsable peut aussi retirer
+// un membre (jamais lui-même ni un autre responsable).
+//
+// Principes : un bénévole ne lit et n'écrit que SA caisse et ne voit que les événements
+// en cours ; une vente n'est jamais modifiée ni supprimée (annulation tracée) ; un
+// événement clôturé est figé ; les images sont des vignettes (30 Ko max) stockées avec
+// le produit, sans service de fichiers. Chaque règle est couverte par tests_regles/.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function connecte() {
+      return request.auth != null;
+    }
+    // Compte relié à Google (y compris un compte anonyme rattaché).
+    function aGoogle() {
+      return connecte() && 'google.com' in request.auth.token.firebase.identities;
+    }
+    function estMembre(a) {
+      return connecte()
+        && exists(/databases/$(database)/documents/associations/$(a)/membres/$(request.auth.uid));
+    }
+    function roleDe(a) {
+      return get(/databases/$(database)/documents/associations/$(a)/membres/$(request.auth.uid)).data.role;
+    }
+    // Responsable ou gestionnaire (jamais un bénévole).
+    function estGestion(a) {
+      return estMembre(a) && roleDe(a) in ['responsable', 'gestionnaire'];
+    }
+    // Modes de paiement : liste fixe.
+    function modesValides(modes) {
+      return modes is list
+        && modes.size() >= 1
+        && modes.size() <= 4
+        && modes.hasOnly(['especes', 'carte', 'cheque', 'autre']);
+    }
+    function produitValide(d) {
+      return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo'])
+        && (!('icone' in d)
+            || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace']))
+        && (!('photo' in d)
+            || (d.photo is bytes && d.photo.size() <= 30000))
+        && texte(d.nom, 40)
+        && d.prixCentimes is int
+        && d.prixCentimes >= 0
+        && d.prixCentimes <= 100000
+        && d.creeLe is timestamp
+        && (!('stock' in d)
+            || (d.stock is int && d.stock >= 0 && d.stock <= 100000));
+    }
+    // Le responsable (Google) a marqué son association « en cours de suppression ».
+    function suppressionEnCours(a) {
+      let asso = get(/databases/$(database)/documents/associations/$(a)).data;
+      return aGoogle()
+        && asso.responsableUid == request.auth.uid
+        && asso.get('suppression', false) == true;
+    }
+    // Caisse « uid__gymnase » : l'identifiant dit à qui elle est et dans quel gymnase.
+    function caisseValide(c) {
+      return c.matches('^[A-Za-z0-9]+__[A-Za-z0-9]+$');
+    }
+    function proprietaire(c) {
+      return c.split('__')[0] == request.auth.uid;
+    }
+    function gymnaseDe(c) {
+      return c.split('__')[1];
+    }
+    // Gymnases d'un gestionnaire sur un événement (liste vide si aucun rattachement).
+    function rattaches(a, e) {
+      return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/rattachements/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/rattachements/$(request.auth.uid)).data.get('gymnases', [])
+        : [];
+    }
+    // Responsable, ou gestionnaire (activé) rattaché à ce gymnase.
+    function gereGymnase(a, e, g) {
+      return estMembre(a)
+        && (roleDe(a) == 'responsable'
+            || (roleDe(a) == 'gestionnaire' && g in rattaches(a, e)));
+    }
+    // Responsable, ou gestionnaire rattaché à TOUS les gymnases de l'événement.
+    function gereTout(a, e) {
+      return estMembre(a)
+        && (roleDe(a) == 'responsable'
+            || (roleDe(a) == 'gestionnaire'
+                && rattaches(a, e).size() >= get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)));
+    }
+    function stockValide(q) {
+      return q is int && q >= -100000 && q <= 100000;
+    }
+    function texte(valeur, max) {
+      return valeur is string && valeur.size() >= 1 && valeur.size() <= max;
+    }
+
+    match /users/{uid} {
+      allow read, write: if connecte() && request.auth.uid == uid;
+    }
+
+    match /associations/{a} {
+      allow read: if estMembre(a);
+
+      allow create: if aGoogle()
+        && request.resource.data.keys().hasOnly(['nom', 'code', 'responsableUid', 'creeLe'])
+        && request.resource.data.responsableUid == request.auth.uid
+        && texte(request.resource.data.nom, 60)
+        && request.resource.data.code is string
+        && request.resource.data.code.size() == 6;
+
+      // Seul le responsable change le nom ou le code.
+      allow update: if aGoogle()
+        && resource.data.responsableUid == request.auth.uid
+        && request.resource.data.responsableUid == resource.data.responsableUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom', 'code'])
+        && request.resource.data.code is string
+        && request.resource.data.code.size() == 6;
+
+      // Début de la suppression : le responsable pose le drapeau, et lui seul.
+      allow update: if aGoogle()
+        && resource.data.responsableUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['suppression'])
+        && request.resource.data.suppression == true;
+
+      // Seul le responsable supprime l'association, et seulement après l'avoir
+      // marquée « en cours de suppression » (puis avoir effacé son contenu).
+      allow delete: if suppressionEnCours(a);
+
+      match /menus/{m} {
+        allow read, delete: if estGestion(a);
+        allow create, update: if estGestion(a)
+          && request.resource.data.keys().hasOnly(['nom', 'creeLe'])
+          && texte(request.resource.data.nom, 40)
+          && request.resource.data.creeLe is timestamp;
+
+        match /produits/{p} {
+          allow read, delete: if estGestion(a);
+          allow create, update: if estGestion(a)
+            && produitValide(request.resource.data);
+        }
+      }
+
+      match /evenements/{e} {
+        allow read: if estGestion(a)
+          || (estMembre(a) && resource.data.statut == 'en_cours');
+
+        allow create: if estGestion(a)
+          && request.resource.data.keys().hasOnly(['nom', 'date', 'statut', 'modes', 'menuNom', 'creeLe', 'nbGymnases'])
+          && request.resource.data.keys().hasAll(['nom', 'date', 'statut', 'modes', 'menuNom', 'creeLe'])
+          && (!('nbGymnases' in request.resource.data)
+              || (request.resource.data.nbGymnases is int
+                  && request.resource.data.nbGymnases >= 1
+                  && request.resource.data.nbGymnases <= 8))
+          && texte(request.resource.data.nom, 60)
+          && texte(request.resource.data.date, 10)
+          && request.resource.data.date.size() == 10
+          && request.resource.data.statut == 'en_cours'
+          && texte(request.resource.data.menuNom, 40)
+          && modesValides(request.resource.data.modes)
+          && request.resource.data.creeLe is timestamp;
+
+        // Effacé seulement avec toute l'association.
+        allow delete: if suppressionEnCours(a);
+
+        // Nom, date et modes restent modifiables tant que l'événement est en cours.
+        allow update: if estGestion(a)
+          && resource.data.statut == 'en_cours'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom', 'date', 'modes'])
+          && texte(request.resource.data.nom, 60)
+          && request.resource.data.date.size() == 10
+          && modesValides(request.resource.data.modes);
+
+        // Un gymnase de plus : le compteur monte de 1 (dans le lot qui crée le gymnase).
+        allow update: if estGestion(a)
+          && resource.data.statut == 'en_cours'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases'])
+          && request.resource.data.nbGymnases is int
+          && request.resource.data.nbGymnases == resource.data.get('nbGymnases', 1) + 1
+          && request.resource.data.nbGymnases <= 8;
+
+        // Clôture : l'événement devient figé. Forcée = des caisses étaient encore
+        // ouvertes ; le nombre est conservé pour signaler les ventes manquantes.
+        allow update: if aGoogle()
+          && estGestion(a)
+          && gereTout(a, e)
+          && resource.data.statut == 'en_cours'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['statut', 'clotureLe', 'cloturePar', 'clotureParPrenom', 'forcee', 'nbCaissesOuvertes'])
+          && request.resource.data.keys().hasAll(['statut', 'clotureLe', 'cloturePar', 'clotureParPrenom', 'forcee', 'nbCaissesOuvertes'])
+          && request.resource.data.statut == 'cloture'
+          && request.resource.data.clotureLe is timestamp
+          && request.resource.data.cloturePar == request.auth.uid
+          && request.resource.data.clotureParPrenom == get(/databases/$(database)/documents/associations/$(a)/membres/$(request.auth.uid)).data.prenom
+          && request.resource.data.nbCaissesOuvertes is int
+          && request.resource.data.nbCaissesOuvertes >= 0
+          && request.resource.data.nbCaissesOuvertes <= 1000
+          && request.resource.data.forcee == (request.resource.data.nbCaissesOuvertes > 0);
+
+        match /produits/{p} {
+          allow read: if estGestion(a)
+            || (estMembre(a)
+                && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+
+          allow delete: if suppressionEnCours(a);
+
+          // Copie posée à la création de l'événement, jamais modifiée ensuite.
+          // Le stock vit dans les gymnases.
+          allow create: if estGestion(a)
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && !('stock' in request.resource.data)
+            && produitValide(request.resource.data);
+        }
+
+        match /gymnases/{g} {
+          allow read: if estGestion(a)
+            || (estMembre(a)
+                && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+
+          allow delete: if suppressionEnCours(a);
+
+          // Créé avec l'événement, ou ajouté plus tard avec le compteur de l'événement
+          // monté de 1 dans le même lot.
+          allow create: if estGestion(a)
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && (!exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e))
+                || getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)
+                   == get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1) + 1)
+            && request.resource.data.keys().hasOnly(['nom', 'creeLe'])
+            && request.resource.data.keys().hasAll(['nom', 'creeLe'])
+            && texte(request.resource.data.nom, 40)
+            && request.resource.data.creeLe is timestamp;
+
+          // Renommer, tant que l'événement est en cours (jamais supprimer).
+          allow update: if estGestion(a)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom'])
+            && texte(request.resource.data.nom, 40);
+
+          match /stocks/{p} {
+            allow read: if estGestion(a)
+              || (estMembre(a)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+
+            // Arrêter le suivi d'un produit dans ce gymnase (la gestion, tant que
+            // l'événement est en cours), ou suppression de l'association.
+            allow delete: if suppressionEnCours(a)
+              || (gereGymnase(a, e, g)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+
+            // Quantité de départ : par la gestion de CE gymnase, ou à la naissance du
+            // gymnase (même lot) par un gestionnaire qui crée l'événement.
+            allow create: if (gereGymnase(a, e, g)
+                  || (estGestion(a)
+                      && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
+                      && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
+              && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && request.resource.data.keys().hasOnly(['quantite'])
+              && request.resource.data.quantite is int
+              && request.resource.data.quantite >= 0
+              && request.resource.data.quantite <= 100000;
+
+            // Réglage par la gestion, ou vente par un membre dont la caisse ouverte
+            // est dans CE gymnase. Le stock peut passer sous zéro : on avertit le
+            // bénévole, on ne bloque pas la vente.
+            allow update: if estMembre(a)
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite'])
+              && stockValide(request.resource.data.quantite)
+              && (gereGymnase(a, e, g)
+                  || (exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+                      && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g));
+          }
+        }
+
+        // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par
+        // l'intéressé. Jamais supprimés (on les vide), sauf avec l'association.
+        match /rattachements/{u} {
+          allow read: if estMembre(a) && (u == request.auth.uid || roleDe(a) == 'responsable');
+          allow create, update: if estMembre(a)
+            && roleDe(a) == 'responsable'
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.keys().hasOnly(['gymnases'])
+            && request.resource.data.gymnases is list
+            && request.resource.data.gymnases.size() <= 8;
+          allow delete: if suppressionEnCours(a);
+        }
+
+        // Pointeur : posé à l'ouverture d'une caisse, retiré à sa clôture (même lot).
+        match /ouvertes/{u} {
+          // Pendant la suppression de l'association, le responsable les relit en liste
+          // pour les effacer.
+          allow read: if connecte() && (u == request.auth.uid || suppressionEnCours(a));
+          allow delete: if suppressionEnCours(a)
+            || (estMembre(a)
+                && u == request.auth.uid
+                && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/caisses/$(resource.data.caisseId)).data.statut == 'cloturee');
+          allow create: if estMembre(a)
+            && u == request.auth.uid
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.keys().hasOnly(['gymnaseId', 'caisseId'])
+            && request.resource.data.keys().hasAll(['gymnaseId', 'caisseId'])
+            && request.resource.data.gymnaseId is string
+            && request.resource.data.caisseId == u + '__' + request.resource.data.gymnaseId
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/caisses/$(request.resource.data.caisseId)).data.statut == 'ouverte';
+        }
+
+        match /caisses/{c} {
+          // Le propriétaire, le responsable, ou le gestionnaire de CE gymnase. En liste, la
+          // requête doit déjà se limiter à un gymnase (where gymnaseId == g).
+          allow read: if estMembre(a)
+            && (proprietaire(c) || gereGymnase(a, e, resource.data.gymnaseId));
+          allow delete: if suppressionEnCours(a);
+
+          // Ouverture : l'identifiant est « uid__gymnase », le gymnase existe, et le
+          // membre n'a aucune autre caisse ouverte (le pointeur est créé dans le même lot).
+          allow create: if estMembre(a)
+            && caisseValide(c)
+            && proprietaire(c)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(gymnaseDe(c)))
+            && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.caisseId == c
+            && request.resource.data.keys().hasOnly(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId'])
+            && request.resource.data.keys().hasAll(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId'])
+            && request.resource.data.membreUid == request.auth.uid
+            && request.resource.data.gymnaseId == gymnaseDe(c)
+            && texte(request.resource.data.prenom, 30)
+            && request.resource.data.statut == 'ouverte'
+            && request.resource.data.ouverteLe is timestamp;
+
+          // Clôture (avec le récapitulatif) ou réouverture, par l'auteur de la
+          // caisse, tant que l'événement est en cours.
+          // La clôture retire le pointeur (même lot) ; la réouverture le recrée
+          // (impossible si le membre a déjà une autre caisse ouverte).
+          allow update: if estMembre(a)
+            && proprietaire(c)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && (
+              (resource.data.statut == 'ouverte'
+                && request.resource.data.statut == 'cloturee'
+                && !existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+                && request.resource.data.keys().hasOnly(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId', 'rouverteLe', 'clotureLe', 'nbVentes', 'nbAnnulees', 'totalCentimes', 'parMode'])
+                && request.resource.data.keys().hasAll(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId', 'clotureLe', 'nbVentes', 'nbAnnulees', 'totalCentimes', 'parMode'])
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['statut', 'clotureLe', 'nbVentes', 'nbAnnulees', 'totalCentimes', 'parMode'])
+                && request.resource.data.clotureLe is timestamp
+                && request.resource.data.nbVentes is int && request.resource.data.nbVentes >= 0
+                && request.resource.data.nbAnnulees is int && request.resource.data.nbAnnulees >= 0
+                && request.resource.data.totalCentimes is int && request.resource.data.totalCentimes >= 0
+                && request.resource.data.parMode is map)
+              ||
+              (resource.data.statut == 'cloturee'
+                && request.resource.data.statut == 'ouverte'
+                && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+                && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+                && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.caisseId == c
+                && request.resource.data.keys().hasOnly(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId', 'rouverteLe'])
+                && request.resource.data.keys().hasAll(['prenom', 'statut', 'ouverteLe', 'membreUid', 'gymnaseId', 'rouverteLe'])
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['statut', 'rouverteLe', 'clotureLe', 'nbVentes', 'nbAnnulees', 'totalCentimes', 'parMode'])
+                && request.resource.data.rouverteLe is timestamp)
+            );
+
+          match /ventes/{v} {
+            allow read: if estMembre(a) && (proprietaire(c) || gereGymnase(a, e, gymnaseDe(c)));
+
+            // Jamais supprimée, sauf avec toute l'association.
+            allow delete: if suppressionEnCours(a);
+
+            // Seuls les modes de paiement autorisés par l'événement sont acceptés.
+            allow create: if estMembre(a)
+              && proprietaire(c)
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/caisses/$(c)).data.statut == 'ouverte'
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && request.resource.data.keys().hasOnly(['lignes', 'totalCentimes', 'mode', 'creeLe', 'gymnaseId', 'corrigeDe'])
+              && request.resource.data.keys().hasAll(['lignes', 'totalCentimes', 'mode', 'creeLe', 'gymnaseId'])
+              && request.resource.data.gymnaseId == gymnaseDe(c)
+              // Une correction remplace une vente de cette caisse déjà annulée.
+              && (!('corrigeDe' in request.resource.data)
+                  || (request.resource.data.corrigeDe is string
+                      && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/caisses/$(c)/ventes/$(request.resource.data.corrigeDe)).data.get('annulee', false) == true))
+              && request.resource.data.lignes is list
+              && request.resource.data.lignes.size() >= 1
+              && request.resource.data.lignes.size() <= 60
+              && request.resource.data.totalCentimes is int
+              && request.resource.data.totalCentimes >= 0
+              && request.resource.data.totalCentimes <= 1000000
+              && request.resource.data.mode is string
+              && request.resource.data.mode in get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.modes
+              && request.resource.data.creeLe is timestamp;
+
+            // Annulation tracée : par l'auteur de la caisse (tant qu'elle est
+            // ouverte) ou par la gestion. Une vente ne s'annule qu'une fois et
+            // rien d'autre ne change (ni lignes, ni montant, ni mode).
+            allow update: if estMembre(a)
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && ((proprietaire(c)
+                   && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/caisses/$(c)).data.statut == 'ouverte')
+                  || gereGymnase(a, e, gymnaseDe(c)))
+              && resource.data.get('annulee', false) == false
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['annulee', 'annuleePar', 'annuleeParPrenom', 'annuleeLe'])
+              && request.resource.data.keys().hasAll(['annulee', 'annuleePar', 'annuleeParPrenom', 'annuleeLe'])
+              && request.resource.data.annulee == true
+              && request.resource.data.annuleePar == request.auth.uid
+              && request.resource.data.annuleeParPrenom == get(/databases/$(database)/documents/associations/$(a)/membres/$(request.auth.uid)).data.prenom
+              && request.resource.data.annuleeLe is timestamp;
+          }
+        }
+      }
+
+      match /membres/{uid} {
+        allow read: if estMembre(a);
+
+        // Le responsable retire un membre (pas lui-même, pas un autre responsable) ;
+        // ou toute l'association est en cours de suppression.
+        allow delete: if suppressionEnCours(a)
+          || (aGoogle()
+              && uid != request.auth.uid
+              && resource.data.role != 'responsable'
+              && roleDe(a) == 'responsable');
+
+        allow update: if aGoogle()
+          && request.resource.data.keys().hasOnly(['prenom', 'role', 'rejointLe', 'codeUtilise', 'nomme'])
+          && (
+            // Nomination (par le responsable) : le bénévole passe « en attente ».
+            (roleDe(a) == 'responsable'
+              && resource.data.role == 'benevole'
+              && resource.data.get('nomme', false) == false
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nomme'])
+              && request.resource.data.nomme == true)
+            ||
+            // Retrait (par le responsable) : gestionnaire ou en attente -> bénévole.
+            (roleDe(a) == 'responsable'
+              && (resource.data.role == 'gestionnaire'
+                  || (resource.data.role == 'benevole' && resource.data.get('nomme', false) == true))
+              && request.resource.data.role == 'benevole'
+              && !('nomme' in request.resource.data)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'nomme']))
+            ||
+            // Activation (par le membre nommé, connecté avec Google).
+            (uid == request.auth.uid
+              && resource.data.role == 'benevole'
+              && resource.data.get('nomme', false) == true
+              && request.resource.data.role == 'gestionnaire'
+              && !('nomme' in request.resource.data)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'nomme']))
+          );
+
+        allow create: if connecte()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['prenom', 'role', 'rejointLe', 'codeUtilise'])
+          && texte(request.resource.data.prenom, 30)
+          && (
+            // Le créateur de l'association devient responsable (même lot d'écritures).
+            (request.resource.data.role == 'responsable'
+              && aGoogle()
+              && !exists(/databases/$(database)/documents/associations/$(a))
+              && getAfter(/databases/$(database)/documents/associations/$(a)).data.responsableUid == uid)
+            ||
+            // Tout autre arrivant est bénévole et doit présenter le code actuel.
+            (request.resource.data.role == 'benevole'
+              && request.resource.data.get('codeUtilise', '')
+                 == get(/databases/$(database)/documents/associations/$(a)).data.code)
+          );
+      }
+    }
+
+    match /codes/{code} {
+      allow get: if connecte();
+
+      // Un code n'existe que s'il est le code actuel de son association,
+      // posé par son responsable, et jamais en double.
+      allow create: if connecte()
+        && !exists(/databases/$(database)/documents/codes/$(code))
+        && request.resource.data.keys().hasOnly(['assoId'])
+        && getAfter(/databases/$(database)/documents/associations/$(request.resource.data.assoId)).data.code == code
+        && getAfter(/databases/$(database)/documents/associations/$(request.resource.data.assoId)).data.responsableUid == request.auth.uid;
+
+      allow delete: if connecte()
+        && get(/databases/$(database)/documents/associations/$(resource.data.assoId)).data.responsableUid == request.auth.uid;
+    }
+  }
+}

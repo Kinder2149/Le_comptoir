@@ -1,0 +1,37 @@
+Tu es directeur artistique senior spécialisé en identités d'applications mobiles pour le monde associatif et sportif. Tu vas concevoir le logo et la base d'une charte graphique pour « Le Comptoir ».
+
+# 1. Le produit
+« Le Comptoir » est une application Android de caisse pour les buvettes d'associations sportives (clubs de basket, hand, volley, foot en salle...) lors de tournois et de matchs. Elle s'utilise debout, derrière un comptoir, en plein jour dans un gymnase, d'une main, parfois avec des doigts mouillés, à la chaîne avec une file de clients. Les utilisateurs sont des bénévoles et des parents, pas des techniciens. Elle remplace le carnet, le tupperware d'argent et la calculatrice : encaisser vite, ne jamais se tromper, retrouver ses comptes à la fin.
+
+# 2. Personnalité de la marque
+Chaleureuse, rapide, fiable. Associatif et humain avant d'être « tech » ; sérieux quand il s'agit d'argent ; jamais enfantin, jamais « fintech froide », jamais « fast-food ». Un club de quartier bien tenu. Mots-clés : comptoir, buvette, tournoi, bénévoles, gymnase, parquet, tableau d'ardoise du menu, auvent, tasse, ticket.
+
+# 3. Mission
+Propose 3 pistes de logo RADICALEMENT différentes (pas trois variations de la même idée), puis recommande-en une seule en justifiant. Pour la piste retenue, fournis la base d'une charte graphique.
+
+# 4. Contraintes techniques (non négociables)
+- Une icône d'application Android : lisible à 48 px, reconnaissable en noir et blanc, une idée simple en un coup d'oeil. Aucun texte dans l'icône. Un symbole centré qui tient dans la zone de sécurité (cercle central de 66 % du carré) car Android découpe en rond, en carré arrondi ou en goutte.
+- Aplats uniquement : pas de dégradé, pas d'ombre portée, pas de détail fin, pas de 3D, pas de texture photo. Maximum 3 couleurs dans le symbole.
+- Livrables en SVG propres et légers (moins de 5 Ko par fichier), tracés simples, sans filtres, sans polices incorporées (convertir les textes en tracés).
+- Doit fonctionner sur fond clair, fond foncé et en une seule couleur.
+
+# 5. Couleurs
+Dominante : anthracite (noir chaud) #2F343C. Fond de l'application : lin #F4EFE6. Couleurs d'accompagnement « cassées » (désaturées, comme des pigments) utilisées selon le type d'action : prune #6C4F86 (gérer), framboise cassée #A04467 (analyser), sauge #5A7D4F (réussir), ocre #9A670F (attention), brique #A8433A (danger, à garder rare). Un sable de parquet #D9B06F est possible comme touche chaude. Le logo doit être porté par l'anthracite et rester sobre ; tu peux proposer des ajustements de teinte s'ils améliorent la lisibilité, en les justifiant avec les rapports de contraste.
+À ÉVITER : orange vif, rouge dominant, jaune vif, vert dominant, bleu dominant, violet néon, dégradés « startup », noir « luxe » ou « gaming ».
+
+# 6. À éviter côté dessin
+Caddie, billet de banque, pièce de monnaie, tiroir-caisse, ballon de sport générique, burger, couverts croisés, silhouette de personne, lettre « C » dans un cercle, clichés d'applications de paiement. Si tu utilises un auvent, une tasse ou un parquet, fais-le de façon neuve et très simplifiée.
+Un premier brouillon existe (auvent rayé au-dessus d'une tasse posée sur un comptoir, fichier joint) : tu peux t'en inspirer ou le critiquer, mais ne te sens pas obligé de le suivre.
+
+# 7. Avant de dessiner : challenge-moi
+Critique ce brief en 5 points maximum (ce qui est flou, contradictoire, trop ambitieux, ou ce que tu ferais différemment). Pose-moi au maximum 3 questions, les plus utiles. Si tu peux avancer sans réponse, avance en disant tes hypothèses.
+
+# 8. Livrables attendus (dans cet ordre)
+a) Ton challenge du brief.
+b) Les 3 pistes : pour chacune, l'idée en une phrase, pourquoi elle convient à une buvette associative, ses risques.
+c) Ta recommandation (une seule) avec justification.
+d) Pour la piste retenue, en SVG : icône carrée (viewBox 108x108, symbole dans la zone de sécurité) ; icône ronde ; logo horizontal (symbole + « Le Comptoir ») ; version une seule couleur ; version sur fond foncé ; et un test de lisibilité à 48, 32 et 24 px.
+e) Base de charte (court) : zone de protection autour du logo, taille minimale, usages interdits, typographie du mot « Le Comptoir » (une police gratuite sous licence libre, avec son nom exact) et typographie de l'interface, rapports de contraste de chaque couple de couleurs utilisé, et 5 règles d'or d'usage en une phrase chacune.
+f) Une phrase d'accroche de 6 mots maximum pour l'écran de démarrage.
+
+Réponds en français, en phrases courtes, sans jargon, avec des listes claires. Ne me demande pas de choisir entre dix options : recommande une seule chose à chaque étape.

@@ -1,0 +1,210 @@
+﻿[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+node.exe : (node:33644) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors 
+that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Au caractère C:\Users\vcout\AppData\Roaming\npm\firebase.ps1:24 : 5
++     & "node$exe"  "$basedir/node_modules/firebase-tools/lib/bin/fireb ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:33644) [D...ulnerabilities.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[36m[1mi [22m[39m Running script: [1mflutter test integration_test -d emulator-5554 --timeout 15m[22m
+00:00 +0: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/annulations_test.dart
+Running Gradle task 'assembleDebug'...                             17,6s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          941ms
+00:00 +0: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/annulations_test.dart: (setUpAll)
+00:00 +0: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/annulations_test.dart: annuler (n'importe quelle vente), corriger, hors r├®seau, gestion
+00:30 +1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/annulations_test.dart: (tearDownAll)
+00:31 +1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/association_test.dart
+Running Gradle task 'assembleDebug'...                             17,6s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»062ms
+00:55 +1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/association_test.dart: (setUpAll)
+00:56 +1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/association_test.dart: cr├®er, changer le code, puis rejoindre depuis un autre appareil
+01:08 +2: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/association_test.dart: (tearDownAll)
+01:09 +2: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/bilan_test.dart
+Running Gradle task 'assembleDebug'...                             17,0s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»059ms
+01:32 +2: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/bilan_test.dart: (setUpAll)
+01:32 +2: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/bilan_test.dart: bilan : m├¬mes chiffres que le calcul ├á la main, puis cl├┤ture forc├®e
+01:55 +3: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/bilan_test.dart: (tearDownAll)
+01:56 +3: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/caisse_test.dart
+Running Gradle task 'assembleDebug'...                             17,1s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          901ms
+02:20 +3: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/caisse_test.dart: (setUpAll)
+02:20 +3: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/caisse_test.dart: caisse : ventes, monnaie, stock, coupure du r├®seau, reprise
+02:41 +4: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/caisse_test.dart: (tearDownAll)
+02:42 +4: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/clotures_test.dart
+Running Gradle task 'assembleDebug'...                             17,0s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          900ms
+03:05 +4: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/clotures_test.dart: (setUpAll)
+03:05 +4: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/clotures_test.dart: cl├┤tures : caisse (r├®capitulatif, r├®ouverture) puis ├®v├®nement (normale et forc├®e)
+03:48 +5: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/clotures_test.dart: (tearDownAll)
+03:49 +5: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/cloture_hors_reseau_test.dart
+Running Gradle task 'assembleDebug'...                             17,3s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          956ms
+04:12 +5: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/cloture_hors_reseau_test.dart: (setUpAll)
+04:12 +5: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/cloture_hors_reseau_test.dart: cl├┤ture sans r├®seau : elle attend l'envoi final des ventes
+04:34 +6: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/cloture_hors_reseau_test.dart: (tearDownAll)
+04:34 +6: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart
+Running Gradle task 'assembleDebug'...                             17,3s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          991ms
+04:59 +6: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart: (setUpAll)
+04:59 +6: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart: ├®v├®nements : cr├®er avec copie du menu, modifier, vue b├®n├®vole
+
+Warning: A call to tap() with finder "Found 1 widget with key [<'valider_evenement'>]: [
+  FilledButton-[<'valider_evenement'>](dependencies: [IconTheme, InheritedCupertinoTheme, MediaQuery, _InheritedTheme, _LocalizationsScope-[GlobalKey#923cf], _ScrollableScope], state: _ButtonStyleState#9621d),
+]" derived an Offset (Offset(205.7, 924.0)) that would not hit test on the specified widget.
+Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
+Indeed, Offset(205.7, 924.0) is outside the bounds of the root of the render tree, Size(411.4, 914.3).
+The finder corresponds to this RenderBox: RenderSemanticsAnnotations#7ce43 relayoutBoundary=up5
+The hit test result at that offset is: HitTestResult(HitTestEntry<HitTestTarget>#ebfe2(_ReusableRenderView#5277c), HitTestEntry<HitTestTarget>#46dd4(<IntegrationTestWidgetsFlutterBinding>))
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2158:25)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1942:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1075:7)
+#3      main.toucher (file:///V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart:30:18)
+<asynchronous suspension>
+#4      main.<anonymous closure> (file:///V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart:81:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+#7      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+To silence this warning, pass "warnIfMissed: false" to "tap()".
+To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to true.
+
+ÔòÉÔòÉÔòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Ôò×ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+The following TestFailure was thrown running a test:
+Expected: 'Choisissez un menu.'
+  Actual: 'Donnez un nom ├á l\'├®v├®nement.'
+   Which: is different.
+          Expected: Choisissez ...
+            Actual: Donnez un  ...
+                    ^
+           Differ at offset 0
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart:83:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart line 83
+The test description was:
+  ├®v├®nements : cr├®er avec copie du menu, modifier, vue b├®n├®vole
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+05:08 +6 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart: ├®v├®nements : cr├®er avec copie du menu, modifier, vue b├®n├®vole [E]
+  Test failed. See exception logs above.
+  The test description was: ├®v├®nements : cr├®er avec copie du menu, modifier, vue b├®n├®vole
+  
+05:08 +6 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/evenements_test.dart: (tearDownAll)
+05:08 +6 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gestionnaires_test.dart
+Running Gradle task 'assembleDebug'...                             16,9s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          979ms
+05:32 +6 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gestionnaires_test.dart: (setUpAll)
+05:32 +6 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gestionnaires_test.dart: gestionnaires rattach├®s : chacun ne voit que son gymnase ; cl├┤ture r├®serv├®e
+06:19 +7 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gestionnaires_test.dart: (tearDownAll)
+06:21 +7 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/google_test.dart
+Running Gradle task 'assembleDebug'...                             18,5s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»010ms
+06:45 +7 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/google_test.dart: (setUpAll)
+06:46 +7 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/google_test.dart: fen├¬tre Google ferm├®e : rien n'est cr├®├®
+06:50 +8 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/google_test.dart: cr├®er rattache Google ├á l'appareil, qu'on retrouve ensuite
+06:54 +9 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/google_test.dart: (tearDownAll)
+06:54 +9 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gymnases_test.dart
+Running Gradle task 'assembleDebug'...                             16,4s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»149ms
+07:17 +9 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gymnases_test.dart: (setUpAll)
+07:17 +9 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gymnases_test.dart: gymnases : cr├®ation, stocks distincts, ouverture par gymnase, changement de gymnase
+08:27 +10 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/gymnases_test.dart: (tearDownAll)
+08:27 +10 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/images_test.dart
+Running Gradle task 'assembleDebug'...                             16,4s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»177ms
+08:50 +10 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/images_test.dart: (setUpAll)
+08:50 +10 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/images_test.dart: images : menu type, ic├┤ne, photo, copie ├á l'├®v├®nement, caisse, hors r├®seau
+09:34 +11 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/images_test.dart: (tearDownAll)
+09:35 +11 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/membres_test.dart
+Running Gradle task 'assembleDebug'...                             16,5s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»038ms
+09:58 +11 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/membres_test.dart: (setUpAll)
+09:58 +11 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/membres_test.dart: gestionnaires : nommer, activer avec Google, retirer
+10:18 +12 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/membres_test.dart: (tearDownAll)
+10:19 +12 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/menus_test.dart
+Running Gradle task 'assembleDebug'...                             16,1s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          887ms
+10:41 +12 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/menus_test.dart: (setUpAll)
+10:41 +12 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/menus_test.dart: menus : cr├®er, remplir, modifier, retrouver, supprimer
+11:04 +13 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/menus_test.dart: (tearDownAll)
+11:05 +13 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/parametres_test.dart
+Running Gradle task 'assembleDebug'...                             16,2s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          898ms
+11:27 +13 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/parametres_test.dart: (setUpAll)
+11:27 +13 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/parametres_test.dart: param├¿tres : changer le code, retirer un membre, supprimer l'association
+12:01 +14 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/parametres_test.dart: (tearDownAll)
+12:01 +14 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/qr_test.dart
+Running Gradle task 'assembleDebug'...                             16,2s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»010ms
+12:24 +14 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/qr_test.dart: (setUpAll)
+12:24 +14 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/qr_test.dart: QR code : afficher, scanner (non-membre puis membre), erreurs
+13:08 +15 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/qr_test.dart: (tearDownAll)
+13:09 +15 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/recette_test.dart
+Running Gradle task 'assembleDebug'...                             16,1s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          894ms
+13:31 +15 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/recette_test.dart: (setUpAll)
+13:31 +15 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/recette_test.dart: recette : un week-end de buvette, tous les r├┤les, du d├®but au bilan
+ETAPE 1 chef
+ETAPE 2 gus
+ETAPE 3 lea
+ETAPE 4 zoe
+ETAPE 5 gus-suivi
+ETAPE 6 bilan
+ETAPE 7 coupure
+16:17 +16 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/recette_test.dart: (tearDownAll)
+16:17 +16 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/suivi_test.dart
+Running Gradle task 'assembleDebug'...                             16,4s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1ÔÇ»079ms
+16:40 +16 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/suivi_test.dart: (setUpAll)
+16:40 +16 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/suivi_test.dart: suivi en direct : totaux, quantit├®s, caisses, silence, annulation
+16:58 +17 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/suivi_test.dart: (tearDownAll)
+16:59 +17 -1: loading V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/vues_test.dart
+Running Gradle task 'assembleDebug'...                             16,4s
+ÔêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          928ms
+17:21 +17 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/vues_test.dart: (setUpAll)
+17:22 +17 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/vues_test.dart: vues distincte et commune : m├¬mes chiffres que le calcul ├á la main
+17:47 +18 -1: V:/DEV/PROJETS/applications_mobile/Le_Comptoir/integration_test/vues_test.dart: (tearDownAll)
+17:48 +18 -1: Some tests failed.
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mflutter test integration_test -d emulator-5554 --timeout 15m[22m" exited with code 1

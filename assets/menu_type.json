@@ -1,0 +1,12 @@
+[
+  { "nom": "Croque-monsieur", "prixCentimes": 300, "icone": "croque" },
+  { "nom": "Salade", "prixCentimes": 400, "icone": "salade" },
+  { "nom": "Fruit", "prixCentimes": 100, "icone": "fruit" },
+  { "nom": "Thé", "prixCentimes": 100, "icone": "the" },
+  { "nom": "Café", "prixCentimes": 100, "icone": "cafe" },
+  { "nom": "Barre chocolatée", "prixCentimes": 100, "icone": "barre" },
+  { "nom": "Soda", "prixCentimes": 150, "icone": "soda" },
+  { "nom": "Part de gâteau sucrée", "prixCentimes": 200, "icone": "gateau_sucre" },
+  { "nom": "Part de gâteau salée", "prixCentimes": 250, "icone": "gateau_sale" },
+  { "nom": "Crêpe", "prixCentimes": 250, "icone": "crepe" }
+]

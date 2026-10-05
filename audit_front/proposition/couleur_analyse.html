@@ -1,0 +1,162 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Couleur « analyser »</title><style>
+:root{--marque:#2F343C;--lagon:#2F343C;--lagon-fonce:#1B1F25;--lagon-doux:#E6E8EB;
+--prune:#6C4F86;--prune-fonce:#43305A;--prune-doux:#EBE3F1;
+--petrole:#3D7A82;--petrole-fonce:#234B50;--petrole-doux:#DCEDEE;
+--brique:#A8433A;--brique-fonce:#6E2620;--brique-doux:#F6E2DF;
+--sauge:#5A7D4F;--sauge-fonce:#34502C;--sauge-doux:#E5EFDD;
+--ocre:#9A670F;--ocre-fonce:#6E4A0E;--ocre-doux:#F6E8C6;
+--sable:#D9B06F;--sable-doux:#F1E6D2;
+--creme:#F4EFE6;--encre:#1E2430;--gris:#5F6573;--ligne:#DDD5C5;--blanc:#FFFFFF;
+--pelouse:#5A7D4F;--pelouse-doux:#E5EFDD;--alerte:#A8433A;--alerte-doux:#F6E2DF;
+--ambre:#6E4A0E;--ambre-doux:#F6E8C6;--r-carte:16px;--r-bouton:14px}
+*{box-sizing:border-box}
+body{margin:0;background:#E8E2D6;color:var(--encre);font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+.page{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+h1{font-size:34px;margin:8px 0 6px}h2{font-size:26px;margin:56px 0 8px;padding-top:16px;border-top:3px solid var(--lagon)}
+h3{font-size:18px;margin:26px 0 8px}p.lead{font-size:17px;max-width:760px}
+.sub{color:var(--gris)} .grid{display:flex;flex-wrap:wrap;gap:18px} .card0{background:#fff;border-radius:14px;padding:16px;border:1px solid var(--ligne)}
+nav.toc a{display:inline-block;margin:2px 10px 2px 0;color:var(--lagon-fonce);font-weight:600}
+.sw{width:150px}.sw i{display:block;height:64px;border-radius:12px;border:1px solid rgba(0,0,0,.08)}.sw b{display:block;margin-top:6px;font-size:13px}.sw span{font-size:12px;color:var(--gris)}
+table.t{border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:14px}table.t td,table.t th{padding:8px 12px;border-bottom:1px solid var(--ligne);text-align:left;vertical-align:top}
+.row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin:18px 0}
+.col{display:flex;flex-direction:column;align-items:center;gap:6px} .col>small{font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.06em}
+img.avant{width:300px;border:1px solid #bbb;border-radius:22px;display:block}
+.pro{background:#fff;border-left:5px solid var(--pelouse);padding:10px 14px;border-radius:8px;max-width:760px;margin:8px 0;font-size:14px}
+.contre{border-left-color:var(--ambre)}
+/* ---------- téléphone ---------- */
+.ph{width:300px;height:660px;background:var(--creme);border-radius:26px;border:7px solid #151B26;overflow:hidden;position:relative;display:flex;flex-direction:column;font-size:12.5px;flex:none;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.ph .sb{height:18px;background:transparent;flex:none}
+.ph .scroll{flex:1;overflow:hidden;position:relative}
+.bar{height:52px;display:flex;align-items:center;gap:8px;padding:0 8px 0 6px;flex:none;background:var(--marque);color:#fff}
+.bar b{font-size:16px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar small{display:block;font-size:11px;font-weight:500;color:rgba(255,255,255,.8)}
+.bar .btn-i{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.bar .btn-i.fond{background:rgba(255,255,255,.18);color:#fff}
+.pad{padding:8px 12px;display:flex;flex-direction:column;gap:10px}
+.carte{background:#FFFDF9;border:1px solid var(--ligne);border-radius:var(--r-carte);padding:12px}
+.carte.alerte{border-color:#E6B8B2;background:#fff} .carte.ok{border-color:#C4D8B8;background:var(--sauge-doux)}
+.carte.ambre{border-color:#E6CF98;background:var(--ocre-doux)}
+.ti{font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.07em;margin:2px 2px 0}
+.bt{height:48px;border-radius:var(--r-bouton);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14.5px;border:2px solid transparent;width:100%}
+.bt.p{background:var(--lagon);color:#fff}.bt.s{background:#fff;color:var(--lagon-fonce);border-color:var(--lagon)}
+.bt.d{background:var(--alerte);color:#fff}.bt.do{background:#fff;color:var(--alerte);border-color:var(--alerte)}.bt.g{background:var(--sauge);color:#fff}
+.bt.m{background:var(--prune);color:#fff}.bt.mo{background:#fff;color:var(--prune-fonce);border-color:var(--prune)}.bt.a{background:var(--petrole);color:#fff}.bt.ao{background:#fff;color:var(--petrole-fonce);border-color:var(--petrole)}.bt.oo{background:#fff;color:var(--ocre-fonce);border-color:var(--ocre)}.bt.o{background:var(--ocre);color:#fff}.bt.off{background:#E8E2D6;color:#9AA39D}.bt.big{height:60px;font-size:15px}.bt.sm{height:40px;font-size:13px;width:auto;padding:0 14px}
+.pill{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:12px;font-size:11.5px;font-weight:700}
+.pill.v{background:var(--sauge-doux);color:var(--sauge-fonce)}.pill.gr{background:#E8E2D6;color:#44504A}.pill.a{background:var(--ambre-doux);color:var(--ambre)}
+.pill.r{background:var(--alerte-doux);color:var(--alerte)}.pill.b{background:var(--sable-doux);color:#6B4A1E}
+.champ{border:1.5px solid #C5BBA8;border-radius:12px;background:#fff;height:48px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.champ small{font-size:10.5px;color:var(--gris);line-height:1}.champ span{font-size:14px;line-height:1.2}
+.seg{display:flex;border:1.5px solid var(--lagon);border-radius:12px;overflow:hidden;height:40px}
+.seg div{flex:1;display:grid;place-items:center;font-weight:700;font-size:12.5px;color:var(--lagon-fonce);border-left:1px solid var(--lagon)}
+.seg div:first-child{border:0}.seg div.on{background:var(--lagon);color:#fff}
+.li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--ligne)}.li:last-child{border:0}
+.li .tx{flex:1;min-width:0}.li .tx b{display:block;font-size:14px}.li .tx span{color:var(--gris);font-size:12px}
+.av{width:36px;height:36px;border-radius:50%;background:#F1E6D2;color:#6B4A1E;display:grid;place-items:center;font-weight:800;flex:none}
+.kpi{font-size:36px;font-weight:800;letter-spacing:-.5px;line-height:1.05}.kpi small{font-size:14px;font-weight:600;color:var(--gris);letter-spacing:0}
+.barre{height:9px;border-radius:5px;background:#E6DFD0;overflow:hidden}.barre i{display:block;height:100%;background:var(--lagon);border-radius:5px}
+.pb{display:flex;justify-content:space-between;font-size:12.5px;margin:7px 0 3px}
+.tuile{border-radius:14px;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;text-align:center;padding:4px}
+.tuile b{font-size:11.5px;line-height:1.1;font-weight:600}.tuile em{font-style:normal;font-weight:800;font-size:13px}
+.tuile .nb{position:absolute;top:5px;right:5px;min-width:22px;height:22px;border-radius:11px;background:var(--lagon);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;padding:0 6px}
+.grille{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.logo{width:56px;height:56px;border-radius:14px}
+.dim{position:absolute;inset:0;background:rgba(31,26,23,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:22px 22px 0 0;padding:16px;display:flex;flex-direction:column;gap:12px}
+.banner{display:flex;gap:8px;align-items:center;padding:8px 12px;font-weight:600;font-size:12.5px}
+.banner.a{background:var(--ambre-doux);color:var(--ambre)}.banner.v{background:var(--sauge-doux);color:var(--sauge-fonce)}.banner.r{background:var(--alerte-doux);color:var(--alerte)}
+.fab{position:absolute;bottom:0;left:0;right:0;padding:10px 12px 12px;background:linear-gradient(transparent,var(--creme) 28%)}
+.vide{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:18px 10px;color:var(--gris)}
+.vide .rond{width:68px;height:68px;border-radius:50%;background:var(--lagon-doux);color:var(--lagon-fonce);display:grid;place-items:center}
+.cam{background:#14201B;flex:1;position:relative;display:grid;place-items:center}
+.cam .vis{width:190px;height:190px;position:relative}
+.cam .vis i{position:absolute;width:34px;height:34px;border:4px solid #fff}
+.ic{vertical-align:middle;flex:none}
+.t-bilan{--lagon:#3D7A82;--lagon-fonce:#234B50;--lagon-doux:#DCEDEE}
+.t-gestion{--lagon:#6C4F86;--lagon-fonce:#43305A;--lagon-doux:#EBE3F1}
+</style></head><body><div class="page">
+<h1>Remplacer le pétrole (couleur « analyser »)</h1>
+<p class="lead">Elle sert au bilan, au suivi en direct, au sélecteur Commun / Gymnase et aux barres de chiffres. Les trois remplaçants ont un contraste blanc/texte supérieur à 4,5. <b>Ma recommandation : le cacao</b> : c'est la seule option qui ne ressemble ni à un bleu, ni à un rouge (danger), et elle se marie avec le lin et le sable que vous aimiez. Les autres couleurs d'action ne changent pas.</p>
+<div class="grid"><div class="card0" style="width:660px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><i style="width:44px;height:44px;border-radius:12px;background:#3D7A82"></i><div><b style="font-size:19px">Actuel · Pétrole (à remplacer)</b><div class="sub">#3D7A82 · bleu-vert : celui que vous n'aimez pas</div></div></div><div style="display:flex;gap:14px;zoom:.92"><div class="ph" style="--lagon:#3D7A82;--lagon-fonce:#234B50;--lagon-doux:#DCEDEE"><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Bilan<small>Tournoi du week-end</small></b></div><div class="scroll"><div class="pad"><div class="seg"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div><span class="pill a">Bilan provisoire · en cours</span><div class="carte ambre" style="font-size:12px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg> 1 caisse pas encore clôturée : Zoé</div>
+<div class="carte"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div></div>
+<div class="ti">Par produit</div><div class="carte"><div class="pb"><span>Crêpe</span><b>6 · 15,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Café</span><b>5 · 5,00 €</b></div><div class="barre"><i style="width:83%"></i></div><div class="pb"><span>Croque-monsieur</span><b>4 · 12,00 €</b></div><div class="barre"><i style="width:66%"></i></div><div class="pb"><span>Salade</span><b>1 · 4,00 €</b></div><div class="barre"><i style="width:17%"></i></div><div class="pb"><span>Soda</span><b>1 · 1,50 €</b></div><div class="barre"><i style="width:17%"></i></div></div>
+<div class="ti">Par mode de paiement</div><div class="carte"><div class="pb" style="margin-top:0"><span>Espèces</span><b>28,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Carte</span><b>10,00 €</b></div><div class="barre"><i style="width:36%"></i></div><div class="pb"><span>Chèque</span><b>1,50 €</b></div><div class="barre"><i style="width:6%"></i></div></div>
+<div class="ti">Produits les plus vendus</div><div class="carte">1. Crêpe (6) · 2. Café (5) · 3. Croque-monsieur (4)</div></div></div></div><div class="ph "><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Tournoi du week-end</b><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg></div></div><div class="scroll"><div class="pad">
+<div class="carte"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill v">● En cours</span><span class="sub">04/10/2026 · Menu Tournoi</span></div>
+<div style="margin-top:6px" class="sub">Paiements : Espèces · Carte · Chèque</div></div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase A</div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase B</div>
+<div style="display:flex;gap:8px"><div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--prune-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10l9-6 9 6v10z M9 20v-6h6v6"/></svg><br>Gymnases<br>et stocks</div>
+<div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--petrole-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10 M12 20V4 M19 20v-8"/></svg><br>Voir le<br>bilan</div></div>
+<div class="ti">Suivi en direct</div>
+<div class="seg" style="--lagon:#3D7A82;--lagon-fonce:#234B50;--lagon-doux:#DCEDEE"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div>
+<div class="carte" style="--lagon:#3D7A82;--lagon-fonce:#234B50;--lagon-doux:#DCEDEE"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div>
+<div style="margin-top:8px"><div class="pb"><span>Crêpe</span><b>6 vendus</b></div><div class="barre"><i style="width:100%"></i></div>
+<div class="pb"><span>Café</span><b>5 vendus</b></div><div class="barre"><i style="width:83%"></i></div>
+<div class="pb"><span>Croque-monsieur</span><b>4 vendus</b></div><div class="barre"><i style="width:66%"></i></div></div></div>
+<div class="ti">Caisses</div>
+<div class="carte" style="padding:2px 12px"><div class="li"><div class="av">L</div><div class="tx"><b>Léa · Gymnase A</b><span>3 ventes · 14,00 € · dernière 12:30</span></div><span class="pill gr">Clôturée</span></div>
+<div class="li"><div class="av">Z</div><div class="tx"><b>Zoé · Gymnase B</b><span>8 ventes · 25,50 € · dernière 15:26</span></div><span class="pill v">Ouverte</span></div></div>
+<div class="carte alerte"><b style="color:var(--alerte)">Clôture de l'événement</b><div class="sub" style="margin:2px 0 8px">1 caisse n'est pas clôturée : ses ventes peuvent manquer.</div><div class="bt do ">Forcer la clôture</div></div>
+</div></div></div></div></div><div class="card0" style="width:660px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><i style="width:44px;height:44px;border-radius:12px;background:#7A5A45"></i><div><b style="font-size:19px">1 · Cacao</b><div class="sub">#7A5A45 · brun chaud, « livre de comptes » ; s'accorde au lin et au sable</div></div></div><div style="display:flex;gap:14px;zoom:.92"><div class="ph" style="--lagon:#7A5A45;--lagon-fonce:#4A3326;--lagon-doux:#EFE5DD"><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Bilan<small>Tournoi du week-end</small></b></div><div class="scroll"><div class="pad"><div class="seg"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div><span class="pill a">Bilan provisoire · en cours</span><div class="carte ambre" style="font-size:12px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg> 1 caisse pas encore clôturée : Zoé</div>
+<div class="carte"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div></div>
+<div class="ti">Par produit</div><div class="carte"><div class="pb"><span>Crêpe</span><b>6 · 15,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Café</span><b>5 · 5,00 €</b></div><div class="barre"><i style="width:83%"></i></div><div class="pb"><span>Croque-monsieur</span><b>4 · 12,00 €</b></div><div class="barre"><i style="width:66%"></i></div><div class="pb"><span>Salade</span><b>1 · 4,00 €</b></div><div class="barre"><i style="width:17%"></i></div><div class="pb"><span>Soda</span><b>1 · 1,50 €</b></div><div class="barre"><i style="width:17%"></i></div></div>
+<div class="ti">Par mode de paiement</div><div class="carte"><div class="pb" style="margin-top:0"><span>Espèces</span><b>28,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Carte</span><b>10,00 €</b></div><div class="barre"><i style="width:36%"></i></div><div class="pb"><span>Chèque</span><b>1,50 €</b></div><div class="barre"><i style="width:6%"></i></div></div>
+<div class="ti">Produits les plus vendus</div><div class="carte">1. Crêpe (6) · 2. Café (5) · 3. Croque-monsieur (4)</div></div></div></div><div class="ph "><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Tournoi du week-end</b><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg></div></div><div class="scroll"><div class="pad">
+<div class="carte"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill v">● En cours</span><span class="sub">04/10/2026 · Menu Tournoi</span></div>
+<div style="margin-top:6px" class="sub">Paiements : Espèces · Carte · Chèque</div></div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase A</div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase B</div>
+<div style="display:flex;gap:8px"><div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--prune-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10l9-6 9 6v10z M9 20v-6h6v6"/></svg><br>Gymnases<br>et stocks</div>
+<div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--petrole-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10 M12 20V4 M19 20v-8"/></svg><br>Voir le<br>bilan</div></div>
+<div class="ti">Suivi en direct</div>
+<div class="seg" style="--lagon:#7A5A45;--lagon-fonce:#4A3326;--lagon-doux:#EFE5DD"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div>
+<div class="carte" style="--lagon:#7A5A45;--lagon-fonce:#4A3326;--lagon-doux:#EFE5DD"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div>
+<div style="margin-top:8px"><div class="pb"><span>Crêpe</span><b>6 vendus</b></div><div class="barre"><i style="width:100%"></i></div>
+<div class="pb"><span>Café</span><b>5 vendus</b></div><div class="barre"><i style="width:83%"></i></div>
+<div class="pb"><span>Croque-monsieur</span><b>4 vendus</b></div><div class="barre"><i style="width:66%"></i></div></div></div>
+<div class="ti">Caisses</div>
+<div class="carte" style="padding:2px 12px"><div class="li"><div class="av">L</div><div class="tx"><b>Léa · Gymnase A</b><span>3 ventes · 14,00 € · dernière 12:30</span></div><span class="pill gr">Clôturée</span></div>
+<div class="li"><div class="av">Z</div><div class="tx"><b>Zoé · Gymnase B</b><span>8 ventes · 25,50 € · dernière 15:26</span></div><span class="pill v">Ouverte</span></div></div>
+<div class="carte alerte"><b style="color:var(--alerte)">Clôture de l'événement</b><div class="sub" style="margin:2px 0 8px">1 caisse n'est pas clôturée : ses ventes peuvent manquer.</div><div class="bt do ">Forcer la clôture</div></div>
+</div></div></div></div></div><div class="card0" style="width:660px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><i style="width:44px;height:44px;border-radius:12px;background:#A04467"></i><div><b style="font-size:19px">2 · Framboise cassée</b><div class="sub">#A04467 · rose profond ; la seule teinte encore libre ; proche du rouge danger</div></div></div><div style="display:flex;gap:14px;zoom:.92"><div class="ph" style="--lagon:#A04467;--lagon-fonce:#66223F;--lagon-doux:#F5E3EA"><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Bilan<small>Tournoi du week-end</small></b></div><div class="scroll"><div class="pad"><div class="seg"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div><span class="pill a">Bilan provisoire · en cours</span><div class="carte ambre" style="font-size:12px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg> 1 caisse pas encore clôturée : Zoé</div>
+<div class="carte"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div></div>
+<div class="ti">Par produit</div><div class="carte"><div class="pb"><span>Crêpe</span><b>6 · 15,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Café</span><b>5 · 5,00 €</b></div><div class="barre"><i style="width:83%"></i></div><div class="pb"><span>Croque-monsieur</span><b>4 · 12,00 €</b></div><div class="barre"><i style="width:66%"></i></div><div class="pb"><span>Salade</span><b>1 · 4,00 €</b></div><div class="barre"><i style="width:17%"></i></div><div class="pb"><span>Soda</span><b>1 · 1,50 €</b></div><div class="barre"><i style="width:17%"></i></div></div>
+<div class="ti">Par mode de paiement</div><div class="carte"><div class="pb" style="margin-top:0"><span>Espèces</span><b>28,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Carte</span><b>10,00 €</b></div><div class="barre"><i style="width:36%"></i></div><div class="pb"><span>Chèque</span><b>1,50 €</b></div><div class="barre"><i style="width:6%"></i></div></div>
+<div class="ti">Produits les plus vendus</div><div class="carte">1. Crêpe (6) · 2. Café (5) · 3. Croque-monsieur (4)</div></div></div></div><div class="ph "><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Tournoi du week-end</b><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg></div></div><div class="scroll"><div class="pad">
+<div class="carte"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill v">● En cours</span><span class="sub">04/10/2026 · Menu Tournoi</span></div>
+<div style="margin-top:6px" class="sub">Paiements : Espèces · Carte · Chèque</div></div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase A</div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase B</div>
+<div style="display:flex;gap:8px"><div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--prune-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10l9-6 9 6v10z M9 20v-6h6v6"/></svg><br>Gymnases<br>et stocks</div>
+<div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--petrole-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10 M12 20V4 M19 20v-8"/></svg><br>Voir le<br>bilan</div></div>
+<div class="ti">Suivi en direct</div>
+<div class="seg" style="--lagon:#A04467;--lagon-fonce:#66223F;--lagon-doux:#F5E3EA"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div>
+<div class="carte" style="--lagon:#A04467;--lagon-fonce:#66223F;--lagon-doux:#F5E3EA"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div>
+<div style="margin-top:8px"><div class="pb"><span>Crêpe</span><b>6 vendus</b></div><div class="barre"><i style="width:100%"></i></div>
+<div class="pb"><span>Café</span><b>5 vendus</b></div><div class="barre"><i style="width:83%"></i></div>
+<div class="pb"><span>Croque-monsieur</span><b>4 vendus</b></div><div class="barre"><i style="width:66%"></i></div></div></div>
+<div class="ti">Caisses</div>
+<div class="carte" style="padding:2px 12px"><div class="li"><div class="av">L</div><div class="tx"><b>Léa · Gymnase A</b><span>3 ventes · 14,00 € · dernière 12:30</span></div><span class="pill gr">Clôturée</span></div>
+<div class="li"><div class="av">Z</div><div class="tx"><b>Zoé · Gymnase B</b><span>8 ventes · 25,50 € · dernière 15:26</span></div><span class="pill v">Ouverte</span></div></div>
+<div class="carte alerte"><b style="color:var(--alerte)">Clôture de l'événement</b><div class="sub" style="margin:2px 0 8px">1 caisse n'est pas clôturée : ses ventes peuvent manquer.</div><div class="bt do ">Forcer la clôture</div></div>
+</div></div></div></div></div><div class="card0" style="width:660px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><i style="width:44px;height:44px;border-radius:12px;background:#6B6258"></i><div><b style="font-size:19px">3 · Taupe</b><div class="sub">#6B6258 · gris chaud neutre ; calme, mais moins de couleur</div></div></div><div style="display:flex;gap:14px;zoom:.92"><div class="ph" style="--lagon:#6B6258;--lagon-fonce:#403A33;--lagon-doux:#ECE8E2"><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Bilan<small>Tournoi du week-end</small></b></div><div class="scroll"><div class="pad"><div class="seg"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div><span class="pill a">Bilan provisoire · en cours</span><div class="carte ambre" style="font-size:12px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg> 1 caisse pas encore clôturée : Zoé</div>
+<div class="carte"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div></div>
+<div class="ti">Par produit</div><div class="carte"><div class="pb"><span>Crêpe</span><b>6 · 15,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Café</span><b>5 · 5,00 €</b></div><div class="barre"><i style="width:83%"></i></div><div class="pb"><span>Croque-monsieur</span><b>4 · 12,00 €</b></div><div class="barre"><i style="width:66%"></i></div><div class="pb"><span>Salade</span><b>1 · 4,00 €</b></div><div class="barre"><i style="width:17%"></i></div><div class="pb"><span>Soda</span><b>1 · 1,50 €</b></div><div class="barre"><i style="width:17%"></i></div></div>
+<div class="ti">Par mode de paiement</div><div class="carte"><div class="pb" style="margin-top:0"><span>Espèces</span><b>28,00 €</b></div><div class="barre"><i style="width:100%"></i></div><div class="pb"><span>Carte</span><b>10,00 €</b></div><div class="barre"><i style="width:36%"></i></div><div class="pb"><span>Chèque</span><b>1,50 €</b></div><div class="barre"><i style="width:6%"></i></div></div>
+<div class="ti">Produits les plus vendus</div><div class="carte">1. Crêpe (6) · 2. Café (5) · 3. Croque-monsieur (4)</div></div></div></div><div class="ph "><div class="sb"></div><div class="bar"><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div><b>Tournoi du week-end</b><div class="btn-i"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg></div></div><div class="scroll"><div class="pad">
+<div class="carte"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill v">● En cours</span><span class="sub">04/10/2026 · Menu Tournoi</span></div>
+<div style="margin-top:6px" class="sub">Paiements : Espèces · Carte · Chèque</div></div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase A</div>
+<div class="bt p big">Ouvrir ma caisse · Gymnase B</div>
+<div style="display:flex;gap:8px"><div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--prune-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10l9-6 9 6v10z M9 20v-6h6v6"/></svg><br>Gymnases<br>et stocks</div>
+<div class="carte" style="flex:1;text-align:center;padding:10px 4px;color:var(--petrole-fonce);font-weight:700;font-size:12px"><svg class="ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10 M12 20V4 M19 20v-8"/></svg><br>Voir le<br>bilan</div></div>
+<div class="ti">Suivi en direct</div>
+<div class="seg" style="--lagon:#6B6258;--lagon-fonce:#403A33;--lagon-doux:#ECE8E2"><div class="on">Commun</div><div>Gymnase A</div><div>Gymnase B</div></div>
+<div class="carte" style="--lagon:#6B6258;--lagon-fonce:#403A33;--lagon-doux:#ECE8E2"><div class="kpi">39,50 €<br><small>11 ventes · 1 annulée</small></div>
+<div style="margin-top:8px"><div class="pb"><span>Crêpe</span><b>6 vendus</b></div><div class="barre"><i style="width:100%"></i></div>
+<div class="pb"><span>Café</span><b>5 vendus</b></div><div class="barre"><i style="width:83%"></i></div>
+<div class="pb"><span>Croque-monsieur</span><b>4 vendus</b></div><div class="barre"><i style="width:66%"></i></div></div></div>
+<div class="ti">Caisses</div>
+<div class="carte" style="padding:2px 12px"><div class="li"><div class="av">L</div><div class="tx"><b>Léa · Gymnase A</b><span>3 ventes · 14,00 € · dernière 12:30</span></div><span class="pill gr">Clôturée</span></div>
+<div class="li"><div class="av">Z</div><div class="tx"><b>Zoé · Gymnase B</b><span>8 ventes · 25,50 € · dernière 15:26</span></div><span class="pill v">Ouverte</span></div></div>
+<div class="carte alerte"><b style="color:var(--alerte)">Clôture de l'événement</b><div class="sub" style="margin:2px 0 8px">1 caisse n'est pas clôturée : ses ventes peuvent manquer.</div><div class="bt do ">Forcer la clôture</div></div>
+</div></div></div></div></div></div></div></body></html>
