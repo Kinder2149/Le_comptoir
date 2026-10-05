@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/ecran_caisse.dart';
+import 'package:le_comptoir/ecran_menu.dart';
 import 'package:le_comptoir/ticket.dart';
 
 // Un vrai PNG de 1 pixel (67 octets).
@@ -168,6 +169,107 @@ void main() {
       expect(sans == avec, isTrue);
       expect(avec.photo, isNotNull);
       expect(avec.icone, 'cafe');
+    });
+  });
+
+  group("image d'un produit d'événement", () {
+    testWidgets("choisir une autre icône et valider", (tester) async {
+      late Future<ImageChoisie?> futur;
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.5;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => futur = demanderImageProduit(c,
+                nom: 'Café', icone: 'cafe', selecteurPhoto: (_) async => null),
+            child: const Text('ouvrir'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('ouvrir'));
+      await tester.pumpAndSettle();
+      expect(find.text('Image : Café'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('icone_crepe')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('valider_image')));
+      await tester.pumpAndSettle();
+      final r = (await futur)!;
+      expect(r.icone, 'crepe');
+      expect(r.photo, isNull);
+    });
+
+    testWidgets("photo choisie : renvoyée ; retirée : plus de photo", (tester) async {
+      late Future<ImageChoisie?> futur;
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.5;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => futur = demanderImageProduit(c,
+                nom: 'Café', selecteurPhoto: (_) async => pngMinuscule),
+            child: const Text('ouvrir'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('ouvrir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ajouter_photo')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('photo_galerie')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('retirer_photo')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('valider_image')));
+      await tester.pumpAndSettle();
+      expect((await futur)!.photo, pngMinuscule);
+    });
+
+    testWidgets('photo trop lourde : message, rien ne change', (tester) async {
+      late Future<ImageChoisie?> futur;
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.5;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => futur = demanderImageProduit(c,
+                nom: 'Café',
+                icone: 'cafe',
+                selecteurPhoto: (_) async => Uint8List(tailleMaxPhoto + 1)),
+            child: const Text('ouvrir'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('ouvrir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ajouter_photo')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('photo_galerie')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('erreur_image')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('valider_image')));
+      await tester.pumpAndSettle();
+      final r = (await futur)!;
+      expect(r.icone, 'cafe');
+      expect(r.photo, isNull);
+    });
+
+    testWidgets('annuler : rien ne change', (tester) async {
+      late Future<ImageChoisie?> futur;
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => futur = demanderImageProduit(c, nom: 'Café'),
+            child: const Text('ouvrir'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('ouvrir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Annuler'));
+      await tester.pumpAndSettle();
+      expect(await futur, isNull);
     });
   });
 }

@@ -100,6 +100,9 @@ les buvettes de la saison.
     événement lancé.
     Pourquoi : les prix d'un week-end en cours ne doivent pas bouger, et
     le bénévole n'a pas accès aux menus (validé le 01/10/2026).
+    Exception (05/10/2026) : la gestion peut corriger l'IMAGE (icône, photo) d'un
+    produit depuis le détail d'un événement en cours ; nom, prix et stock restent
+    figés. Une image changée dans le menu n'atteint donc pas un événement déjà créé.
 14. Stock épuisé : la caisse avertit (message fixe, produit marqué
     « Épuisé ») mais ne bloque jamais la vente ; le stock peut passer
     sous zéro.

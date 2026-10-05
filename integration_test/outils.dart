@@ -30,8 +30,19 @@ Future<void> attendre(WidgetTester tester, Finder cible) async {
 Future<String> gymnaseUnique(DepotEvenements depot, String evenementId) async =>
     (await depot.suivreGymnases(evenementId).first).single.id;
 
+/// Texte d'un élément : celui du Text, ou, pour un bloc (ligne du bilan), les
+/// textes qu'il contient dans l'ordre, joints par « | ».
+String contenuDe(WidgetTester tester, Finder f) {
+  final w = tester.widget(f);
+  if (w is Text) return w.data!;
+  return tester
+      .widgetList<Text>(find.descendant(of: f, matching: find.byType(Text)))
+      .map((t) => t.data!)
+      .join(' | ');
+}
+
 String texte(WidgetTester tester, String cle) =>
-    tester.widget<Text>(find.byKey(Key(cle))).data!;
+    contenuDe(tester, find.byKey(Key(cle)));
 
 /// Compte Google simulé (l'émulateur Auth accepte ce faux jeton).
 FournisseurGoogle fauxGoogle(String identite) => () async =>

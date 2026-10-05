@@ -17,7 +17,7 @@ rules_version = '2';
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
-//       produits/{p}                              copie des produits du menu (images comprises), SANS stock
+//       produits/{p}                              copie des produits du menu (images comprises), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
 //         stocks/{p}                              quantite (absent = pas de suivi de ce produit dans ce gymnase)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
@@ -237,11 +237,17 @@ service cloud.firestore {
 
           allow delete: if suppressionEnCours(a);
 
-          // Copie posée à la création de l'événement, jamais modifiée ensuite.
-          // Le stock vit dans les gymnases.
+          // Copie posée à la création de l'événement. Le stock vit dans les gymnases.
           allow create: if estGestion(a)
             && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
             && !('stock' in request.resource.data)
+            && produitValide(request.resource.data);
+
+          // Ensuite, seule l'image (icône, photo) peut changer, par la gestion et
+          // tant que l'événement est en cours : nom et prix restent figés.
+          allow update: if estGestion(a)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['icone', 'photo'])
             && produitValide(request.resource.data);
         }
 

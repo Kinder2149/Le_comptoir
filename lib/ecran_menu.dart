@@ -203,38 +203,6 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
   late Uint8List? _photo = widget.produit?.photo;
   String? _erreur;
 
-  Future<void> _choisirPhoto() async {
-    final source = await showDialog<SourcePhoto>(
-      context: context,
-      builder: (c) => SimpleDialog(
-        title: const Text('Photo du produit'),
-        children: [
-          SimpleDialogOption(
-            key: const Key('photo_galerie'),
-            onPressed: () => Navigator.pop(c, SourcePhoto.galerie),
-            child: const Text('Choisir dans la galerie'),
-          ),
-          SimpleDialogOption(
-            key: const Key('photo_camera'),
-            onPressed: () => Navigator.pop(c, SourcePhoto.camera),
-            child: const Text('Prendre une photo'),
-          ),
-        ],
-      ),
-    );
-    if (source == null) return;
-    final octets = await widget.selecteurPhoto(source);
-    if (octets == null || !mounted) return;
-    setState(() {
-      if (octets.length > tailleMaxPhoto) {
-        _erreur = 'Photo trop lourde. Choisissez-en une autre.';
-      } else {
-        _photo = octets;
-        _erreur = null;
-      }
-    });
-  }
-
   @override
   void dispose() {
     _nom.dispose();
@@ -280,51 +248,15 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
               decoration: const InputDecoration(labelText: 'Prix en €'),
             ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Image', style: Theme.of(context).textTheme.labelLarge),
-            ),
-            Row(
-              children: [
-                VignetteProduit(
-                    key: const Key('apercu_produit'),
-                    icone: _icone,
-                    photo: _photo,
-                    taille: 48),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Wrap(
-                    spacing: 4,
-                    children: [
-                      OutlinedButton(
-                        key: const Key('ajouter_photo'),
-                        onPressed: _choisirPhoto,
-                        child: Text(_photo == null ? 'Ajouter une photo' : 'Changer la photo'),
-                      ),
-                      if (_photo != null)
-                        TextButton(
-                          key: const Key('retirer_photo'),
-                          onPressed: () => setState(() => _photo = null),
-                          child: const Text('Retirer la photo'),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final cle in cleIcones)
-                  ChoiceChip(
-                    key: Key('icone_$cle'),
-                    label: Icon(iconeDe(cle), size: 20),
-                    selected: _icone == cle,
-                    onSelected: (v) => setState(() => _icone = v ? cle : null),
-                  ),
-              ],
+            SelecteurImage(
+              icone: _icone,
+              photo: _photo,
+              selecteurPhoto: widget.selecteurPhoto,
+              onChanged: (i, p) => setState(() {
+                _icone = i;
+                _photo = p;
+              }),
+              onErreur: (e) => setState(() => _erreur = e),
             ),
             SwitchListTile(
               key: const Key('suivi_stock'),
@@ -366,6 +298,213 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
         FilledButton(
           key: const Key('valider_produit'),
           onPressed: _valider,
+          child: const Text('Valider'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Choix de l'image d'un produit : aperçu, photo (galerie ou appareil) et icônes
+/// modèles. Sert au formulaire du produit de menu et à l'image d'un produit
+/// d'événement. [onErreur] reçoit le message d'une photo refusée (null = effacé).
+class SelecteurImage extends StatefulWidget {
+  const SelecteurImage({
+    super.key,
+    required this.icone,
+    required this.photo,
+    required this.selecteurPhoto,
+    required this.onChanged,
+    required this.onErreur,
+  });
+
+  final String? icone;
+  final Uint8List? photo;
+  final SelecteurPhoto selecteurPhoto;
+  final void Function(String? icone, Uint8List? photo) onChanged;
+  final ValueChanged<String?> onErreur;
+
+  @override
+  State<SelecteurImage> createState() => _EtatSelecteurImage();
+}
+
+class _EtatSelecteurImage extends State<SelecteurImage> {
+  late String? _icone = widget.icone;
+  late Uint8List? _photo = widget.photo;
+
+  Future<void> _choisirPhoto() async {
+    final source = await showDialog<SourcePhoto>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: const Text('Photo du produit'),
+        children: [
+          SimpleDialogOption(
+            key: const Key('photo_galerie'),
+            onPressed: () => Navigator.pop(c, SourcePhoto.galerie),
+            child: const Text('Choisir dans la galerie'),
+          ),
+          SimpleDialogOption(
+            key: const Key('photo_camera'),
+            onPressed: () => Navigator.pop(c, SourcePhoto.camera),
+            child: const Text('Prendre une photo'),
+          ),
+        ],
+      ),
+    );
+    if (source == null) return;
+    final octets = await widget.selecteurPhoto(source);
+    if (octets == null || !mounted) return;
+    if (octets.length > tailleMaxPhoto) {
+      widget.onErreur('Photo trop lourde. Choisissez-en une autre.');
+      return;
+    }
+    setState(() => _photo = octets);
+    widget.onErreur(null);
+    widget.onChanged(_icone, _photo);
+  }
+
+  void _changer({String? icone, Uint8List? photo}) {
+    setState(() {
+      _icone = icone;
+      _photo = photo;
+    });
+    widget.onChanged(_icone, _photo);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Image', style: Theme.of(context).textTheme.labelLarge),
+        Row(
+          children: [
+            VignetteProduit(
+                key: const Key('apercu_produit'),
+                icone: _icone,
+                photo: _photo,
+                taille: 48),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Wrap(
+                spacing: 4,
+                children: [
+                  OutlinedButton(
+                    key: const Key('ajouter_photo'),
+                    onPressed: _choisirPhoto,
+                    child: Text(_photo == null ? 'Ajouter une photo' : 'Changer la photo'),
+                  ),
+                  if (_photo != null)
+                    TextButton(
+                      key: const Key('retirer_photo'),
+                      onPressed: () => _changer(icone: _icone),
+                      child: const Text('Retirer la photo'),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final cle in cleIcones)
+              ChoiceChip(
+                key: Key('icone_$cle'),
+                label: Icon(iconeDe(cle), size: 20),
+                selected: _icone == cle,
+                onSelected: (v) => _changer(icone: v ? cle : null, photo: _photo),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Nouvelle image d'un produit d'événement (icône et/ou photo, ou aucune).
+class ImageChoisie {
+  const ImageChoisie(this.icone, this.photo);
+
+  final String? icone;
+  final Uint8List? photo;
+}
+
+/// Change l'image d'un produit d'événement : le nom et le prix restent figés.
+/// Renvoie le nouveau choix, ou null si on annule.
+Future<ImageChoisie?> demanderImageProduit(
+  BuildContext context, {
+  required String nom,
+  String? icone,
+  Uint8List? photo,
+  SelecteurPhoto selecteurPhoto = selecteurPhotoReel,
+}) {
+  return showDialog<ImageChoisie>(
+    context: context,
+    builder: (c) => _DialogueImage(
+        nom: nom, icone: icone, photo: photo, selecteurPhoto: selecteurPhoto),
+  );
+}
+
+class _DialogueImage extends StatefulWidget {
+  const _DialogueImage({
+    required this.nom,
+    required this.icone,
+    required this.photo,
+    required this.selecteurPhoto,
+  });
+
+  final String nom;
+  final String? icone;
+  final Uint8List? photo;
+  final SelecteurPhoto selecteurPhoto;
+
+  @override
+  State<_DialogueImage> createState() => _EtatDialogueImage();
+}
+
+class _EtatDialogueImage extends State<_DialogueImage> {
+  late String? _icone = widget.icone;
+  late Uint8List? _photo = widget.photo;
+  String? _erreur;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Image : ${widget.nom}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SelecteurImage(
+              icone: _icone,
+              photo: _photo,
+              selecteurPhoto: widget.selecteurPhoto,
+              onChanged: (i, p) {
+                _icone = i;
+                _photo = p;
+              },
+              onErreur: (e) => setState(() => _erreur = e),
+            ),
+            if (_erreur != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_erreur!,
+                    key: const Key('erreur_image'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler')),
+        FilledButton(
+          key: const Key('valider_image'),
+          onPressed: () => Navigator.pop(context, ImageChoisie(_icone, _photo)),
           child: const Text('Valider'),
         ),
       ],

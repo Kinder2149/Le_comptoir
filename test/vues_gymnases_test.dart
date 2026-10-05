@@ -256,8 +256,14 @@ void main() {
   String texte(WidgetTester tester, String cle) =>
       tester.widget<Text>(find.byKey(Key(cle))).data!;
 
+  String contenu(WidgetTester tester, String cle) => tester
+      .widgetList<Text>(find.descendant(
+          of: find.byKey(Key(cle)), matching: find.byType(Text)))
+      .map((t) => t.data!)
+      .join(' | ');
+
   Future<void> grandEcran(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 4800);
+    tester.view.physicalSize = const Size(1080, 10000);
     tester.view.devicePixelRatio = 2.5;
     addTearDown(tester.view.reset);
   }
@@ -284,35 +290,29 @@ void main() {
         (tester) async {
       await afficher(tester);
       expect(find.byKey(const Key('vue_commune')), findsOneWidget);
-      expect(texte(tester, 'bilan_total'), 'Total : 22,00 € · 5 ventes');
-      expect(texte(tester, 'bilan_produit_croque'),
-          'Croque-monsieur : 4 vendus · 12,00 € · stock 7 (Gymnase A : 4 · Gymnase B : 3)');
-      expect(texte(tester, 'bilan_produit_cafe'), 'Café : 5 vendus · 7,50 €');
-      expect(texte(tester, 'bilan_caisse_lea__g1'),
-          'Lea : 2 ventes · 10,50 € · Clôturée · 1 annulée · Gymnase A');
-      expect(texte(tester, 'bilan_caisse_max__g2'),
-          'Max : 3 ventes · 11,50 € · Ouverte · Gymnase B');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 22,00 € | 5 ventes');
+      expect(contenu(tester, 'bilan_produit_croque'), 'Croque-monsieur | 4 vendus | Stock 7 | (Gymnase A : 4 · Gymnase B : 3) | 12,00 €');
+      expect(contenu(tester, 'bilan_produit_cafe'), 'Café | 5 vendus | 7,50 €');
+      expect(contenu(tester, 'bilan_caisse_lea__g1'), 'Lea | Gymnase A | Clôturée | 2 ventes | 1 annulée | 10,50 €');
+      expect(contenu(tester, 'bilan_caisse_max__g2'), 'Max | Gymnase B | Ouverte | 3 ventes | 11,50 €');
 
       await tester.tap(find.byKey(const Key('vue_g1')));
       await tester.pump();
-      expect(texte(tester, 'bilan_total'), 'Total : 10,50 € · 2 ventes');
-      expect(texte(tester, 'bilan_produit_croque'),
-          'Croque-monsieur : 2 vendus · 6,00 € · stock 4');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 10,50 € | 2 ventes');
+      expect(contenu(tester, 'bilan_produit_croque'), 'Croque-monsieur | 2 vendus | Stock 4 | 6,00 €');
       expect(find.byKey(const Key('bilan_caisse_max__g2')), findsNothing);
       expect(texte(tester, 'bilan_annulees'), 'Ventes annulées : 1');
 
       await tester.tap(find.byKey(const Key('vue_g2')));
       await tester.pump();
-      expect(texte(tester, 'bilan_total'), 'Total : 11,50 € · 3 ventes');
-      expect(texte(tester, 'bilan_produit_croque'),
-          'Croque-monsieur : 2 vendus · 6,00 € · stock 3');
-      expect(texte(tester, 'bilan_produit_gateau'),
-          'Gâteau : 1 vendu · 2,50 € · stock 1');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 11,50 € | 3 ventes');
+      expect(contenu(tester, 'bilan_produit_croque'), 'Croque-monsieur | 2 vendus | Stock 3 | 6,00 €');
+      expect(contenu(tester, 'bilan_produit_gateau'), 'Gâteau | 1 vendu | Stock 1 | 2,50 €');
       expect(find.byKey(const Key('bilan_annulees')), findsNothing);
 
       await tester.tap(find.byKey(const Key('vue_commune')));
       await tester.pump();
-      expect(texte(tester, 'bilan_total'), 'Total : 22,00 € · 5 ventes');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 22,00 € | 5 ventes');
     });
 
     testWidgets('sans vue commune (gestionnaire de quelques gymnases) : le premier gymnase',
@@ -320,7 +320,7 @@ void main() {
       await afficher(tester, commun: false);
       expect(find.byKey(const Key('vue_commune')), findsNothing);
       expect(find.byKey(const Key('vue_g1')), findsOneWidget);
-      expect(texte(tester, 'bilan_total'), 'Total : 10,50 € · 2 ventes');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 10,50 € | 2 ventes');
     });
 
     testWidgets('un seul gymnase : pas de sélecteur, comme avant', (tester) async {
@@ -339,9 +339,8 @@ void main() {
         await tester.pump();
       }
       expect(find.byType(SelecteurVue), findsNothing);
-      expect(texte(tester, 'bilan_total'), 'Total : 10,50 € · 2 ventes');
-      expect(texte(tester, 'bilan_caisse_lea__g1'),
-          'Lea : 2 ventes · 10,50 € · Clôturée · 1 annulée');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 10,50 € | 2 ventes');
+      expect(contenu(tester, 'bilan_caisse_lea__g1'), 'Lea | Clôturée | 2 ventes | 1 annulée | 10,50 €');
     });
   });
 

@@ -10,6 +10,7 @@ import 'depot_menus.dart';
 import 'ecran_bilan.dart';
 import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
+import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -50,6 +51,7 @@ class EcranEvenement extends StatelessWidget {
     required this.uid,
     required this.prenom,
     this.gymnasePropose,
+    this.selecteurPhoto = selecteurPhotoReel,
   });
 
   final DepotEvenements depot;
@@ -69,6 +71,20 @@ class EcranEvenement extends StatelessWidget {
 
   /// Gymnase d'un QR code qu'on vient de scanner : proposé en premier.
   final String? gymnasePropose;
+
+  /// Choix d'une photo (remplaçable dans les tests).
+  final SelecteurPhoto selecteurPhoto;
+
+  Future<void> _changerImage(BuildContext context, ProduitEvenement p) async {
+    final r = await demanderImageProduit(context,
+        nom: p.nom,
+        icone: p.icone,
+        photo: p.photo,
+        selecteurPhoto: selecteurPhoto);
+    if (r == null) return;
+    await depot.modifierImageProduit(evenementId, p.id,
+        icone: r.icone, photo: r.photo);
+  }
 
   /// Ouvre (ou reprend, ou rouvre) la caisse du membre dans [gymnase]. Si une
   /// caisse est ouverte dans un autre gymnase, on l'explique et on propose de la
@@ -367,6 +383,13 @@ class EcranEvenement extends StatelessWidget {
                                     ? ''
                                     : ' · Stock : ${p.stock}'),
                           ),
+                          // La gestion corrige l'image (pas le nom ni le prix).
+                          trailing: peutModifier && ev.enCours
+                              ? const Icon(Icons.image_outlined)
+                              : null,
+                          onTap: peutModifier && ev.enCours
+                              ? () => _changerImage(context, p)
+                              : null,
                         ),
                     ],
                   );

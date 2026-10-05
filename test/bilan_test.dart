@@ -238,7 +238,7 @@ void main() {
 
     Future<void> afficher(WidgetTester tester, Evenement e,
         {TableauDeBord? tableau}) async {
-      tester.view.physicalSize = const Size(1080, 4800);
+      tester.view.physicalSize = const Size(1080, 10000);
       tester.view.devicePixelRatio = 2.5;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
@@ -255,45 +255,44 @@ void main() {
     String texte(WidgetTester tester, String cle) =>
         tester.widget<Text>(find.byKey(Key(cle))).data!;
 
+    String contenu(WidgetTester tester, String cle) => tester
+        .widgetList<Text>(find.descendant(
+            of: find.byKey(Key(cle)), matching: find.byType(Text)))
+        .map((t) => t.data!)
+        .join(' | ');
+
     testWidgets('chiffres affichés = chiffres calculés à la main', (tester) async {
       await afficher(tester, evt());
       expect(texte(tester, 'bilan_etat'), 'Bilan provisoire : événement en cours');
-      expect(texte(tester, 'bilan_total'), 'Total : 26,50 € · 6 ventes');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 26,50 € | 6 ventes');
       expect(texte(tester, 'bilan_annulees'), 'Ventes annulées : 1');
       // Par produit
-      expect(texte(tester, 'bilan_produit_cafe'), 'Café : 6 vendus · 9,00 €');
-      expect(texte(tester, 'bilan_produit_croque'),
-          'Croque-monsieur : 5 vendus · 15,00 € · stock 4');
-      expect(texte(tester, 'bilan_produit_gateau'),
-          'Gâteau : 1 vendu · 2,50 € · stock 6');
-      expect(texte(tester, 'bilan_produit_salade'), 'Salade : 0 vendu · 0,00 €');
-      expect(texte(tester, 'bilan_produit_soda'), 'Soda : 0 vendu · 0,00 €');
+      expect(contenu(tester, 'bilan_produit_cafe'), 'Café | 6 vendus | 9,00 €');
+      expect(contenu(tester, 'bilan_produit_croque'), 'Croque-monsieur | 5 vendus | Stock 4 | 15,00 €');
+      expect(contenu(tester, 'bilan_produit_gateau'), 'Gâteau | 1 vendu | Stock 6 | 2,50 €');
+      expect(contenu(tester, 'bilan_produit_salade'), 'Salade | 0 vendu | 0,00 €');
+      expect(contenu(tester, 'bilan_produit_soda'), 'Soda | 0 vendu | 0,00 €');
       // Plus / moins vendus
-      expect(texte(tester, 'plus_1'), '1. Café (6)');
-      expect(texte(tester, 'plus_2'), '2. Croque-monsieur (5)');
-      expect(texte(tester, 'moins_1'), '1. Salade (0)');
-      expect(texte(tester, 'moins_2'), '2. Soda (0)');
+      expect(contenu(tester, 'plus_1'), '1 | Café | 6 vendus');
+      expect(contenu(tester, 'plus_2'), '2 | Croque-monsieur | 5 vendus');
+      expect(contenu(tester, 'moins_1'), '1 | Salade | 0 vendu');
+      expect(contenu(tester, 'moins_2'), '2 | Soda | 0 vendu');
       // Par mode
-      expect(texte(tester, 'bilan_mode_especes'), 'Espèces : 16,50 €');
-      expect(texte(tester, 'bilan_mode_carte'), 'Carte : 7,50 €');
-      expect(texte(tester, 'bilan_mode_cheque'), 'Chèque : 2,50 €');
+      expect(contenu(tester, 'bilan_mode_especes'), 'Espèces | 16,50 €');
+      expect(contenu(tester, 'bilan_mode_carte'), 'Carte | 7,50 €');
+      expect(contenu(tester, 'bilan_mode_cheque'), 'Chèque | 2,50 €');
       // Par caisse
-      expect(texte(tester, 'bilan_caisse_lea__g1'),
-          'Lea : 4 ventes · 17,50 € · Clôturée · 1 annulée');
-      expect(texte(tester, 'bilan_caisse_zoe__g1'),
-          'Zoe : 2 ventes · 9,00 € · Ouverte');
+      expect(contenu(tester, 'bilan_caisse_lea__g1'), 'Lea | Clôturée | 4 ventes | 1 annulée | 17,50 €');
+      expect(contenu(tester, 'bilan_caisse_zoe__g1'), 'Zoe | Ouverte | 2 ventes | 9,00 €');
       // Par jour
-      expect(texte(tester, 'bilan_jour_2026-10-03'),
-          '03/10/2026 : 4 ventes · 18,00 €');
-      expect(texte(tester, 'bilan_jour_2026-10-04'),
-          '04/10/2026 : 2 ventes · 8,50 €');
+      expect(contenu(tester, 'bilan_jour_2026-10-03'), '03/10/2026 | 4 ventes | 18,00 €');
+      expect(contenu(tester, 'bilan_jour_2026-10-04'), '04/10/2026 | 2 ventes | 8,50 €');
       // Heures de pointe
-      expect(texte(tester, 'pointe_1'), '14 h–15 h : 3 ventes');
-      expect(texte(tester, 'pointe_2'), '10 h–11 h : 2 ventes');
-      expect(texte(tester, 'pointe_3'), '15 h–16 h : 1 vente');
+      expect(contenu(tester, 'pointe_1'), '14 h–15 h | 3 ventes');
+      expect(contenu(tester, 'pointe_2'), '10 h–11 h | 2 ventes');
+      expect(contenu(tester, 'pointe_3'), '15 h–16 h | 1 vente');
       // Annulation tracée
-      expect(texte(tester, 'annulation_0'),
-          'Lea · 14:20 · 3,00 € (Carte) — annulée par Lea à 14:25');
+      expect(contenu(tester, 'annulation_0'), 'Lea · 14:20 · Carte | Annulée par Lea à 14:25 | 3,00 €');
       // En cours : la caisse non clôturée est signalée, pas de bandeau « forcée ».
       expect(texte(tester, 'bilan_caisses_ouvertes'),
           '1 caisse pas encore clôturée : Zoe');
@@ -309,7 +308,7 @@ void main() {
           'clôturée (Zoe). Des ventes peuvent manquer.');
       expect(find.byKey(const Key('bilan_caisses_ouvertes')), findsNothing);
       // Les chiffres sont les mêmes.
-      expect(texte(tester, 'bilan_total'), 'Total : 26,50 € · 6 ventes');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 26,50 € | 6 ventes');
     });
 
     testWidgets('clôture normale : ni bandeau de clôture forcée, ni caisse ouverte',
@@ -324,19 +323,19 @@ void main() {
       expect(texte(tester, 'bilan_etat'), 'Bilan définitif : événement clôturé');
       expect(find.byKey(const Key('bilan_forcee')), findsNothing);
       expect(find.byKey(const Key('bilan_caisses_ouvertes')), findsNothing);
-      expect(texte(tester, 'bilan_total'), 'Total : 3,00 € · 1 vente');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 3,00 € | 1 vente');
       expect(find.byKey(const Key('bilan_annulees')), findsNothing);
       expect(find.byKey(const Key('annulation_0')), findsNothing);
     });
 
     testWidgets('événement sans vente', (tester) async {
       await afficher(tester, evt(), tableau: TableauDeBord.depuis(const []));
-      expect(texte(tester, 'bilan_total'), 'Total : 0,00 € · 0 vente');
+      expect(contenu(tester, 'bilan_total'), 'Total des ventes | 0,00 € | 0 vente');
       expect(find.byKey(const Key('bilan_aucune_caisse')), findsOneWidget);
       expect(find.byKey(const Key('bilan_aucun_jour')), findsOneWidget);
       expect(find.byKey(const Key('bilan_aucune_pointe')), findsOneWidget);
       expect(find.byKey(const Key('plus_1')), findsNothing);
-      expect(texte(tester, 'bilan_mode_especes'), 'Espèces : 0,00 €');
+      expect(contenu(tester, 'bilan_mode_especes'), 'Espèces | 0,00 €');
     });
   });
 }

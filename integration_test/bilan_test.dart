@@ -32,13 +32,13 @@ void main() {
     for (var i = 0; i < 200; i++) {
       await tester.pump(const Duration(milliseconds: 100));
       final f = find.byKey(Key(cle));
-      if (f.evaluate().isNotEmpty && tester.widget<Text>(f).data == attendu) {
+      if (f.evaluate().isNotEmpty && contenuDe(tester, f) == attendu) {
         return;
       }
     }
     final f = find.byKey(Key(cle));
     final actuel =
-        f.evaluate().isEmpty ? '(absent)' : tester.widget<Text>(f).data;
+        f.evaluate().isEmpty ? '(absent)' : contenuDe(tester, f);
     throw TestFailure('« $cle » : attendu « $attendu », obtenu « $actuel »');
   }
 
@@ -169,28 +169,28 @@ void main() {
 
     final chiffres = {
       'bilan_etat': 'Bilan provisoire : événement en cours',
-      'bilan_total': 'Total : 26,50 € · 6 ventes',
+      'bilan_total': 'Total des ventes | 26,50 € | 6 ventes',
       'bilan_annulees': 'Ventes annulées : 1',
       'bilan_caisses_ouvertes': '1 caisse pas encore clôturée : Zoe',
-      'bilan_produit_$cafe': 'Café : 6 vendus · 9,00 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 5 vendus · 15,00 € · stock 5',
-      'bilan_produit_$gateau': 'Gâteau : 1 vendu · 2,50 €',
-      'bilan_produit_$salade': 'Salade : 0 vendu · 0,00 €',
-      'bilan_produit_$soda': 'Soda : 0 vendu · 0,00 €',
-      'plus_1': '1. Café (6)',
-      'plus_2': '2. Croque-monsieur (5)',
-      'moins_1': '1. Salade (0)',
-      'moins_2': '2. Soda (0)',
-      'bilan_mode_especes': 'Espèces : 16,50 €',
-      'bilan_mode_carte': 'Carte : 7,50 €',
-      'bilan_mode_cheque': 'Chèque : 2,50 €',
-      'bilan_caisse_$caisseLea': 'Lea : 4 ventes · 17,50 € · Clôturée · 1 annulée',
-      'bilan_caisse_$caisseZoe': 'Zoe : 2 ventes · 9,00 € · Ouverte',
-      'bilan_jour_2026-10-03': '03/10/2026 : 4 ventes · 18,00 €',
-      'bilan_jour_2026-10-04': '04/10/2026 : 2 ventes · 8,50 €',
-      'pointe_1': '14 h–15 h : 3 ventes',
-      'pointe_2': '10 h–11 h : 2 ventes',
-      'pointe_3': '15 h–16 h : 1 vente',
+      'bilan_produit_$cafe': 'Café | 6 vendus | 9,00 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 5 vendus | Stock 5 | 15,00 €',
+      'bilan_produit_$gateau': 'Gâteau | 1 vendu | 2,50 €',
+      'bilan_produit_$salade': 'Salade | 0 vendu | 0,00 €',
+      'bilan_produit_$soda': 'Soda | 0 vendu | 0,00 €',
+      'plus_1': '1 | Café | 6 vendus',
+      'plus_2': '2 | Croque-monsieur | 5 vendus',
+      'moins_1': '1 | Salade | 0 vendu',
+      'moins_2': '2 | Soda | 0 vendu',
+      'bilan_mode_especes': 'Espèces | 16,50 €',
+      'bilan_mode_carte': 'Carte | 7,50 €',
+      'bilan_mode_cheque': 'Chèque | 2,50 €',
+      'bilan_caisse_$caisseLea': 'Lea | Clôturée | 4 ventes | 1 annulée | 17,50 €',
+      'bilan_caisse_$caisseZoe': 'Zoe | Ouverte | 2 ventes | 9,00 €',
+      'bilan_jour_2026-10-03': '03/10/2026 | 4 ventes | 18,00 €',
+      'bilan_jour_2026-10-04': '04/10/2026 | 2 ventes | 8,50 €',
+      'pointe_1': '14 h–15 h | 3 ventes',
+      'pointe_2': '10 h–11 h | 2 ventes',
+      'pointe_3': '15 h–16 h | 1 vente',
     };
     await verifierChiffres(tester, chiffres);
     // La vente annulée est listée avec sa trace.
@@ -201,7 +201,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(
-      RegExp(r'^Lea · 14:20 · 3,00 € \(Carte\) — annulée par Lea à \d{2}:\d{2}$')
+      RegExp(r'^Lea · 14:20 · Carte \| Annulée par Lea à \d{2}:\d{2} \| 3,00 €$')
           .hasMatch(texte(tester, 'annulation_0')),
       isTrue,
     );
@@ -218,7 +218,7 @@ void main() {
     await finTransition(tester);
     await verifierChiffres(tester, {
       'bilan_etat': 'Bilan définitif : événement clôturé',
-      'bilan_total': 'Total : 26,50 € · 6 ventes', // mêmes chiffres
+      'bilan_total': 'Total des ventes | 26,50 € | 6 ventes', // mêmes chiffres
     });
     final forcee = texte(tester, 'bilan_forcee');
     expect(forcee, startsWith('Clôture forcée par Chef le '));

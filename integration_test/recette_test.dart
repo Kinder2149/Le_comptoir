@@ -65,10 +65,10 @@ void main() {
     for (var i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 100));
       final f = find.byKey(Key(cle));
-      if (f.evaluate().isNotEmpty && tester.widget<Text>(f).data == attendu) return;
+      if (f.evaluate().isNotEmpty && contenuDe(tester, f) == attendu) return;
     }
     final f = find.byKey(Key(cle));
-    final actuel = f.evaluate().isEmpty ? '(absent)' : tester.widget<Text>(f).data;
+    final actuel = f.evaluate().isEmpty ? '(absent)' : contenuDe(tester, f);
     throw TestFailure('« $cle » : attendu « $attendu », obtenu « $actuel »');
   }
 
@@ -497,35 +497,35 @@ void main() {
     String jour(DateTime d) => dateAffichee(dateIso(d));
     await verifier({
       'bilan_etat': 'Bilan définitif : événement clôturé',
-      'bilan_total': 'Total : 23,50 € · 7 ventes',
+      'bilan_total': 'Total des ventes | 23,50 € | 7 ventes',
       'bilan_annulees': 'Ventes annulées : 3',
-      'bilan_mode_especes': 'Espèces : 15,50 €',
-      'bilan_mode_carte': 'Carte : 6,00 €',
-      'bilan_mode_cheque': 'Chèque : 2,00 €',
-      'bilan_produit_$cafe': 'Café : 4 vendus · 4,00 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 3 vendus · 9,00 €',
-      'bilan_produit_$crepe': 'Crêpe : 2 vendus · 5,00 €',
-      'bilan_produit_$the': 'Thé : 1 vendu · 1,00 €',
-      'bilan_produit_$sucre': 'Part de gâteau sucrée : 1 vendu · 2,00 €',
-      'bilan_produit_$sale': 'Part de gâteau salée : 1 vendu · 2,50 €',
-      'bilan_produit_$soda': 'Soda : 0 vendu · 0,00 €',
-      'bilan_produit_$barre': 'Barre chocolatée : 0 vendu · 0,00 €',
-      'bilan_produit_${id('Salade')}': 'Salade : 0 vendu · 0,00 €',
-      'bilan_produit_${id('Fruit')}': 'Fruit : 0 vendu · 0,00 €',
-      'plus_1': '1. Café (4)',
-      'plus_2': '2. Croque-monsieur (3)',
-      'plus_3': '3. Crêpe (2)',
-      'moins_1': '1. Barre chocolatée (0)',
-      'moins_2': '2. Fruit (0)',
-      'moins_3': '3. Salade (0)',
+      'bilan_mode_especes': 'Espèces | 15,50 €',
+      'bilan_mode_carte': 'Carte | 6,00 €',
+      'bilan_mode_cheque': 'Chèque | 2,00 €',
+      'bilan_produit_$cafe': 'Café | 4 vendus | 4,00 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 3 vendus | 9,00 €',
+      'bilan_produit_$crepe': 'Crêpe | 2 vendus | 5,00 €',
+      'bilan_produit_$the': 'Thé | 1 vendu | 1,00 €',
+      'bilan_produit_$sucre': 'Part de gâteau sucrée | 1 vendu | 2,00 €',
+      'bilan_produit_$sale': 'Part de gâteau salée | 1 vendu | 2,50 €',
+      'bilan_produit_$soda': 'Soda | 0 vendu | 0,00 €',
+      'bilan_produit_$barre': 'Barre chocolatée | 0 vendu | 0,00 €',
+      'bilan_produit_${id('Salade')}': 'Salade | 0 vendu | 0,00 €',
+      'bilan_produit_${id('Fruit')}': 'Fruit | 0 vendu | 0,00 €',
+      'plus_1': '1 | Café | 4 vendus',
+      'plus_2': '2 | Croque-monsieur | 3 vendus',
+      'plus_3': '3 | Crêpe | 2 vendus',
+      'moins_1': '1 | Barre chocolatée | 0 vendu',
+      'moins_2': '2 | Fruit | 0 vendu',
+      'moins_3': '3 | Salade | 0 vendu',
       'bilan_caisse_$caisseLea':
-          'Lea : 4 ventes · 16,00 € · Clôturée · 2 annulées · Gymnase A',
-      'bilan_caisse_$caisseZoeA': 'Zoe : 0 vente · 0,00 € · Clôturée · Gymnase A',
+          'Lea | Gymnase A | Clôturée | 4 ventes | 2 annulées | 16,00 €',
+      'bilan_caisse_$caisseZoeA': 'Zoe | Gymnase A | Clôturée | 0 vente | 0,00 €',
       'bilan_caisse_$caisseZoe':
-          'Zoe : 3 ventes · 7,50 € · Ouverte · 1 annulée · Gymnase B',
+          'Zoe | Gymnase B | Ouverte | 3 ventes | 1 annulée | 7,50 €',
       'bilan_jour_${dateIso(DateTime.now())}':
-          '${jour(DateTime.now())} : 5 ventes · 18,50 €',
-      'bilan_jour_${dateIso(demain)}': '${jour(demain)} : 2 ventes · 5,00 €',
+          '${jour(DateTime.now())} | 5 ventes | 18,50 €',
+      'bilan_jour_${dateIso(demain)}': '${jour(demain)} | 2 ventes | 5,00 €',
     });
     // La clôture forcée est annoncée en toutes lettres.
     await defilerJusqua(tester, find.byKey(const Key('bilan_forcee')));
@@ -539,12 +539,12 @@ void main() {
       await defilerJusqua(tester, cible);
       traces.add(texte(tester, 'annulation_$i'));
     }
-    expect(traces.where((t) => t.contains('annulée par Lea')).length, 2);
-    expect(traces.where((t) => t.contains('annulée par Zed')).length, 1);
+    expect(traces.where((t) => t.contains('Annulée par Lea')).length, 2);
+    expect(traces.where((t) => t.contains('Annulée par Zed')).length, 1);
     expect(find.byKey(const Key('annulation_3')), findsNothing);
     // Heures de pointe : la tranche la plus chargée compte au moins 2 ventes.
     await defilerJusqua(tester, find.byKey(const Key('pointe_1')));
-    final pointe = RegExp(r'^\d{1,2} h–\d{1,2} h : (\d+) ventes?$')
+    final pointe = RegExp(r'^\d{1,2} h–\d{1,2} h \| (\d+) ventes?$')
         .firstMatch(texte(tester, 'pointe_1'));
     expect(pointe, isNotNull);
     expect(int.parse(pointe!.group(1)!), greaterThanOrEqualTo(2));
@@ -553,30 +553,30 @@ void main() {
     await defilerJusqua(tester, find.byKey(Key('vue_$gA')));
     await toucher(tester, find.byKey(Key('vue_$gA')));
     await verifier({
-      'bilan_total': 'Total : 16,00 € · 4 ventes',
+      'bilan_total': 'Total des ventes | 16,00 € | 4 ventes',
       'bilan_annulees': 'Ventes annulées : 2',
-      'bilan_mode_especes': 'Espèces : 10,00 €',
-      'bilan_mode_carte': 'Carte : 6,00 €',
-      'bilan_mode_cheque': 'Chèque : 0,00 €',
-      'bilan_produit_$cafe': 'Café : 2 vendus · 2,00 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 2 vendus · 6,00 €',
-      'bilan_produit_$crepe': 'Crêpe : 2 vendus · 5,00 €',
-      'bilan_produit_$the': 'Thé : 1 vendu · 1,00 €',
-      'bilan_produit_$sucre': 'Part de gâteau sucrée : 1 vendu · 2,00 €',
-      'bilan_produit_$sale': 'Part de gâteau salée : 0 vendu · 0,00 €',
-      'bilan_produit_$soda': 'Soda : 0 vendu · 0,00 €',
-      'bilan_produit_$barre': 'Barre chocolatée : 0 vendu · 0,00 €',
-      'plus_1': '1. Café (2)',
-      'plus_2': '2. Croque-monsieur (2)',
-      'plus_3': '3. Crêpe (2)',
-      'moins_1': '1. Barre chocolatée (0)',
-      'moins_2': '2. Fruit (0)',
-      'moins_3': '3. Part de gâteau salée (0)',
+      'bilan_mode_especes': 'Espèces | 10,00 €',
+      'bilan_mode_carte': 'Carte | 6,00 €',
+      'bilan_mode_cheque': 'Chèque | 0,00 €',
+      'bilan_produit_$cafe': 'Café | 2 vendus | 2,00 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 2 vendus | 6,00 €',
+      'bilan_produit_$crepe': 'Crêpe | 2 vendus | 5,00 €',
+      'bilan_produit_$the': 'Thé | 1 vendu | 1,00 €',
+      'bilan_produit_$sucre': 'Part de gâteau sucrée | 1 vendu | 2,00 €',
+      'bilan_produit_$sale': 'Part de gâteau salée | 0 vendu | 0,00 €',
+      'bilan_produit_$soda': 'Soda | 0 vendu | 0,00 €',
+      'bilan_produit_$barre': 'Barre chocolatée | 0 vendu | 0,00 €',
+      'plus_1': '1 | Café | 2 vendus',
+      'plus_2': '2 | Croque-monsieur | 2 vendus',
+      'plus_3': '3 | Crêpe | 2 vendus',
+      'moins_1': '1 | Barre chocolatée | 0 vendu',
+      'moins_2': '2 | Fruit | 0 vendu',
+      'moins_3': '3 | Part de gâteau salée | 0 vendu',
       'bilan_caisse_$caisseLea':
-          'Lea : 4 ventes · 16,00 € · Clôturée · 2 annulées · Gymnase A',
-      'bilan_caisse_$caisseZoeA': 'Zoe : 0 vente · 0,00 € · Clôturée · Gymnase A',
+          'Lea | Gymnase A | Clôturée | 4 ventes | 2 annulées | 16,00 €',
+      'bilan_caisse_$caisseZoeA': 'Zoe | Gymnase A | Clôturée | 0 vente | 0,00 €',
       'bilan_jour_${dateIso(DateTime.now())}':
-          '${jour(DateTime.now())} : 4 ventes · 16,00 €',
+          '${jour(DateTime.now())} | 4 ventes | 16,00 €',
     });
     expect(find.byKey(Key('bilan_caisse_$caisseZoe')), findsNothing); // caisse du gymnase B
     expect(find.byKey(Key('bilan_jour_${dateIso(demain)}')), findsNothing);
@@ -586,27 +586,27 @@ void main() {
     await defilerJusqua(tester, find.byKey(Key('vue_$gB')));
     await toucher(tester, find.byKey(Key('vue_$gB')));
     await verifier({
-      'bilan_total': 'Total : 7,50 € · 3 ventes',
+      'bilan_total': 'Total des ventes | 7,50 € | 3 ventes',
       'bilan_annulees': 'Ventes annulées : 1',
-      'bilan_mode_especes': 'Espèces : 5,50 €',
-      'bilan_mode_carte': 'Carte : 0,00 €',
-      'bilan_mode_cheque': 'Chèque : 2,00 €',
-      'bilan_produit_$cafe': 'Café : 2 vendus · 2,00 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 1 vendu · 3,00 €',
-      'bilan_produit_$sale': 'Part de gâteau salée : 1 vendu · 2,50 €',
-      'bilan_produit_$crepe': 'Crêpe : 0 vendu · 0,00 €',
-      'bilan_produit_${id('Salade')}': 'Salade : 0 vendu · 0,00 €',
-      'plus_1': '1. Café (2)',
-      'plus_2': '2. Croque-monsieur (1)',
-      'plus_3': '3. Part de gâteau salée (1)',
-      'moins_1': '1. Barre chocolatée (0)',
-      'moins_2': '2. Crêpe (0)',
-      'moins_3': '3. Fruit (0)',
+      'bilan_mode_especes': 'Espèces | 5,50 €',
+      'bilan_mode_carte': 'Carte | 0,00 €',
+      'bilan_mode_cheque': 'Chèque | 2,00 €',
+      'bilan_produit_$cafe': 'Café | 2 vendus | 2,00 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 1 vendu | 3,00 €',
+      'bilan_produit_$sale': 'Part de gâteau salée | 1 vendu | 2,50 €',
+      'bilan_produit_$crepe': 'Crêpe | 0 vendu | 0,00 €',
+      'bilan_produit_${id('Salade')}': 'Salade | 0 vendu | 0,00 €',
+      'plus_1': '1 | Café | 2 vendus',
+      'plus_2': '2 | Croque-monsieur | 1 vendu',
+      'plus_3': '3 | Part de gâteau salée | 1 vendu',
+      'moins_1': '1 | Barre chocolatée | 0 vendu',
+      'moins_2': '2 | Crêpe | 0 vendu',
+      'moins_3': '3 | Fruit | 0 vendu',
       'bilan_caisse_$caisseZoe':
-          'Zoe : 3 ventes · 7,50 € · Ouverte · 1 annulée · Gymnase B',
+          'Zoe | Gymnase B | Ouverte | 3 ventes | 1 annulée | 7,50 €',
       'bilan_jour_${dateIso(DateTime.now())}':
-          '${jour(DateTime.now())} : 1 vente · 2,50 €',
-      'bilan_jour_${dateIso(demain)}': '${jour(demain)} : 2 ventes · 5,00 €',
+          '${jour(DateTime.now())} | 1 vente | 2,50 €',
+      'bilan_jour_${dateIso(demain)}': '${jour(demain)} | 2 ventes | 5,00 €',
     });
     expect(find.byKey(Key('bilan_caisse_$caisseLea')), findsNothing); // gymnase A
     expect(find.byKey(Key('bilan_caisse_$caisseZoeA')), findsNothing);
@@ -615,7 +615,7 @@ void main() {
     // Retour à la vue commune : les chiffres de départ.
     await defilerJusqua(tester, find.byKey(const Key('vue_commune')));
     await toucher(tester, find.byKey(const Key('vue_commune')));
-    await verifier({'bilan_total': 'Total : 23,50 € · 7 ventes'});
+    await verifier({'bilan_total': 'Total des ventes | 23,50 € | 7 ventes'});
 
     // Côté serveur : l'événement est bien clôturé de façon forcée, la caisse de Zoé reste ouverte.
     final evtServeur =

@@ -1,5 +1,26 @@
 # CHANGELOG — Le Comptoir
 
+## 05/10/2026 — Images des produits d'un événement, et bilan lisible
+- Constat : une image changée dans un menu n'apparaissait ni en caisse ni dans l'événement. C'est la
+  décision 13 (l'événement copie le produit à sa création) : un événement créé avant le changement garde
+  l'ancienne image. Ce n'est pas un bogue de copie ; il manquait un moyen de corriger l'image après coup.
+- Nouveau : dans le détail d'un événement EN COURS, la gestion touche un produit pour changer son image
+  (icône modèle, photo, ou rien). Nom, prix et stock restent figés. La caisse et le bilan reprennent
+  l'image aussitôt (flux en direct). Règles d'accès : mise à jour d'un produit d'événement autorisée à la
+  gestion, uniquement pour `icone` / `photo`, événement en cours, mêmes limites que pour un menu.
+- Code : le choix d'image du formulaire produit devient `SelecteurImage` (ecran_menu.dart), réutilisé par
+  `demanderImageProduit` ; `DepotEvenements.modifierImageProduit`. Aucun module ni dépendance ajouté.
+- Bilan : mise en page refaite (même contenu, mêmes chiffres, mêmes clés). Total en bandeau sombre ;
+  cartes par section avec barres de proportion (modes de paiement, produits, heures de pointe) ;
+  produits avec leur image, quantité, stock et montant alignés ; classements numérotés ; caisses avec
+  pastille Clôturée / Ouverte ; ventes annulées barrées avec leur trace ; messages d'état (provisoire,
+  définitif, clôture forcée, caisses ouvertes) dans des bandeaux de la couleur de leur sens.
+- Tests : les lignes du bilan sont maintenant plusieurs textes ; les tests lisent le contenu d'un bloc
+  (textes joints par « | »). Tests de logique/écrans : tous verts SAUF ecran_caisse_test.dart, qui
+  ne se charge pas sur ce poste car `lib/firebase_options.dart` (ignoré par git) y manque.
+  Tests de règles (images.test.mjs, 2 nouveaux) et parcours Android : mis à jour mais NON lancés
+  (pas d'outil Firebase ni d'émulateur sur ce poste).
+
 ## 04/10/2026 — Front, mission a1 (thème et composants)
 - Nouveau module `lib/theme.dart` (23 modules sur 24) : palette de la charte (décision 31), thème de toute
   l'application (anthracite, fond de lin, barres de titre, boutons arrondis à 14, cartes à 16, champs à

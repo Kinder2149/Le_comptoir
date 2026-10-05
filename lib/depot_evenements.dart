@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -267,6 +269,19 @@ class DepotEvenements {
     await lot.commit();
     return ref.id;
   }
+
+  /// Change l'image (icône et/ou photo) d'un produit de l'événement. Le nom et
+  /// le prix restent ceux de la copie : seule l'image se corrige après coup.
+  Future<void> modifierImageProduit(
+    String evenementId,
+    String produitId, {
+    String? icone,
+    Uint8List? photo,
+  }) =>
+      _evenements.doc(evenementId).collection('produits').doc(produitId).update({
+        'icone': icone ?? FieldValue.delete(),
+        'photo': photo == null ? FieldValue.delete() : Blob(photo),
+      });
 
   DocumentReference<Map<String, dynamic>> _gymnase(String id, String gymnaseId) =>
       _evenements.doc(id).collection('gymnases').doc(gymnaseId);

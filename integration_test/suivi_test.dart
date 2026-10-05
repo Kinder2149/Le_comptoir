@@ -32,13 +32,13 @@ void main() {
     for (var i = 0; i < 200; i++) {
       await tester.pump(const Duration(milliseconds: 100));
       final f = find.byKey(Key(cle));
-      if (f.evaluate().isNotEmpty && tester.widget<Text>(f).data == attendu) {
+      if (f.evaluate().isNotEmpty && contenuDe(tester, f) == attendu) {
         return;
       }
     }
     final f = find.byKey(Key(cle));
     final actuel =
-        f.evaluate().isEmpty ? '(absent)' : tester.widget<Text>(f).data;
+        f.evaluate().isEmpty ? '(absent)' : contenuDe(tester, f);
     throw TestFailure('« $cle » : attendu « $attendu », obtenu « $actuel »');
   }
 

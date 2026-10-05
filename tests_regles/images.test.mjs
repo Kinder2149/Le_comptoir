@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  assoAvecGestionnaire, ecrire, lire, lot, MAJ, produit, RACINE, API, entier,
+  admin, assoAvecGestionnaire, ecrire, lire, lot, MAJ, produit, RACINE, API, entier,
 } from './outils.mjs';
 import { evenement, produitEvenement } from './outilsCaisse.mjs';
 
@@ -128,4 +128,54 @@ test('sur l\'événement, un bénévole ne modifie jamais le produit (ni image, 
   assert.equal(await maj({ ...icone('crepe') }, ['icone']), 403);
   assert.equal(await maj({ photo: octets(100) }, ['photo']), 403);
   assert.equal(await maj({ stock: entier(8), ...icone('crepe') }, ['stock', 'icone']), 403);
+});
+
+test('sur l\'événement en cours, la gestion corrige l\'image seulement (jamais nom, prix, stock)', async () => {
+  const { chef, gestionnaire, id } = await avecMenu();
+  await lot(chef, [
+    ecrire(`associations/${id}/evenements/e1`, evenement()),
+    produitEvenement(id, 'e1', 'p1', { champs: { ...icone('croque'), photo: octets(2000) } }),
+  ]);
+  const chemin = `associations/${id}/evenements/e1/produits/p1`;
+  const maj = (qui, fields, masque) => lot(qui, [{
+    update: { name: `${RACINE}/${chemin}`, fields },
+    updateMask: { fieldPaths: masque },
+    currentDocument: { exists: true },
+  }]);
+  for (const qui of [chef, gestionnaire]) {
+    assert.equal(await maj(qui, { ...icone('crepe') }, ['icone']), 200); // autre icône
+    assert.equal(await maj(qui, { photo: octets(5000) }, ['photo']), 200); // autre photo
+    assert.equal(await maj(qui, { ...icone('cafe'), photo: octets(100) }, ['icone', 'photo']), 200);
+  }
+  assert.equal(await maj(chef, {}, ['photo']), 200); // photo retirée
+  assert.equal(await maj(chef, {}, ['icone']), 200); // icône retirée
+  // Mêmes limites que pour un menu.
+  assert.equal(await maj(chef, { ...icone('licorne') }, ['icone']), 403);
+  assert.equal(await maj(chef, { photo: octets(30001) }, ['photo']), 403);
+  // Nom, prix et stock restent figés, même mêlés à une image.
+  assert.equal(await maj(chef, { nom: { stringValue: 'Autre' } }, ['nom']), 403);
+  assert.equal(await maj(chef, { prixCentimes: entier(1) }, ['prixCentimes']), 403);
+  assert.equal(await maj(chef, { stock: entier(9) }, ['stock']), 403);
+  assert.equal(await maj(chef, { ...icone('crepe'), prixCentimes: entier(1) }, ['icone', 'prixCentimes']), 403);
+});
+
+test('événement clôturé : les images sont figées', async () => {
+  const { chef, id } = await avecMenu();
+  await lot(chef, [
+    ecrire(`associations/${id}/evenements/e1`, evenement()),
+    produitEvenement(id, 'e1', 'p1', { champs: icone('croque') }),
+  ]);
+  await lot(admin, [{
+    update: { name: `${RACINE}/associations/${id}/evenements/e1`, fields: { statut: { stringValue: 'cloture' } } },
+    updateMask: { fieldPaths: ['statut'] },
+    currentDocument: { exists: true },
+  }]);
+  assert.equal(await lot(chef, [{
+    update: {
+      name: `${RACINE}/associations/${id}/evenements/e1/produits/p1`,
+      fields: { ...icone('crepe') },
+    },
+    updateMask: { fieldPaths: ['icone'] },
+    currentDocument: { exists: true },
+  }]), 403);
 });

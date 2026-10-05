@@ -46,13 +46,13 @@ void main() {
     for (var i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 100));
       final f = find.byKey(Key(cle));
-      if (f.evaluate().isNotEmpty && tester.widget<Text>(f).data == attendu) {
+      if (f.evaluate().isNotEmpty && contenuDe(tester, f) == attendu) {
         return;
       }
     }
     final f = find.byKey(Key(cle));
     final actuel =
-        f.evaluate().isEmpty ? '(absent)' : tester.widget<Text>(f).data;
+        f.evaluate().isEmpty ? '(absent)' : contenuDe(tester, f);
     throw TestFailure('« $cle » : attendu « $attendu », obtenu « $actuel »');
   }
 
@@ -212,60 +212,60 @@ void main() {
     await finTransition(tester);
     await verifier(tester, {
       'bilan_etat': 'Bilan provisoire : événement en cours',
-      'bilan_total': 'Total : 22,00 € · 5 ventes',
+      'bilan_total': 'Total des ventes | 22,00 € | 5 ventes',
       'bilan_annulees': 'Ventes annulées : 1',
       'bilan_caisses_ouvertes': '1 caisse pas encore clôturée : Max',
-      'bilan_produit_$cafe': 'Café : 5 vendus · 7,50 €',
+      'bilan_produit_$cafe': 'Café | 5 vendus | 7,50 €',
       'bilan_produit_$croque':
-          'Croque-monsieur : 4 vendus · 12,00 € · stock 7 (Gymnase A : 4 · Gymnase B : 3)',
+          'Croque-monsieur | 4 vendus | Stock 7 | (Gymnase A : 4 · Gymnase B : 3) | 12,00 €',
       'bilan_produit_$gateau':
-          'Gâteau : 1 vendu · 2,50 € · stock 7 (Gymnase A : 6 · Gymnase B : 1)',
-      'bilan_produit_$salade': 'Salade : 0 vendu · 0,00 €',
-      'bilan_mode_especes': 'Espèces : 12,00 €',
-      'bilan_mode_carte': 'Carte : 7,50 €',
-      'bilan_mode_cheque': 'Chèque : 2,50 €',
+          'Gâteau | 1 vendu | Stock 7 | (Gymnase A : 6 · Gymnase B : 1) | 2,50 €',
+      'bilan_produit_$salade': 'Salade | 0 vendu | 0,00 €',
+      'bilan_mode_especes': 'Espèces | 12,00 €',
+      'bilan_mode_carte': 'Carte | 7,50 €',
+      'bilan_mode_cheque': 'Chèque | 2,50 €',
       'bilan_caisse_$caisseLea':
-          'Lea : 2 ventes · 10,50 € · Clôturée · 1 annulée · Gymnase A',
-      'bilan_caisse_$caisseMax': 'Max : 3 ventes · 11,50 € · Ouverte · Gymnase B',
-      'bilan_jour_2026-10-03': '03/10/2026 : 3 ventes · 13,50 €',
-      'bilan_jour_2026-10-04': '04/10/2026 : 2 ventes · 8,50 €',
-      'pointe_1': '14 h–15 h : 3 ventes',
-      'pointe_2': '10 h–11 h : 2 ventes',
+          'Lea | Gymnase A | Clôturée | 2 ventes | 1 annulée | 10,50 €',
+      'bilan_caisse_$caisseMax': 'Max | Gymnase B | Ouverte | 3 ventes | 11,50 €',
+      'bilan_jour_2026-10-03': '03/10/2026 | 3 ventes | 13,50 €',
+      'bilan_jour_2026-10-04': '04/10/2026 | 2 ventes | 8,50 €',
+      'pointe_1': '14 h–15 h | 3 ventes',
+      'pointe_2': '10 h–11 h | 2 ventes',
     });
 
     await choisirVue(tester, 'vue_$gA');
     await verifier(tester, {
-      'bilan_total': 'Total : 10,50 € · 2 ventes',
+      'bilan_total': 'Total des ventes | 10,50 € | 2 ventes',
       'bilan_annulees': 'Ventes annulées : 1',
-      'bilan_produit_$cafe': 'Café : 3 vendus · 4,50 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 2 vendus · 6,00 € · stock 4',
-      'bilan_produit_$gateau': 'Gâteau : 0 vendu · 0,00 € · stock 6',
-      'bilan_mode_especes': 'Espèces : 6,00 €',
-      'bilan_mode_carte': 'Carte : 4,50 €',
-      'bilan_mode_cheque': 'Chèque : 0,00 €',
+      'bilan_produit_$cafe': 'Café | 3 vendus | 4,50 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 2 vendus | Stock 4 | 6,00 €',
+      'bilan_produit_$gateau': 'Gâteau | 0 vendu | Stock 6 | 0,00 €',
+      'bilan_mode_especes': 'Espèces | 6,00 €',
+      'bilan_mode_carte': 'Carte | 4,50 €',
+      'bilan_mode_cheque': 'Chèque | 0,00 €',
       'bilan_caisse_$caisseLea':
-          'Lea : 2 ventes · 10,50 € · Clôturée · 1 annulée · Gymnase A',
-      'bilan_jour_2026-10-03': '03/10/2026 : 2 ventes · 10,50 €',
-      'pointe_1': '14 h–15 h : 2 ventes',
+          'Lea | Gymnase A | Clôturée | 2 ventes | 1 annulée | 10,50 €',
+      'bilan_jour_2026-10-03': '03/10/2026 | 2 ventes | 10,50 €',
+      'pointe_1': '14 h–15 h | 2 ventes',
     });
     expect(find.byKey(Key('bilan_caisse_$caisseMax')), findsNothing);
     expect(find.byKey(const Key('bilan_caisses_ouvertes')), findsNothing);
 
     await choisirVue(tester, 'vue_$gB');
     await verifier(tester, {
-      'bilan_total': 'Total : 11,50 € · 3 ventes',
+      'bilan_total': 'Total des ventes | 11,50 € | 3 ventes',
       'bilan_caisses_ouvertes': '1 caisse pas encore clôturée : Max',
-      'bilan_produit_$cafe': 'Café : 2 vendus · 3,00 €',
-      'bilan_produit_$croque': 'Croque-monsieur : 2 vendus · 6,00 € · stock 3',
-      'bilan_produit_$gateau': 'Gâteau : 1 vendu · 2,50 € · stock 1',
-      'bilan_mode_especes': 'Espèces : 6,00 €',
-      'bilan_mode_carte': 'Carte : 3,00 €',
-      'bilan_mode_cheque': 'Chèque : 2,50 €',
-      'bilan_caisse_$caisseMax': 'Max : 3 ventes · 11,50 € · Ouverte · Gymnase B',
-      'bilan_jour_2026-10-03': '03/10/2026 : 1 vente · 3,00 €',
-      'bilan_jour_2026-10-04': '04/10/2026 : 2 ventes · 8,50 €',
-      'pointe_1': '10 h–11 h : 2 ventes',
-      'pointe_2': '14 h–15 h : 1 vente',
+      'bilan_produit_$cafe': 'Café | 2 vendus | 3,00 €',
+      'bilan_produit_$croque': 'Croque-monsieur | 2 vendus | Stock 3 | 6,00 €',
+      'bilan_produit_$gateau': 'Gâteau | 1 vendu | Stock 1 | 2,50 €',
+      'bilan_mode_especes': 'Espèces | 6,00 €',
+      'bilan_mode_carte': 'Carte | 3,00 €',
+      'bilan_mode_cheque': 'Chèque | 2,50 €',
+      'bilan_caisse_$caisseMax': 'Max | Gymnase B | Ouverte | 3 ventes | 11,50 €',
+      'bilan_jour_2026-10-03': '03/10/2026 | 1 vente | 3,00 €',
+      'bilan_jour_2026-10-04': '04/10/2026 | 2 ventes | 8,50 €',
+      'pointe_1': '10 h–11 h | 2 ventes',
+      'pointe_2': '14 h–15 h | 1 vente',
     });
     expect(find.byKey(const Key('bilan_annulees')), findsNothing);
     expect(find.byKey(Key('bilan_caisse_$caisseLea')), findsNothing);

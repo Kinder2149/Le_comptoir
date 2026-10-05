@@ -105,6 +105,7 @@ class EcranAssociation extends StatelessWidget {
           uid: uid,
           prenom: moi.prenom,
           gymnasePropose: lien.gymnaseId,
+          selecteurPhoto: selecteurPhoto,
         ),
       ),
     );
@@ -199,6 +200,7 @@ class EcranAssociation extends StatelessWidget {
                               .map((a) => a?.code ?? ''),
                           uid: uid,
                           prenom: moi.prenom,
+                          selecteurPhoto: selecteurPhoto,
                         ),
                       ),
                     ),
