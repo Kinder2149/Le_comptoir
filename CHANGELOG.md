@@ -1,5 +1,15 @@
 # CHANGELOG — Le Comptoir
 
+## 05/10/2026 (soir) — Logo, icône et écran de démarrage ; vérification complète
+- Logo : piste A « auvent et tasse » retenue par Kinder (décision 32). Icône Android adaptative (fond anthracite
+  + symbole vectoriel dans la zone de sécurité), icônes des anciens Android, écran de démarrage anthracite avec le
+  symbole (`launch_background.xml`), `play_store/icone_512.png`. Script `audit_front/proposition/logo/fabriquer_icones.py`.
+  Aucun code Dart modifié, aucune dépendance ajoutée.
+- Vérification complète faite ce jour sur le dernier code (images modifiables + bilan) : analyse sans erreur, 141 tests
+  de logique et d'écrans, 132 tests de règles, 19 parcours Android verts ; règles d'accès déployées sur le vrai projet.
+  (`ecran_caisse_test` passe : le défaut noté plus bas venait d'un poste sans `firebase_options.dart`.)
+- APK de recette reconstruit (icône et écran de démarrage vérifiés sur l'émulateur). Prochaine étape : recette de Kinder.
+
 ## 05/10/2026 — Images des produits d'un événement, et bilan lisible
 - Constat : une image changée dans un menu n'apparaissait ni en caisse ni dans l'événement. C'est la
   décision 13 (l'événement copie le produit à sa création) : un événement créé avant le changement garde
