@@ -217,6 +217,8 @@ les buvettes de la saison.
     propositions) ; l'icône et l'écran de démarrage attendent le logo. Maquettes et palette
     complète : audit_front/proposition/index.html.
 
+32. Logo et icône (05/10/2026) : Kinder a retenu la piste A, « auvent et tasse » (auvent rayé lin et sable au-dessus d'une tasse posée sur un plan de comptoir sable, sur fond anthracite). Sources dans `audit_front/proposition/logo/` ; `fabriquer_icones.py` régénère les icônes Android (adaptative + anciennes), l'écran de démarrage et `play_store/icone_512.png`. Pas d'icône thématique Android 13 (non vérifiée).
+
 ## 7. Points ouverts
 - Menu type prêt à l'emploi : en place avec des produits génériques
   (`assets/menu_type.json`) ; à remplacer par le menu fourni par moi. Exemples cités
@@ -290,3 +292,33 @@ gestion des photos (étape 13).
 - Écran Paramètres avec suppression de l'association et retrait d'un membre :
   ajoutés après la recette (décision 23). Menu type réel à fournir.
 - Point ouvert : un gestionnaire peut-il changer le code d'accès ?
+
+## 12. État au 05/10/2026 et reprise sur un autre poste
+**Où on en est**
+- Application complète (étapes 1 à 15, gymnases M1-M6, images modifiables depuis l'événement, bilan redessiné,
+  thème a1, logo et icône). Vérifié le 05/10/2026 : analyse sans erreur, 141 tests de logique et d'écrans,
+  132 tests de règles, 19 parcours Android, tous verts. Règles d'accès déployées sur le vrai projet.
+- APK de recette à jour (`recette/le-comptoir-recette.apk`, non suivi par git : à reconstruire, voir plus bas).
+- **Reste à faire, dans cet ordre** : (1) test unique de Kinder sur téléphones (`RECETTE.md`) puis corrections ;
+  (2) publication Play Store : clé de signature dédiée (à créer ; Kinder en garde une copie hors du poste),
+  `build.gradle.kts` signe encore avec la clé de débogage, `versionName`/`versionCode`, politique de confidentialité
+  (page web publique, obligatoire), image de présentation 1024x500, captures, textes de la fiche, questionnaires
+  Play Console (classification, sécurité des données). Le compte développeur Google Play existe déjà.
+  (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
+- Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
+
+**Reprendre sur un autre poste** (fichiers volontairement absents de git) :
+- `lib/firebase_options.dart` et `android/app/google-services.json` : à copier depuis l'autre poste, ou à régénérer avec
+  `flutterfire configure --project le-comptoir-60ba8` (application Android `fr.lecomptoir.le_comptoir`). Sans eux,
+  l'application et `test/ecran_caisse_test.dart` ne se compilent pas.
+- Empreinte de signature : celle du poste est enregistrée dans Firebase. Un autre poste a une autre clé de débogage : ajouter
+  son empreinte SHA-1 dans la console Firebase, sinon la connexion Google échoue sur l'APK construit là-bas.
+- Outils : Flutter, Node (pour `firebase-tools`), Java 21 (jbr d'Android Studio) pour les émulateurs Firebase, émulateur Android
+  `LC2` (jamais `Medium_Phone`). Lancer les émulateurs avec `-gpu swiftshader_indirect -no-snapshot -no-audio`.
+- Commandes : `flutter analyze`, `flutter test`, `powershell -File tests_regles/lancer.ps1`,
+  `powershell -File tests_regles/lancer_integration.ps1` (~25 min, en arrière-plan),
+  `flutter build apk --release` puis copie de `build/app/outputs/flutter-apk/app-release.apk` vers `recette/`.
+- Déployer les règles (seulement après leurs tests) : `firebase deploy --only firestore:rules --project le-comptoir-60ba8`.
+- Pièges : après `ouvrirCaisse` dans un test, toujours `await db.waitForPendingWrites()` ; les fichiers `lib/*.dart` sont en CRLF ;
+  deux fichiers de test qui partagent l'émulateur ne réutilisent pas la même adresse e-mail.
+- Limites de Kinder : 24 modules max (23 utilisés), 5 fichiers .md max (4), aucune dépendance sans son accord.
