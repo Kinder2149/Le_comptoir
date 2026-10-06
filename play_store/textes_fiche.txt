@@ -1,0 +1,34 @@
+NOM (30 max)
+Le Comptoir
+
+DESCRIPTION COURTE (80 max)
+La caisse des buvettes associatives : rapide, sans réseau, avec bilan.
+
+DESCRIPTION COMPLÈTE (4000 max)
+Le Comptoir est la caisse des buvettes associatives. Elle est pensée pour les week-ends d'événements sportifs : on encaisse vite, même sans réseau, et on obtient un bilan détaillé à la fin.
+
+ENCAISSER VITE
+• Des icônes illustrées pour chaque produit, le total se calcule tout seul.
+• Un bouton facultatif de monnaie à rendre : on saisit la somme reçue, la caisse affiche ce qu'il faut rendre.
+• Les modes de paiement proposés sont ceux choisis pour l'événement.
+
+FONCTIONNE SANS RÉSEAU
+• Les ventes sont enregistrées sur le téléphone et envoyées automatiquement dès que le réseau revient.
+• Plusieurs caisses peuvent tourner en même temps sur le même événement.
+
+POUR TOUTE L'ASSOCIATION
+• Le responsable crée l'association, nomme des gestionnaires et prépare les menus réutilisables, avec prix et stock facultatif.
+• Les bénévoles rejoignent avec le code de l'association (ou en scannant un code QR) et leur prénom, sans créer de compte.
+• Chaque bénévole ouvre une caisse à son nom et ne corrige que sa caisse.
+
+UN BILAN CLAIR
+• Chaque bénévole clôture sa caisse et voit le total par mode de paiement pour compter son fond de caisse.
+• L'événement se clôture quand toutes les caisses sont clôturées.
+• Le bilan détaillé de l'événement est disponible pour les gestionnaires.
+• Corrections et annulations sont tracées : qui, quand, combien.
+
+Sans publicité, sans suivi. Gratuit.
+
+CATÉGORIE : Outils (ou Affaires)
+COORDONNÉES : e-mail vcoutry@gmail.com
+POLITIQUE DE CONFIDENTIALITÉ : https://kinder2149.github.io/Le_comptoir/confidentialite.html
