@@ -300,10 +300,17 @@ gestion des photos (étape 13).
   132 tests de règles, 19 parcours Android, tous verts. Règles d'accès déployées sur le vrai projet.
 - APK de recette à jour (`recette/le-comptoir-recette.apk`, non suivi par git : à reconstruire, voir plus bas).
 - **Reste à faire, dans cet ordre** : (1) test unique de Kinder sur téléphones (`RECETTE.md`) puis corrections ;
-  (2) publication Play Store : clé de signature dédiée (à créer ; Kinder en garde une copie hors du poste),
-  `build.gradle.kts` signe encore avec la clé de débogage, `versionName`/`versionCode`, politique de confidentialité
-  (page web publique, obligatoire), image de présentation 1024x500, captures, textes de la fiche, questionnaires
-  Play Console (classification, sécurité des données). Le compte développeur Google Play existe déjà.
+  (2) publication Play Store (en cours, 06/10/2026) : **fait** : application créée dans la Play Console
+  (`fr.lecomptoir.le_comptoir`, gratuite, fr-FR), clé d'envoi dédiée (`V:\DEV\keys\le-comptoir-upload.jks` + `le-comptoir-key.properties` ;
+  copie hors poste à faire par Kinder), `build.gradle.kts` signe avec elle via `android/key.properties` (hors git),
+  version 1.0.0+1 envoyée en test interne (Play App Signing actif), empreintes Play + clé d'envoi ajoutées dans Firebase,
+  politique de confidentialité en ligne (`docs/confidentialite.html`, GitHub Pages sur `main` /docs :
+  https://kinder2149.github.io/Le_comptoir/confidentialite.html), image de présentation 1024x500, 6 captures
+  (`play_store/captures/`, régénérables par `lancer_captures.ps1`), textes de la fiche (`play_store/textes_fiche.txt`).
+  **Reste** : test de la connexion Google sur téléphone depuis l'installation Play (sinon re-télécharger
+  `google-services.json` et envoyer 1.0.1) ; remplir la fiche et les questionnaires Play Console (sécurité des données,
+  classification, public cible, pubs : non) ; test fermé obligatoire (12 testeurs, 14 jours, liste « Testeur PaperClip » de 22) ;
+  puis demande d'accès à la production.
   (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
 - Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
 

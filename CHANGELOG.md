@@ -1,5 +1,13 @@
 # CHANGELOG — Le Comptoir
 
+## 06/10/2026 — Préparation de la publication Play Store
+- Clé de signature de publication dédiée ; `build.gradle.kts` la lit dans `android/key.properties` (absent = clé de débogage).
+  Version 1.0.0+1 construite en bundle (`flutter build appbundle --release`) et envoyée en test interne.
+- Politique de confidentialité publique (`docs/confidentialite.html`, GitHub Pages depuis `main` /docs).
+- Fiche : image de présentation 1024x500 (`fabriquer_presentation.py`), textes (`play_store/textes_fiche.txt`),
+  6 captures 1080x2160 fabriquées sur l'émulateur (`integration_test/captures.dart`, `play_store/captures/lancer_captures.ps1`).
+- Aucune dépendance ajoutée, aucun écran modifié.
+
 ## 05/10/2026 (soir) — Logo, icône et écran de démarrage ; vérification complète
 - Logo : piste A « auvent et tasse » retenue par Kinder (décision 32). Icône Android adaptative (fond anthracite
   + symbole vectoriel dans la zone de sécurité), icônes des anciens Android, écran de démarrage anthracite avec le
