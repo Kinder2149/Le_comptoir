@@ -1,5 +1,12 @@
 # CHANGELOG — Le Comptoir
 
+## 18/10/2026 — Exploration : paiement carte avec Monetico
+- Cadrage en phase 2 du besoin du club : éviter la double saisie entre Le Comptoir et Monetico Tap to Pay.
+  Recherches et orientations consignées dans PROJET_CONTEXTE.md section 7 (aucune décision figée).
+- Projet remis en place sur un second poste (clone, dépendances) ; outillage Android et fichiers Firebase
+  hors git encore à installer sur ce poste.
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 06/10/2026 — Préparation de la publication Play Store
 - Clé de signature de publication dédiée ; `build.gradle.kts` la lit dans `android/key.properties` (absent = clé de débogage).
   Version 1.0.0+1 construite en bundle (`flutter build appbundle --release`) et envoyée en test interne.

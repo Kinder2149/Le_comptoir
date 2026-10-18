@@ -224,6 +224,34 @@ les buvettes de la saison.
   (`assets/menu_type.json`) ; à remplacer par le menu fourni par moi. Exemples cités
   au départ, non figés : croque-monsieur, salade, fruits, thé, café,
   barre chocolatée, soda.
+- **Paiement carte avec Monetico (piste A, en phase 2 de cadrage, 18/10/2026 — rien de figé)**
+  - Besoin : le club (seul club visé pour l'instant) encaisse la carte avec l'appli Monetico Tap to
+    Pay (Crédit Mutuel) sur Android ; ses bénévoles saisissent donc chaque montant deux fois
+    (Le Comptoir puis Monetico).
+  - Orientations prises par Kinder : le mode « Carte » actuel reste inchangé ; à l'ouverture de la
+    caisse, proposer d'associer Monetico à cette caisse ; le niveau de liaison sera choisi selon ce
+    que Monetico permet. Hypothèse à confirmer : plusieurs téléphones, chacun connecté au compte
+    Monetico du club par identifiant et mot de passe.
+  - Proposition de Claude (non validée) : Le Comptoir ne fait que vérifier que Monetico est installé
+    sur le téléphone ; il ne connaît jamais les identifiants Monetico du club.
+  - Trois niveaux possibles : (1) liaison complète, Le Comptoir envoie le montant à Monetico et
+    récupère accepté / refusé (exige que Monetico le permette, non documenté publiquement) ;
+    (2) bouton qui ouvre Monetico, le montant est retapé (toujours possible) ; (3) contrôle en fin
+    d'événement, total « Carte » du bilan à comparer au relevé Monetico (toujours possible).
+  - Faits vérifiés (sites Crédit Mutuel / CIC / Monetico, 18/10/2026) : Android 12 ou plus + NFC,
+    réseau nécessaire au paiement, code PIN au-delà de 50 €. Tarifs associations : 10 € HT puis
+    1,70 % + 0,15 €, ou 5 € HT/mois puis 1,00 % + 0,15 €. Appli Android : `com.ei.softpos`.
+    « S'intègre aux solutions d'encaissement » est annoncé sans aucun détail.
+  - Piste B écartée pour l'instant (autre prestataire, Stripe par ex.) : changement de banque
+    d'encaissement, serveur donc forfait Firebase payant, Android 13 minimum, réseau obligatoire.
+  - **Prochaines actions** : (a) Kinder obtient les accès Monetico du club pour tester sur son propre
+    téléphone ; (b) téléphone branché au PC, lire ce que l'appli `com.ei.softpos` accepte de recevoir
+    des autres applis (lecture seule, demande l'outillage Android et le mode développeur) ;
+    (c) en parallèle, question au conseiller Crédit Mutuel : une autre appli peut-elle ouvrir Monetico
+    avec un montant et récupérer le résultat ? documentation et coût ? un contrat sur plusieurs
+    téléphones ?
+  - Points ouverts : redemander l'association à chaque ouverture de caisse ou la retenir sur le
+    téléphone ? que fait la caisse si le paiement carte échoue faute de réseau ?
 
 ## 8. Plan (validé le 01/10/2026)
 Règle : chaque étape est validée par des tests automatiques lancés et
@@ -312,6 +340,7 @@ gestion des photos (étape 13).
   classification, public cible, pubs : non) ; test fermé obligatoire (12 testeurs, 14 jours, liste « Testeur PaperClip » de 22) ;
   puis demande d'accès à la production.
   (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
+  (4) paiement carte avec Monetico : exploration en cours, voir section 7 (18/10/2026).
 - Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
 
 **Reprendre sur un autre poste** (fichiers volontairement absents de git) :
