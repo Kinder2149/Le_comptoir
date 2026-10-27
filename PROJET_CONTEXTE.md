@@ -299,6 +299,18 @@ service.
 Dépendances à demander avant ajout : connexion Google (étape 4),
 gestion des photos (étape 13).
 
+### Plan du chantier « Stock et courses » (validé le 27/10/2026, décisions 33 à 41)
+Une étape à la fois ; chaque étape a un critère écrit par Kinder avant tout code (phase de cadrage).
+1. Types de produit et recettes dans le menu (composé, unité, part, litre avec ratio litres/verres).
+2. Modèle générique : partir du modèle, copier un menu ou partir de zéro ; carte de 10 produits avec logos.
+3. Stock par rôle : saisie et modification par la gestion, ajout de parts par le bénévole, total de référence enregistré à chaque modification.
+4. Caisse : produit coloré en rupture, alerte sous 10 % du dernier total, vente et stock écrits dans un même lot.
+5. Courses, préparation : produits et quantités, ingrédients calculés, « ce qu'il reste », suggestions de stock bas.
+6. Courses, validation : quantités réellement achetées, calcul inverse (ingrédient limitant), mise à jour du stock, coût total.
+7. Bilan et export : coût des courses déduit au bilan, export CSV.
+8. Recette : parcours complet automatique, test de Kinder, mesure des lectures du suivi en direct.
+Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). Monetico : chantier à part, en dernier.
+
 ## 9. Références techniques (01/10/2026)
 - Projet Firebase : `le-comptoir-60ba8` (n° 522645235489), plan Spark
   (gratuit).
