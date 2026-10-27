@@ -1,5 +1,16 @@
 # CHANGELOG — Le Comptoir
 
+## 27/10/2026 — Figeage du chantier « Stock et courses »
+- Cahier des charges d'une IA de l'association comparé à l'application : l'existant couvre la caisse, le stock par gymnase,
+  le bilan et le fonctionnement hors réseau ; manquent états du stock, entrées, courses, recettes, export.
+- Décisions 33 à 41 figées dans PROJET_CONTEXTE.md : droits sur le stock par rôle, produit coloré en rupture (sans blocage),
+  quatre types de produit, modèle générique modifiable, module Courses avec calcul inverse, stock bas à 10 % du dernier total,
+  éléments écartés, export CSV, plafond de modules supprimé.
+- Revue d'équipe Hermès (Chef, Technique, Recherche) menée par Kinder sur Telegram : quotas d'écritures Spark tenables ;
+  vente et stock à écrire dans un même lot ; lectures du suivi en direct à mesurer. Technique n'a pas pu lire le projet
+  (la fiche du parc ne couvre pas le-comptoir-60ba8) : mise à jour de la fiche à faire sur le serveur.
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 18/10/2026 — Exploration : paiement carte avec Monetico
 - Cadrage en phase 2 du besoin du club : éviter la double saisie entre Le Comptoir et Monetico Tap to Pay.
   Recherches et orientations consignées dans PROJET_CONTEXTE.md section 7 (aucune décision figée).

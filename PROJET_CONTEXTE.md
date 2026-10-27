@@ -48,7 +48,7 @@ les buvettes de la saison.
 
 ## 5. Hors périmètre
 - Notifications push.
-- Prévision automatique des courses.
+- Prévision automatique des courses par coefficients (les courses se calculent depuis des quantités saisies : décisions 33 à 41).
 
 ## 6. Décisions figées (01/10/2026)
 1. L'association est l'entité mère ; un seul code d'accès, celui de
@@ -219,9 +219,21 @@ les buvettes de la saison.
 
 32. Logo et icône (05/10/2026) : Kinder a retenu la piste A, « auvent et tasse » (auvent rayé lin et sable au-dessus d'une tasse posée sur un plan de comptoir sable, sur fond anthracite). Sources dans `audit_front/proposition/logo/` ; `fabriquer_icones.py` régénère les icônes Android (adaptative + anciennes), l'écran de démarrage et `play_store/icone_512.png`. Pas d'icône thématique Android 13 (non vérifiée).
 
+33. Chantier « Stock et courses » (figé le 27/10/2026, cahier des charges d'une IA de l'association comparé à l'existant ; détail du déroulé ci-dessous). Trois modules distincts : Menu, Caisse, Courses.
+34. Droits sur le stock : le bénévole garde sa caisse classique et ajoute des parts (gâteau sucré, gâteau salé, salade) au stock de son gymnase ; il ne voit pas le stock complet et ne le modifie pas. Le responsable et les gestionnaires voient et modifient le stock de leurs gymnases.
+    Pourquoi : le bénévole apporte les gâteaux ; la gestion tient les chiffres. Précise la décision 3 et reste dans les gymnases rattachés (décision 29).
+35. Rupture de stock : la vente n'est jamais bloquée (confirme la décision 14) ; en plus du message « Épuisé », le produit change de couleur en caisse.
+36. Types de produit : composé (recette : quantités nécessaires pour UN produit, fractions permises, ex. 1/4 de tranche), à l'unité (fruit, barre), à la part (gâteaux, salade), au litre (café et sodas : litres achetés, ratio litres -> verres vendus ; chaque soda est un produit distinct). Chaque produit du menu a un type et un stock réglable.
+37. Modèle générique : remplace le simple menu type (décision 22). L'association l'utilise tel quel, le modifie, le copie ou crée un menu de zéro. Il est construit à partir de la carte de buvette de Kinder (café, thé, tarte, flan, croque-monsieur, barre chocolatée, fruits, salade, soda, crêpes ; logos sans fond fournis). Dans le modèle, les gâteaux et la salade sont « apportés par les bénévoles » donc hors courses ; l'association peut les intégrer aux courses.
+38. Module Courses : lancé avant ou pendant l'événement. On choisit les produits du menu de l'événement à acheter et la quantité de produits finaux voulue ; pour un produit composé, l'application calcule les ingrédients (« ce qu'il reste » est une saisie facultative qui réduit les quantités à acheter). À la validation, on saisit les quantités réellement achetées ; calcul inverse : le stock gagne ce que permet l'ingrédient LIMITANT (ex. gruyère pour 80 croques = +80). Les courses ajoutent au stock, n'en retirent rien. Les ingrédients n'ont pas de stock : les restes ne sont suivis que par la saisie « ce qu'il reste ». Le coût TOTAL des courses est saisi (pas de prix par élément) et déduit au bilan. Pas de marge, pas de lots, pas de coût moyen.
+39. Stock bas : il ne concerne que les produits finaux, jamais les ingrédients. Il se déclenche à 10 % du DERNIER total de stock enregistré (si le stock est modifié le samedi soir, ce total devient la référence). Les produits sous le seuil s'affichent et sont suggérés aux courses suivantes.
+40. Écartés pour l'instant : transferts entre gymnases (à la main : -10 puis +10), prix d'achat par élément, prévision automatique par coefficients, cartes prépayées, terminal bancaire (Monetico, en dernier). Export du bilan : fichier CSV qui s'ouvre dans Excel (pas de vrai .xlsx, qui ajouterait une dépendance) ; bilan de clôture conservé. Remise du fichier sur Android : dépendance éventuelle à demander le moment venu.
+41. Plafond de modules supprimé (remplace la limite de 24). Documentation : 5 fichiers .md max inchangé.
+    Exigences issues de la revue d'équipe Hermès (27/10/2026) : (a) la vente et la baisse de stock sont écrites dans UN MÊME lot (aujourd'hui deux écritures séparées) ; (b) mesurer les lectures du suivi en direct (quota gratuit 50 000/jour) avant de passer à 8 gymnases ; l'estimation d'écritures (environ 11 000/jour pour 3 gymnases et 6 caisses, quota 20 000) tient. L'identifiant unique de vente existe déjà.
+
 ## 7. Points ouverts
 - Menu type prêt à l'emploi : en place avec des produits génériques
-  (`assets/menu_type.json`) ; à remplacer par le menu fourni par moi. Exemples cités
+  (`assets/menu_type.json`) ; devient le modèle générique (décision 37). Reste à recevoir : les prix de la carte et l'estimation des courses de Kinder (base du modèle). Exemples cités
   au départ, non figés : croque-monsieur, salade, fruits, thé, café,
   barre chocolatée, soda.
 - **Paiement carte avec Monetico (piste A, en phase 2 de cadrage, 18/10/2026 — rien de figé)**
@@ -357,4 +369,4 @@ gestion des photos (étape 13).
 - Déployer les règles (seulement après leurs tests) : `firebase deploy --only firestore:rules --project le-comptoir-60ba8`.
 - Pièges : après `ouvrirCaisse` dans un test, toujours `await db.waitForPendingWrites()` ; les fichiers `lib/*.dart` sont en CRLF ;
   deux fichiers de test qui partagent l'émulateur ne réutilisent pas la même adresse e-mail.
-- Limites de Kinder : 24 modules max (23 utilisés), 5 fichiers .md max (4), aucune dépendance sans son accord.
+- Limites de Kinder : plus de plafond de modules (décision 41, 23 utilisés), 5 fichiers .md max (4), aucune dépendance sans son accord.
