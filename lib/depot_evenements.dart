@@ -185,6 +185,7 @@ class DepotEvenements {
             q[d.id],
             icone: d.data()['icone'] as String?,
             photo: (d.data()['photo'] as Blob?)?.bytes,
+            fiche: FicheProduit.depuis(d.data()),
           ),
       ];
       liste.sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
@@ -257,6 +258,7 @@ class DepotEvenements {
         'prixCentimes': p.prixCentimes,
         'icone': ?p.icone,
         if (p.photo != null) 'photo': Blob(p.photo!),
+        ...p.fiche.versMap(),
         'creeLe': FieldValue.serverTimestamp(),
       });
       // Chaque gymnase part du stock du menu.

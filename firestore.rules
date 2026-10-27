@@ -13,11 +13,11 @@ rules_version = '2';
 //   associations/{a}                              nom, code, responsableUid, creeLe
 //     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
 //     menus/{m}                                   nom, creeLe                       (gestion seulement)
-//       produits/{p}                              nom, prixCentimes, stock?, icone?, photo?, creeLe
+//       produits/{p}                              nom, prixCentimes, stock?, icone?, photo?, type?, conso?, ingredients?, verresParLitre?, creeLe
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
-//       produits/{p}                              copie des produits du menu (images comprises), SANS stock ; seule l'image se modifie ensuite
+//       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
 //         stocks/{p}                              quantite (absent = pas de suivi de ce produit dans ce gymnase)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
@@ -71,9 +71,51 @@ service cloud.firestore {
         && modes.size() <= 4
         && modes.hasOnly(['especes', 'carte', 'cheque', 'autre']);
     }
+    // Recette : 1 à 20 ingrédients {nom (1 à 40 caractères), quantité pour UNE unité (> 0),
+    // unité de la liste fixe}. Pas de boucle dans les règles, et une requête ne peut pas
+    // évaluer plus de 1000 expressions : un test compact, écrit en clair, par position
+    // (une valeur d'un mauvais type fait échouer le test, donc refuse l'écriture).
+    function ingredientsValides(l) {
+      return l is list
+        && l.size() >= 1
+        && l.size() <= 20
+        && (l.size() <= 0 || (l[0].quantite > 0 && l[0].nom.matches('.{1,40}') && l[0].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 1 || (l[1].quantite > 0 && l[1].nom.matches('.{1,40}') && l[1].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 2 || (l[2].quantite > 0 && l[2].nom.matches('.{1,40}') && l[2].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 3 || (l[3].quantite > 0 && l[3].nom.matches('.{1,40}') && l[3].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 4 || (l[4].quantite > 0 && l[4].nom.matches('.{1,40}') && l[4].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 5 || (l[5].quantite > 0 && l[5].nom.matches('.{1,40}') && l[5].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 6 || (l[6].quantite > 0 && l[6].nom.matches('.{1,40}') && l[6].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 7 || (l[7].quantite > 0 && l[7].nom.matches('.{1,40}') && l[7].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 8 || (l[8].quantite > 0 && l[8].nom.matches('.{1,40}') && l[8].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 9 || (l[9].quantite > 0 && l[9].nom.matches('.{1,40}') && l[9].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 10 || (l[10].quantite > 0 && l[10].nom.matches('.{1,40}') && l[10].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 11 || (l[11].quantite > 0 && l[11].nom.matches('.{1,40}') && l[11].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 12 || (l[12].quantite > 0 && l[12].nom.matches('.{1,40}') && l[12].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 13 || (l[13].quantite > 0 && l[13].nom.matches('.{1,40}') && l[13].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 14 || (l[14].quantite > 0 && l[14].nom.matches('.{1,40}') && l[14].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 15 || (l[15].quantite > 0 && l[15].nom.matches('.{1,40}') && l[15].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 16 || (l[16].quantite > 0 && l[16].nom.matches('.{1,40}') && l[16].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 17 || (l[17].quantite > 0 && l[17].nom.matches('.{1,40}') && l[17].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 18 || (l[18].quantite > 0 && l[18].nom.matches('.{1,40}') && l[18].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 19 || (l[19].quantite > 0 && l[19].nom.matches('.{1,40}') && l[19].unite.matches('unite|tranche|g|kg|cl|L')));
+    }
+    // Type, recette, ratio et consommation. Sans type = « unite ». Une recette
+    // seulement pour un produit composé, un ratio seulement pour un produit au litre.
+    function ficheValide(d) {
+      return (!('type' in d) || d.type in ['compose', 'unite', 'part', 'litre'])
+        && (!('conso' in d) || (d.conso is number && d.conso >= 0 && d.conso <= 1000))
+        && (d.get('type', 'unite') == 'compose'
+            ? ('ingredients' in d && ingredientsValides(d.ingredients))
+            : !('ingredients' in d))
+        && (d.get('type', 'unite') == 'litre'
+            ? ('verresParLitre' in d && d.verresParLitre is number && d.verresParLitre > 0 && d.verresParLitre <= 100)
+            : !('verresParLitre' in d));
+    }
     function produitValide(d) {
       return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
-        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'conso', 'ingredients', 'verresParLitre'])
+        && ficheValide(d)
         && (!('icone' in d)
             || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace']))
         && (!('photo' in d)

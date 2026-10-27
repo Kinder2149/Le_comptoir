@@ -63,6 +63,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **À trancher** : liste des unités (unité, tranche, g, kg, cl, L ?) et conversions g/kg ; un ingrédient
   partagé entre deux recettes se reconnaît-il par son nom (casse, accents) ? ; le stock des produits
   « litre » se compte-t-il en verres ? (proposé : oui) ; formulaire trop chargé : champs selon le type.
+- **Tranché le 28/10/2026 (Kinder)** : unités = unité, tranche, g, kg, cl, L, saisies telles quelles, sans conversion à l'étape 1 (g/kg et cl/L se convertiront aux étapes 5-6) ; un ingrédient partagé se reconnaît par son nom sans casse ni accents ni espaces autour (`cleIngredient`), utilisé aux courses ; le stock d'un produit au litre se compte en verres. Fraction acceptée à la saisie (« 1/4 »). Règles d'accès : une requête ne peut évaluer plus de 1000 expressions, donc la recette (20 ingrédients) y est contrôlée de façon compacte (quantité > 0, nom de 1 à 40 caractères, unité de la liste fixe) ; la vérification complète (quantité max, nombre de champs) est faite par l'application.
 - **Critère de validation (délégué par Kinder à Claude le 27/10/2026, validé en le déléguant)** :
   1. Dans un menu, je crée « Croque-monsieur » de type composé avec 3 ingrédients (2 tranches de pain de mie,
      1/4 de tranche de jambon, 25 g de gruyère) ; en rouvrant le menu, je retrouve exactement ces valeurs.
@@ -203,7 +204,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 ## 8. Suivi (à mettre à jour à la fin de chaque étape)
 | Étape | État | Date | Critère validé |
 |---|---|---|---|
-| 1 Types et recettes | cadrée, prête à implémenter | 27/10/2026 | critère écrit (section 5) ; test et capture à venir |
+| 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles) ; captures dans `audit_front/captures_stock_courses/` ; règles NON déployées sur le vrai projet |
 | 2 Modèle générique et logos | à cadrer | | |
 | 3 Stock par rôle | à cadrer | | |
 | 4 Caisse : rupture et stock bas | à cadrer | | |

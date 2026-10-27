@@ -381,7 +381,8 @@ class EcranEvenement extends StatelessWidget {
                             formaterEuros(p.prixCentimes) +
                                 (p.stock == null
                                     ? ''
-                                    : ' · Stock : ${p.stock}'),
+                                    : ' · Stock : ${p.stock}') +
+                                resumeFiche(p.fiche),
                           ),
                           // La gestion corrige l'image (pas le nom ni le prix).
                           trailing: peutModifier && ev.enCours

@@ -1,5 +1,13 @@
 # CHANGELOG — Le Comptoir
 
+## 28/10/2026 — Chantier « Stock et courses », étape 1 : types de produit et recettes
+- Formulaire « Produit » d'un menu : type (composé, à l'unité, à la part, au litre), recette pour UN produit (jusqu'à 20 ingrédients, quantité fractionnaire, unité parmi unité, tranche, g, kg, cl, L), nombre de verres par litre, consommation par personne et par jour. Champs affichés selon le type ; un produit sans type reste « unité » (prix, stock et image intacts).
+- L'événement copie type, recette, ratio et consommation avec le produit (figés comme le prix) ; le détail de l'événement les affiche.
+- Messages clairs : composé sans ingrédient, quantité à zéro ou négative, ratio à zéro, plus de 20 ingrédients.
+- Règles d'accès : champs `type`, `conso`, `ingredients`, `verresParLitre` contrôlés (menu et copie d'événement) ; la recette est vérifiée position par position, de façon compacte, à cause de la limite de 1000 expressions par requête. NON déployées sur le vrai projet Firebase.
+- Vérifié : analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles (13 nouveaux). Captures : `audit_front/captures_stock_courses/` (rendu de test : les libellés de boutons y apparaissent en blocs, limite de la police de test).
+- Aucune dépendance ajoutée. Reste : capture de Kinder (ferme la mission), vérification par une autre IA, déploiement des règles sur accord.
+
 ## 27/10/2026 (fin) — Cadrage de l'étape 1 clos
 - Critère de validation de l'étape 1 écrit (délégué par Kinder) dans `PLAN_STOCK_COURSES.md`. Étape 1 prête à implémenter.
 - Tranché par Kinder : une liste de courses pour tout l'événement (quantités par gymnase) ; le bénévole ajoute seulement des

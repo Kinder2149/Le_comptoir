@@ -368,6 +368,8 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
   puis demande d'accès à la production.
   (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
   (4) paiement carte avec Monetico : exploration en cours, voir section 7 (18/10/2026).
+- **Chantier « Stock et courses » (décisions 33 à 42, PLAN_STOCK_COURSES.md)** : étape 1 (types de produit et recettes) implémentée et testée le 28/10/2026 sur la branche `claude/comptoir-app-refinement-cnuyb4` (analyse sans erreur, 161 tests, 145 tests de règles). Règles modifiées mais NON déployées : `firebase deploy --only firestore:rules --project le-comptoir-60ba8` après accord de Kinder. Reste pour l'étape 1 : capture de Kinder et vérification par une autre IA. Prochaine : étape 2 (modèle générique et logos, à cadrer).
+- Piège des règles : une requête évalue 1000 expressions au plus ; ne pas ajouter de contrôles lourds par ingrédient sans mesurer.
 - Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
 
 **Reprendre sur un autre poste** (fichiers volontairement absents de git) :

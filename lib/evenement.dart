@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'depot_menus.dart';
+
 /// Modes de paiement : liste fixe (clé stockée -> libellé affiché).
 const modesPaiement = <String, String>{
   'especes': 'Espèces',
@@ -72,12 +74,15 @@ class Evenement {
 /// Produit tel qu'il était dans le menu au moment de la création de l'événement.
 class ProduitEvenement {
   const ProduitEvenement(this.id, this.nom, this.prixCentimes, this.stock,
-      {this.icone, this.photo});
+      {this.icone, this.photo, this.fiche = FicheProduit.unite});
 
   final String id;
   final String nom;
   final int prixCentimes;
   final int? stock;
+
+  /// Type, recette, ratio et consommation, figés comme le prix.
+  final FicheProduit fiche;
 
   /// Copiées avec le produit : la caisse les affiche même sans réseau.
   final String? icone;
