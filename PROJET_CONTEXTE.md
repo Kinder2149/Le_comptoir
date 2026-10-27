@@ -48,7 +48,7 @@ les buvettes de la saison.
 
 ## 5. Hors périmètre
 - Notifications push.
-- Prévision automatique des courses par coefficients (les courses se calculent depuis des quantités saisies : décisions 33 à 41).
+- Prévision automatique des courses qui s'impose : seul un pré-remplissage modifiable existe (décision 42).
 
 ## 6. Décisions figées (01/10/2026)
 1. L'association est l'entité mère ; un seul code d'accès, celui de
@@ -227,9 +227,11 @@ les buvettes de la saison.
 37. Modèle générique : remplace le simple menu type (décision 22). L'association l'utilise tel quel, le modifie, le copie ou crée un menu de zéro. Il est construit à partir de la carte de buvette de Kinder (café, thé, tarte, flan, croque-monsieur, barre chocolatée, fruits, salade, soda, crêpes ; logos sans fond fournis). Dans le modèle, les gâteaux et la salade sont « apportés par les bénévoles » donc hors courses ; l'association peut les intégrer aux courses.
 38. Module Courses : lancé avant ou pendant l'événement. On choisit les produits du menu de l'événement à acheter et la quantité de produits finaux voulue ; pour un produit composé, l'application calcule les ingrédients (« ce qu'il reste » est une saisie facultative qui réduit les quantités à acheter). À la validation, on saisit les quantités réellement achetées ; calcul inverse : le stock gagne ce que permet l'ingrédient LIMITANT (ex. gruyère pour 80 croques = +80). Les courses ajoutent au stock, n'en retirent rien. Les ingrédients n'ont pas de stock : les restes ne sont suivis que par la saisie « ce qu'il reste ». Le coût TOTAL des courses est saisi (pas de prix par élément) et déduit au bilan. Pas de marge, pas de lots, pas de coût moyen.
 39. Stock bas : il ne concerne que les produits finaux, jamais les ingrédients. Il se déclenche à 10 % du DERNIER total de stock enregistré (si le stock est modifié le samedi soir, ce total devient la référence). Les produits sous le seuil s'affichent et sont suggérés aux courses suivantes.
-40. Écartés pour l'instant : transferts entre gymnases (à la main : -10 puis +10), prix d'achat par élément, prévision automatique par coefficients, cartes prépayées, terminal bancaire (Monetico, en dernier). Export du bilan : fichier CSV qui s'ouvre dans Excel (pas de vrai .xlsx, qui ajouterait une dépendance) ; bilan de clôture conservé. Remise du fichier sur Android : dépendance éventuelle à demander le moment venu.
+40. Écartés pour l'instant : transferts entre gymnases (à la main : -10 puis +10), prix d'achat par élément, prévision automatique NON modifiable (voir décision 42), cartes prépayées, terminal bancaire (Monetico, en dernier). Export du bilan : fichier CSV qui s'ouvre dans Excel (pas de vrai .xlsx, qui ajouterait une dépendance) ; bilan de clôture conservé. Remise du fichier sur Android : dépendance éventuelle à demander le moment venu.
 41. Plafond de modules supprimé (remplace la limite de 24). Documentation : 5 fichiers .md max inchangé.
     Exigences issues de la revue d'équipe Hermès (27/10/2026) : (a) la vente et la baisse de stock sont écrites dans UN MÊME lot (aujourd'hui deux écritures séparées) ; (b) mesurer les lectures du suivi en direct (quota gratuit 50 000/jour) avant de passer à 8 gymnases ; l'estimation d'écritures (environ 11 000/jour pour 3 gymnases et 6 caisses, quota 20 000) tient. L'identifiant unique de vente existe déjà.
+
+42. Pré-remplissage des quantités de courses (27/10/2026, modifie la décision 40) : à la création d'un événement, la gestion règle le nombre de personnes par gymnase et le nombre de jours (2 par défaut). Chaque produit du menu porte une consommation par personne et par jour, modifiable (exemple de départ pour 80 personnes par gymnase : 2 croque-monsieur, 1 boisson, 1 part de gâteau, 1 fruit ou barre, 2 cafés). Le module Courses PRÉ-REMPLIT avec ces réglages les quantités de produits finaux ; la gestion garde la main et modifie chaque chiffre. Estimations de départ du modèle, à corriger par l'association : croque = 2 tranches de pain de mie, 1/4 de tranche de jambon, 25 g de gruyère ; café = 1 litre pour 8 verres. Aucune quantité n'est imposée : rien ne se commande ni ne s'achète sans validation.
 
 ## 7. Points ouverts
 - Menu type prêt à l'emploi : en place avec des produits génériques
@@ -301,11 +303,11 @@ gestion des photos (étape 13).
 
 ### Plan du chantier « Stock et courses » (validé le 27/10/2026, décisions 33 à 41)
 Une étape à la fois ; chaque étape a un critère écrit par Kinder avant tout code (phase de cadrage).
-1. Types de produit et recettes dans le menu (composé, unité, part, litre avec ratio litres/verres).
+1. Types de produit et recettes dans le menu (composé, unité, part, litre avec ratio litres/verres) et consommation par personne et par jour.
 2. Modèle générique : partir du modèle, copier un menu ou partir de zéro ; carte de 10 produits avec logos.
 3. Stock par rôle : saisie et modification par la gestion, ajout de parts par le bénévole, total de référence enregistré à chaque modification.
 4. Caisse : produit coloré en rupture, alerte sous 10 % du dernier total, vente et stock écrits dans un même lot.
-5. Courses, préparation : produits et quantités, ingrédients calculés, « ce qu'il reste », suggestions de stock bas.
+5. Courses, préparation : réglages de l'événement (personnes par gymnase, jours), quantités pré-remplies et modifiables, ingrédients calculés, « ce qu'il reste », suggestions de stock bas.
 6. Courses, validation : quantités réellement achetées, calcul inverse (ingrédient limitant), mise à jour du stock, coût total.
 7. Bilan et export : coût des courses déduit au bilan, export CSV.
 8. Recette : parcours complet automatique, test de Kinder, mesure des lectures du suivi en direct.

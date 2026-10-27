@@ -9,6 +9,8 @@
 - Revue d'équipe Hermès (Chef, Technique, Recherche) menée par Kinder sur Telegram : quotas d'écritures Spark tenables ;
   vente et stock à écrire dans un même lot ; lectures du suivi en direct à mesurer. Technique n'a pas pu lire le projet
   (la fiche du parc ne couvre pas le-comptoir-60ba8) : mise à jour de la fiche à faire sur le serveur.
+- Ajout (même jour) : décision 42, pré-remplissage modifiable des quantités de courses à partir des réglages de l'événement
+  (personnes par gymnase, jours) et d'une consommation par personne et par jour portée par chaque produit ; plan validé en 8 étapes.
 - Aucun code modifié, aucune dépendance ajoutée.
 
 ## 18/10/2026 — Exploration : paiement carte avec Monetico
