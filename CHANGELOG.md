@@ -1,5 +1,11 @@
 # CHANGELOG — Le Comptoir
 
+## 27/10/2026 (fin) — Cadrage de l'étape 1 clos
+- Critère de validation de l'étape 1 écrit (délégué par Kinder) dans `PLAN_STOCK_COURSES.md`. Étape 1 prête à implémenter.
+- Tranché par Kinder : une liste de courses pour tout l'événement (quantités par gymnase) ; le bénévole ajoute seulement des
+  parts ; le flan est le gâteau sucré. Reste à confirmer à l'étape 2 : la tarte confiture et le logo du gâteau salé.
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 27/10/2026 (suite) — Plan détaillé du chantier « Stock et courses »
 - Nouveau `PLAN_STOCK_COURSES.md` (5e et dernier fichier de documentation autorisé) : modèle de données cible, les 8 étapes
   (ce que Kinder voit, stratégie, fichiers, ce qu'on ne fait pas, points à trancher au cadrage), registre du cahier des

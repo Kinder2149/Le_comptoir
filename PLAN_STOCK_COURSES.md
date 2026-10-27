@@ -63,7 +63,18 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **À trancher** : liste des unités (unité, tranche, g, kg, cl, L ?) et conversions g/kg ; un ingrédient
   partagé entre deux recettes se reconnaît-il par son nom (casse, accents) ? ; le stock des produits
   « litre » se compte-t-il en verres ? (proposé : oui) ; formulaire trop chargé : champs selon le type.
-- **Critère (Kinder)** : à écrire.
+- **Critère de validation (délégué par Kinder à Claude le 27/10/2026, validé en le déléguant)** :
+  1. Dans un menu, je crée « Croque-monsieur » de type composé avec 3 ingrédients (2 tranches de pain de mie,
+     1/4 de tranche de jambon, 25 g de gruyère) ; en rouvrant le menu, je retrouve exactement ces valeurs.
+  2. Je crée « Café » de type litre avec 8 verres par litre, et je règle sa consommation à 2 par personne et par jour ;
+     je retrouve ces valeurs en rouvrant le produit.
+  3. Un produit déjà existant (ex. « Fruit ») reste un produit à l'unité : prix, stock et image sont intacts.
+  4. Je crée un événement avec ce menu : le croque-monsieur et le café y sont avec leur recette, leur ratio et leur
+     consommation. Si je change ensuite la recette dans le menu, l'événement déjà créé ne change pas.
+  5. Les saisies incohérentes sont refusées avec un message clair : produit composé sans ingrédient, quantité à zéro
+     ou négative, ratio à zéro, plus de 20 ingrédients.
+  6. La caisse, le stock et le bilan fonctionnent comme avant (tous les tests existants restent verts).
+  Le test de code ferme l'étape ; la capture d'écran de Kinder (formulaire produit, puis événement) ferme la mission.
 
 ### Étape 2 — Modèle générique et logos (moyenne)
 - **Kinder voit** : à la création d'un menu, « partir du modèle », « copier un menu » ou « de zéro ». Le
@@ -75,7 +86,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
   (même liste de clés) ; les 4 autres icônes (bière, eau, frites, glace) restent.
 - **Sources des logos** : `audit_front/logos_menu_modele/` (10 images réduites à 512 px, fond transparent).
   Fournies par Kinder le 27/10/2026. Correspondance proposée : 01 café, 02 thé, 03 tarte confiture =
-  gâteau sucré, 04 flan = gâteau salé (À CONFIRMER), 05 croque, 06 Mars = barre, 07 fruits, 08 salade,
+  À CONFIRMER (second gâteau sucré ? il n'y a alors aucun logo pour le gâteau salé), 04 flan = gâteau sucré (confirmé par Kinder le 27/10/2026), 05 croque, 06 Mars = barre, 07 fruits, 08 salade,
   09 soda (icône plate, style différent des photos), 10 crêpes.
 - **Valeurs d'exemple du modèle** (estimations de Claude, à corriger par Kinder, décision 42) : croque = 2 tranches
   de pain de mie + 1/4 de tranche de jambon + 25 g de gruyère ; café = 1 litre pour 8 verres ; consommation
@@ -84,7 +95,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **Fichiers** : `assets/menu_type.json`, `pubspec.yaml` (déclarer les images, aucune dépendance), `lib/ecran_caisse.dart`
   (affichage des icônes), `lib/ecran_menus.dart`, `lib/depot_menus.dart`, tests.
 - **On ne fait pas** : réglages de l'événement, courses.
-- **À trancher** : correspondance des logos (04, 09) ; où se range le modèle (livré avec l'application,
+- **À trancher** : correspondance des logos : la tarte confiture (03) est-elle un second gâteau sucré, et quel logo pour le gâteau salé ? (10 images, 9 produits distincts) ; soda (09) au style différent ; où se range le modèle (livré avec l'application,
   jamais modifiable lui-même : on le copie) ; le menu type actuel est-il remplacé ?
 - **Critère (Kinder)** : à écrire.
 
@@ -97,6 +108,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **Fichiers** : `lib/ecran_gymnases.dart`, `lib/ecran_caisse.dart`, `lib/depot_evenements.dart`, `lib/depot_caisses.dart`,
   `firestore.rules`, tests (règles : tests_regles/).
 - **On ne fait pas** : alerte et couleurs (étape 4), courses, transferts entre gymnases.
+- **Confirmé par Kinder (27/10/2026)** : un bénévole ajoute des parts, rien d'autre.
 - **Point d'attention technique** : les règles autorisent aujourd'hui un membre dont la caisse est ouverte dans le gymnase
   à modifier la quantité (c'est ce qui permet la vente, qui baisse, et l'annulation, qui remonte). L'ajout de parts
   par un bénévole doit être limité aux produits de type « part » et distingué de l'annulation d'une vente.
@@ -123,8 +135,9 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **Stratégie** : module à part (Courses) ; calcul de la liste en logique pure, testée ; la liste se sauvegarde (statut préparation).
 - **Fichiers** : nouveau module Courses (écran + dépôt), `lib/ecran_nouvel_evenement.dart`, `lib/ecran_evenement.dart`, `lib/evenement.dart`, `firestore.rules`, tests.
 - **On ne fait pas** : validation des achats (étape 6), prix par élément, impression de la liste.
-- **À trancher** : courses d'un gymnase ou de tout l'événement ? (proposé : toute la liste de l'événement, quantités saisies
-  par gymnase, pré-remplies depuis les personnes de ce gymnase) ; qui lance les courses (gestion de tous les gymnases ?) ;
+- **Tranché (Kinder, 27/10/2026)** : une liste de courses pour TOUT l'événement ; quantités saisies par gymnase,
+  pré-remplies depuis les personnes de ce gymnase ; la validation ajoute à chaque gymnase.
+- **À trancher** : qui lance les courses (gestion de tous les gymnases ?) ;
   arrondis (pain en paquets ?) ; ajouter une ligne à la main après calcul ; plusieurs listes dans un même événement.
 - **Critère (Kinder)** : à écrire.
 
@@ -190,7 +203,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 ## 8. Suivi (à mettre à jour à la fin de chaque étape)
 | Étape | État | Date | Critère validé |
 |---|---|---|---|
-| 1 Types et recettes | à cadrer | | |
+| 1 Types et recettes | cadrée, prête à implémenter | 27/10/2026 | critère écrit (section 5) ; test et capture à venir |
 | 2 Modèle générique et logos | à cadrer | | |
 | 3 Stock par rôle | à cadrer | | |
 | 4 Caisse : rupture et stock bas | à cadrer | | |
