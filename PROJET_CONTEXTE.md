@@ -219,7 +219,7 @@ les buvettes de la saison.
 
 32. Logo et icône (05/10/2026) : Kinder a retenu la piste A, « auvent et tasse » (auvent rayé lin et sable au-dessus d'une tasse posée sur un plan de comptoir sable, sur fond anthracite). Sources dans `audit_front/proposition/logo/` ; `fabriquer_icones.py` régénère les icônes Android (adaptative + anciennes), l'écran de démarrage et `play_store/icone_512.png`. Pas d'icône thématique Android 13 (non vérifiée).
 
-33. Chantier « Stock et courses » (figé le 27/10/2026, cahier des charges d'une IA de l'association comparé à l'existant ; détail du déroulé ci-dessous). Trois modules distincts : Menu, Caisse, Courses.
+33. Chantier « Stock et courses » (figé le 27/10/2026, cahier des charges d'une IA de l'association comparé à l'existant ; détail des étapes, modèle de données et registre du cahier des charges dans PLAN_STOCK_COURSES.md). Trois modules distincts : Menu, Caisse, Courses.
 34. Droits sur le stock : le bénévole garde sa caisse classique et ajoute des parts (gâteau sucré, gâteau salé, salade) au stock de son gymnase ; il ne voit pas le stock complet et ne le modifie pas. Le responsable et les gestionnaires voient et modifient le stock de leurs gymnases.
     Pourquoi : le bénévole apporte les gâteaux ; la gestion tient les chiffres. Précise la décision 3 et reste dans les gymnases rattachés (décision 29).
 35. Rupture de stock : la vente n'est jamais bloquée (confirme la décision 14) ; en plus du message « Épuisé », le produit change de couleur en caisse.
@@ -311,6 +311,7 @@ Une étape à la fois ; chaque étape a un critère écrit par Kinder avant tout
 6. Courses, validation : quantités réellement achetées, calcul inverse (ingrédient limitant), mise à jour du stock, coût total.
 7. Bilan et export : coût des courses déduit au bilan, export CSV.
 8. Recette : parcours complet automatique, test de Kinder, mesure des lectures du suivi en direct.
+Détail, points à trancher à chaque cadrage et suivi : PLAN_STOCK_COURSES.md.
 Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). Monetico : chantier à part, en dernier.
 
 ## 9. Références techniques (01/10/2026)
@@ -383,4 +384,4 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
 - Déployer les règles (seulement après leurs tests) : `firebase deploy --only firestore:rules --project le-comptoir-60ba8`.
 - Pièges : après `ouvrirCaisse` dans un test, toujours `await db.waitForPendingWrites()` ; les fichiers `lib/*.dart` sont en CRLF ;
   deux fichiers de test qui partagent l'émulateur ne réutilisent pas la même adresse e-mail.
-- Limites de Kinder : plus de plafond de modules (décision 41, 23 utilisés), 5 fichiers .md max (4), aucune dépendance sans son accord.
+- Limites de Kinder : plus de plafond de modules (décision 41, 23 utilisés), 5 fichiers .md max (5 : limite atteinte avec PLAN_STOCK_COURSES.md), aucune dépendance sans son accord.

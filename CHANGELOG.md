@@ -1,5 +1,12 @@
 # CHANGELOG — Le Comptoir
 
+## 27/10/2026 (suite) — Plan détaillé du chantier « Stock et courses »
+- Nouveau `PLAN_STOCK_COURSES.md` (5e et dernier fichier de documentation autorisé) : modèle de données cible, les 8 étapes
+  (ce que Kinder voit, stratégie, fichiers, ce qu'on ne fait pas, points à trancher au cadrage), registre du cahier des
+  charges (retenu / écarté / reporté), risques, suivi.
+- Les 10 logos fournis par Kinder sont conservés, réduits à 512 px, dans `audit_front/logos_menu_modele/` (intégration à l'étape 2).
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 27/10/2026 — Figeage du chantier « Stock et courses »
 - Cahier des charges d'une IA de l'association comparé à l'application : l'existant couvre la caisse, le stock par gymnase,
   le bilan et le fonctionnement hors réseau ; manquent états du stock, entrées, courses, recettes, export.
