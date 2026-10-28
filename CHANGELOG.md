@@ -4,7 +4,7 @@
 - Création d'un menu : « Partir du modèle », « Copier un menu existant » ou menu vide. « Partir du menu type » devient « Partir du modèle » ; nouvelle action de copie (types, recettes, images et stocks repris).
 - Modèle (`assets/menu_type.json`) : 13 produits (croque-monsieur et croque chèvre composés, tartiflette, café et soda au litre, thé, tarte, flan, barre, fruit, salade, crêpe, bonbons offerts) avec types, recettes, ratios et consommations de départ (estimations tirées de la liste de courses de l'an dernier, décision 43). Prix = valeurs de départ. Le gâteau salé est retiré.
 - 10 logos de Kinder dans `assets/logos/` (1,9 Mo), affichés à la place des icônes du système : photo, puis logo, puis icône. Nouvelle clé d'icône `tarte` (flan = `gateau_sucre`).
-- Règles d'accès : clé `tarte` ajoutée à la liste des icônes ; **pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Règles d'accès : clé `tarte` ajoutée à la liste des icônes ; déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
 - Tests : 166 de logique et d'écrans, 147 de règles (dont le modèle de 13 produits et un événement à 3 gymnases en un lot), 19 parcours Android (nouveau : `copie_menu_test`). Le parcours « recette » utilise désormais un menu de test figé (l'ancien menu type) pour que ses chiffres ne dépendent pas du modèle.
 - Aucune dépendance ajoutée.
 
