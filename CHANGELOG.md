@@ -4,7 +4,7 @@
 - Bouton « Valider les courses » : écran des quantités réellement achetées (pré-remplies, en kg ou L quand c'est lisible), de ce que cela ajoute au stock de chaque gymnase (« limité par … » quand un ingrédient manque) et du coût total (obligatoire, 0 si inconnu).
 - « Confirmer » ajoute tout au stock, démarre le suivi des produits qui n'en avaient pas, fait monter le total de référence, enregistre achats, rendements et coût, et fige la liste (bandeau « Courses validées le … »). Tout dans un seul lot : tout est ajouté ou rien. Une liste validée ne se rejoue pas. La validation demande le réseau.
 - Calcul inverse en logique pure (décision 38) : ingrédient limitant, ingrédients partagés répartis proportionnellement, litres vers verres, arrondi vers le bas avec répartition au plus grand reste entre gymnases.
-- Règles d'accès : la liste passe de « preparation » à « validee » (achats, rendements, coût, date), puis ne bouge plus. **Pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Règles d'accès : la liste passe de « preparation » à « validee » (achats, rendements, coût, date), puis ne bouge plus. Déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
 - Tests : 195 de logique et d'écrans (calculs refaits à la main), 166 de règles, 24 parcours Android (validation dans `courses_test`).
 - Aucune dépendance ajoutée.
 
