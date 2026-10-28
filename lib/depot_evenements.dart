@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'depot_caisses.dart';
+import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -47,6 +48,7 @@ class DepotEvenements {
       forcee: data['forcee'] == true,
       nbCaissesOuvertes: (data['nbCaissesOuvertes'] as int?) ?? 0,
       nbGymnases: (data['nbGymnases'] as int?) ?? 1,
+      nbJours: (data['nbJours'] as int?) ?? 2,
     );
   }
 
@@ -70,7 +72,9 @@ class DepotEvenements {
   Stream<List<Gymnase>> suivreGymnases(String id) =>
       _evenements.doc(id).collection('gymnases').snapshots().map((s) {
         final liste = [
-          for (final d in s.docs) Gymnase(d.id, d.data()['nom'] as String),
+          for (final d in s.docs)
+            Gymnase(d.id, d.data()['nom'] as String,
+                (d.data()['personnes'] as int?) ?? 0),
         ];
         liste.sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
         return liste;
@@ -400,6 +404,30 @@ class DepotEvenements {
     }
     await lot.commit();
   }
+
+  /// Réglages des courses : durée de l'événement et personnes attendues par gymnase.
+  Future<void> definirJours(String evenementId, int jours) =>
+      _evenements.doc(evenementId).update({'nbJours': jours});
+
+  Future<void> definirPersonnes(
+          String evenementId, String gymnaseId, int personnes) =>
+      _gymnase(evenementId, gymnaseId).update({'personnes': personnes});
+
+  /// La liste de courses de l'événement (une seule, document « liste »), null
+  /// tant qu'elle n'a pas été enregistrée.
+  Stream<ListeCourses?> suivreListeCourses(String evenementId) => _evenements
+      .doc(evenementId)
+      .collection('courses')
+      .doc('liste')
+      .snapshots()
+      .map((d) => d.exists ? ListeCourses.depuis(d.data()!) : null);
+
+  Future<void> enregistrerListeCourses(
+          String evenementId, ListeCourses liste) =>
+      _evenements.doc(evenementId).collection('courses').doc('liste').set({
+        ...liste.versMap(),
+        'majLe': FieldValue.serverTimestamp(),
+      });
 
   Future<void> renommerGymnase(
           String evenementId, String gymnaseId, String nom) =>

@@ -21,6 +21,9 @@ rules_version = '2';
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
 //         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
 //                                                 (absent = pas de suivi de ce produit dans ce gymnase)
+//       courses/liste                             statut ('preparation'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
+//                                                 restes[] {cle, quantite}, majLe — la liste de courses de l'événement (gestion de tous les gymnases)
+//                                                 evenements/{e}.nbJours (1 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
@@ -263,6 +266,15 @@ service cloud.firestore {
           && request.resource.data.date.size() == 10
           && modesValides(request.resource.data.modes);
 
+        // Durée de l'événement (réglage des courses) : le responsable, ou un gestionnaire
+        // rattaché à tous les gymnases.
+        allow update: if gereTout(a, e)
+          && resource.data.statut == 'en_cours'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbJours'])
+          && request.resource.data.nbJours is int
+          && request.resource.data.nbJours >= 1
+          && request.resource.data.nbJours <= 30;
+
         // Un gymnase de plus : le compteur monte de 1 (dans le lot qui crée le gymnase).
         allow update: if estGestion(a)
           && resource.data.statut == 'en_cours'
@@ -333,6 +345,14 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom'])
             && texte(request.resource.data.nom, 40);
+
+          // Personnes attendues (réglage des courses), par ceux qui lancent les courses.
+          allow update: if gereTout(a, e)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['personnes'])
+            && request.resource.data.personnes is int
+            && request.resource.data.personnes >= 0
+            && request.resource.data.personnes <= 1000;
 
           match /stocks/{p} {
             allow read: if estGestion(a)
@@ -405,6 +425,27 @@ service cloud.firestore {
                   && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
                   && (gereGymnase(a, e, g) || caisseOuverteDans(a, e, g)));
           }
+        }
+
+        // La liste de courses : le responsable, ou un gestionnaire rattaché à tous les
+        // gymnases. Un seul document « liste » ; le contenu est celui de l'application
+        // (tailles bornées, rien d'autre que ces champs).
+        match /courses/{c} {
+          allow read: if gereTout(a, e);
+          allow delete: if suppressionEnCours(a);
+          allow create, update: if gereTout(a, e)
+            && c == 'liste'
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+            && request.resource.data.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+            && request.resource.data.statut == 'preparation'
+            && request.resource.data.lignes is list
+            && request.resource.data.lignes.size() <= 400
+            && request.resource.data.libres is list
+            && request.resource.data.libres.size() <= 60
+            && request.resource.data.restes is list
+            && request.resource.data.restes.size() <= 100
+            && request.resource.data.majLe is timestamp;
         }
 
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par

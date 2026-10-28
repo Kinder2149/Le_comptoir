@@ -116,6 +116,15 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Les couleurs sont lisibles en plein jour sur le téléphone.
 - [ ] Hors réseau : une vente de plusieurs produits puis le retour du réseau — la vente et les baisses de stock arrivent ensemble.
 
+**18. Courses : préparation (nouveau, chantier Stock et courses, étape 5)**
+- [ ] Événement → « Courses » (responsable, ou gestionnaire de tous les gymnases ; invisible pour un bénévole).
+- [ ] Régler les personnes de chaque gymnase puis « Recalculer » : croque 80 et 60 personnes, 2 jours → 320 et 240.
+- [ ] « À acheter » : pain de mie, jambon, gruyère (en kg à partir de 1 000 g), café en litres ; modifier une quantité ou cocher un autre produit recalcule tout.
+- [ ] « Il reste » réduit l'achat ; une ligne libre (« Liquide vaisselle × 2 ») se garde et se retire.
+- [ ] « Suggéré : stock bas » apparaît sur un produit dont le stock est bas à ce gymnase.
+- [ ] Quitter puis rouvrir : tout est retrouvé. Les chiffres sont plausibles par rapport à la liste de courses de l'an dernier (à corriger dans les consommations du menu si besoin).
+- [ ] Hors réseau : modifier la liste, remettre le réseau : « Enregistré ».
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

@@ -8,6 +8,7 @@ import 'depot_caisses.dart';
 import 'depot_evenements.dart';
 import 'depot_menus.dart';
 import 'ecran_bilan.dart';
+import 'ecran_courses.dart';
 import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
@@ -536,6 +537,25 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                     ),
                   ),
                   child: const Text('Gymnases et stocks'),
+                ),
+              )
+            : const SizedBox.shrink(),
+        // Les courses : responsable, ou gestionnaire rattaché à tous les gymnases.
+        ev.enCours && portee.toutVoir
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: OutlinedButton(
+                  key: const Key('voir_courses'),
+                  style: TypeAction.gerer.contour,
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => EcranCourses(
+                        depot: widget.depot,
+                        evenementId: ev.id,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Courses'),
                 ),
               )
             : const SizedBox.shrink(),

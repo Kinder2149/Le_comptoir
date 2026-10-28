@@ -47,6 +47,7 @@ class Evenement {
     this.forcee = false,
     this.nbCaissesOuvertes = 0,
     this.nbGymnases = 1,
+    this.nbJours = 2,
   });
 
   final String id;
@@ -67,6 +68,9 @@ class Evenement {
 
   /// Nombre de gymnases (les événements plus anciens n'en ont qu'un).
   final int nbGymnases;
+
+  /// Durée de l'événement en jours (réglage des courses).
+  final int nbJours;
 
   bool get enCours => statut == 'en_cours';
 }

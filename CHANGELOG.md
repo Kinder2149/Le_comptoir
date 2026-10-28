@@ -1,5 +1,14 @@
 # CHANGELOG — Le Comptoir
 
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 5 : courses, préparation
+- Nouveau bouton « Courses » sur l'événement (responsable, ou gestionnaire rattaché à tous les gymnases). Réglages : nombre de jours (2 par défaut) et personnes attendues par gymnase.
+- Quantités de produits finaux pré-remplies par gymnase (personnes × jours × consommation), modifiables, produits cochables ; « Suggéré : stock bas » pour les produits à réapprovisionner.
+- Liste « À acheter » calculée : ingrédients additionnés d'une recette à l'autre (g/kg et cl/L convertis, arrondi à l'unité supérieure), litres pour les produits au litre, produits à la part ou à l'unité tels quels ; champ « Il reste » par achat ; lignes libres (matériel d'organisation) qui n'entrent pas dans le stock.
+- Tout s'enregistre automatiquement (document `courses/liste`) et se retrouve en rouvrant l'écran.
+- Règles d'accès : `nbJours` (1 à 30) sur l'événement, `personnes` (0 à 1000) sur le gymnase, document `courses/liste` borné, tout réservé au responsable et au gestionnaire de tous les gymnases. **Pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Tests : 187 de logique et d'écrans (nouveau : `courses_test`, calculs faits à la main), 162 de règles (nouveau : `courses.test.mjs`), 23 parcours Android (nouveau : `courses_test`).
+- Aucune dépendance ajoutée.
+
 ## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 4 : rupture et stock bas en caisse
 - Caisse : un produit épuisé passe en rouge clair (« Épuisé »), un produit à 10 % ou moins du dernier total de stock en orange clair (« Stock bas : n »), un produit sans quantité signalé « vide » en rouge clair (« Vide »). La vente n'est jamais bloquée. Visible par la gestion et par le bénévole.
 - Suivi en direct de la gestion : signal sous le produit ; en vue commune, les gymnases concernés ; en vue d'un gymnase, le signal seul.
