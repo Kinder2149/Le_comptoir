@@ -9,6 +9,7 @@ import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'mesure.dart';
 import 'ticket.dart';
 
 /// Résultat de la vérification d'un QR code de gymnase.
@@ -57,20 +58,20 @@ class DepotEvenements {
   Stream<List<Evenement>> suivreEvenements({required bool enCoursSeulement}) {
     Query<Map<String, dynamic>> q = _evenements;
     if (enCoursSeulement) q = q.where('statut', isEqualTo: 'en_cours');
-    return q.snapshots().map((s) {
+    return q.snapshots().compte('evenements').map((s) {
       return trierEvenements([for (final d in s.docs) _depuis(d)]);
     });
   }
 
   Stream<Evenement?> suivreEvenement(String id) => _evenements
       .doc(id)
-      .snapshots()
+      .snapshots().compte('evenement')
       .map((d) => d.exists ? _depuis(d) : null);
 
   /// Gymnases de l'événement, par ordre alphabétique. Vide = événement créé
   /// avant les gymnases (ancien format).
   Stream<List<Gymnase>> suivreGymnases(String id) =>
-      _evenements.doc(id).collection('gymnases').snapshots().map((s) {
+      _evenements.doc(id).collection('gymnases').snapshots().compte('gymnases').map((s) {
         final liste = [
           for (final d in s.docs)
             Gymnase(d.id, d.data()['nom'] as String,
@@ -85,7 +86,12 @@ class DepotEvenements {
   /// additionnés ; sans rien : tous les gymnases additionnés.
   Stream<Map<String, int>> suivreStocks(String id,
       {String? gymnaseId, Set<String>? gymnases}) {
-    if (gymnaseId != null) return _stocksDe(id, gymnaseId);
+    if (gymnaseId != null) {
+      return _detailStocks(id, {gymnaseId}).map((d) => {
+            for (final e in (d[gymnaseId]?.stocks ?? const {}).entries)
+              e.key: e.value.quantite,
+          });
+    }
     return suivreStocksParGymnase(id, gymnases: gymnases).map((parGymnase) {
       final total = <String, int>{};
       for (final m in parGymnase.values) {
@@ -97,86 +103,57 @@ class DepotEvenements {
     });
   }
 
-  Stream<Map<String, int>> _stocksDe(String id, String gymnaseId) => _evenements
-      .doc(id)
-      .collection('gymnases')
-      .doc(gymnaseId)
-      .collection('stocks')
-      .snapshots()
-      .map((s) => {
-            for (final d in s.docs) d.id: d.data()['quantite'] as int,
-          });
-
   /// Le stock de chaque gymnase (gymnase -> produit -> quantité), pour afficher
   /// une vue distincte ou commune. [gymnases] limite aux gymnases voulus.
   Stream<Map<String, Map<String, int>>> suivreStocksParGymnase(String id,
-      {Set<String>? gymnases}) {
-    late final StreamController<Map<String, Map<String, int>>> sortie;
-    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? abonnementGymnases;
-    final abonnements = <String, StreamSubscription<Map<String, int>>>{};
-    final parGymnase = <String, Map<String, int>>{};
-
-    // Rien n'est émis tant que chaque gymnase n'a pas rendu son stock : pas de
-    // total partiel.
-    void emettre() {
-      if (sortie.isClosed || !abonnements.keys.every(parGymnase.containsKey)) {
-        return;
-      }
-      sortie.add({
-        for (final e in parGymnase.entries) e.key: Map.of(e.value),
-      });
-    }
-
-    sortie = StreamController<Map<String, Map<String, int>>>.broadcast(
-      onListen: () {
-        abonnementGymnases =
-            _evenements.doc(id).collection('gymnases').snapshots().listen((s) {
-          final presents = {
-            for (final d in s.docs)
-              if (gymnases == null || gymnases.contains(d.id)) d.id,
-          };
-          for (final g in abonnements.keys.toList()) {
-            if (!presents.contains(g)) {
-              abonnements.remove(g)?.cancel();
-              parGymnase.remove(g);
-            }
-          }
-          for (final g in presents) {
-            abonnements.putIfAbsent(
-              g,
-              () => _stocksDe(id, g).listen((m) {
-                parGymnase[g] = m;
-                emettre();
-              }, onError: sortie.addError),
-            );
-          }
-          emettre();
-        }, onError: sortie.addError);
-      },
-      onCancel: () async {
-        await abonnementGymnases?.cancel();
-        abonnementGymnases = null;
-        for (final a in abonnements.values) {
-          await a.cancel();
-        }
-        abonnements.clear();
-        parGymnase.clear();
-      },
-    );
-    return sortie.stream;
-  }
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final e in g.value.stocks.entries) e.key: e.value.quantite,
+              },
+          });
 
   /// État du stock de chaque produit, gymnase par gymnase (gymnase -> produit ->
   /// état) : rupture, stock bas, vide. [gymnases] limite aux gymnases voulus.
   Stream<Map<String, Map<String, EtatStock>>> suivreEtats(String id,
-      {Set<String>? gymnases}) {
-    late final StreamController<Map<String, Map<String, EtatStock>>> sortie;
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final p in {...g.value.stocks.keys, ...g.value.vides})
+                  p: etatStock(
+                    quantite: g.value.stocks[p]?.quantite,
+                    reference: g.value.stocks[p]?.reference,
+                    vide: g.value.vides.contains(p),
+                  ),
+              },
+          });
+
+  // Une seule écoute des stocks (et des signaux « vide ») par événement et par
+  // ensemble de gymnases, partagée entre les quantités, les états et les produits :
+  // chaque changement de stock n'est lu qu'une fois par téléphone (quota de lectures,
+  // étape 8). Elle s'arrête quand plus personne ne l'écoute.
+  final Map<String, _Partage<Map<String, _StocksGymnase>>> _partages = {};
+
+  Stream<Map<String, _StocksGymnase>> _detailStocks(
+      String id, Set<String>? gymnases) {
+    final cle = '$id|${gymnases == null ? '*' : (gymnases.toList()..sort()).join(',')}';
+    return _partages
+        .putIfAbsent(cle, () => _Partage(() => _lireStocks(id, gymnases)))
+        .flux;
+  }
+
+  /// Rien n'est émis tant que chaque gymnase n'a pas rendu ses stocks et ses
+  /// signaux : pas de total partiel.
+  Stream<Map<String, _StocksGymnase>> _lireStocks(
+      String id, Set<String>? gymnases) {
+    late final StreamController<Map<String, _StocksGymnase>> sortie;
     StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? abonnementGymnases;
     final abonnements = <String, List<StreamSubscription<dynamic>>>{};
     final stocks = <String, Map<String, ({int quantite, int? reference})>>{};
     final vides = <String, Set<String>>{};
 
-    // Rien n'est émis tant que chaque gymnase n'a pas rendu stocks et signaux.
     void emettre() {
       if (sortie.isClosed ||
           !abonnements.keys
@@ -185,21 +162,14 @@ class DepotEvenements {
       }
       sortie.add({
         for (final g in abonnements.keys)
-          g: {
-            for (final p in {...stocks[g]!.keys, ...vides[g]!})
-              p: etatStock(
-                quantite: stocks[g]![p]?.quantite,
-                reference: stocks[g]![p]?.reference,
-                vide: vides[g]!.contains(p),
-              ),
-          },
+          g: _StocksGymnase(Map.of(stocks[g]!), Set.of(vides[g]!)),
       });
     }
 
-    sortie = StreamController<Map<String, Map<String, EtatStock>>>.broadcast(
+    sortie = StreamController<Map<String, _StocksGymnase>>(
       onListen: () {
         abonnementGymnases =
-            _evenements.doc(id).collection('gymnases').snapshots().listen((s) {
+            _evenements.doc(id).collection('gymnases').snapshots().compte('gymnases').listen((s) {
           final presents = {
             for (final d in s.docs)
               if (gymnases == null || gymnases.contains(d.id)) d.id,
@@ -217,7 +187,7 @@ class DepotEvenements {
             abonnements.putIfAbsent(g, () {
               final gymnase = _evenements.doc(id).collection('gymnases').doc(g);
               return [
-                gymnase.collection('stocks').snapshots().listen((st) {
+                gymnase.collection('stocks').snapshots().compte('stocks').listen((st) {
                   stocks[g] = {
                     for (final d in st.docs)
                       d.id: (
@@ -227,7 +197,7 @@ class DepotEvenements {
                   };
                   emettre();
                 }, onError: sortie.addError),
-                gymnase.collection('vides').snapshots().listen((v) {
+                gymnase.collection('vides').snapshots().compte('vides').listen((v) {
                   vides[g] = {for (final d in v.docs) d.id};
                   emettre();
                 }, onError: sortie.addError),
@@ -287,7 +257,7 @@ class DepotEvenements {
     sortie = StreamController<List<ProduitEvenement>>.broadcast(
       onListen: () {
         abonnementProduits =
-            _evenements.doc(id).collection('produits').snapshots().listen((s) {
+            _evenements.doc(id).collection('produits').snapshots().compte('produits').listen((s) {
           produits = s;
           emettre();
         }, onError: sortie.addError);
@@ -419,7 +389,7 @@ class DepotEvenements {
       .doc(evenementId)
       .collection('courses')
       .doc('liste')
-      .snapshots()
+      .snapshots().compte('courses')
       .map((d) => d.exists ? ListeCourses.depuis(d.data()!) : null);
 
   Future<void> enregistrerListeCourses(
@@ -528,7 +498,7 @@ class DepotEvenements {
   Stream<Set<String>> suivreVides(String evenementId, String gymnaseId) =>
       _gymnase(evenementId, gymnaseId)
           .collection('vides')
-          .snapshots()
+          .snapshots().compte('vides')
           .map((s) => {for (final d in s.docs) d.id});
 
   /// Signale (ou retire le signal) qu'un produit est vide dans ce gymnase.
@@ -558,14 +528,14 @@ class DepotEvenements {
 
   /// Gymnases auxquels ce gestionnaire est rattaché (vide = aucun).
   Stream<Set<String>> suivreMesGymnases(String evenementId, String uid) =>
-      _rattachement(evenementId, uid).snapshots().map(_gymnasesDe);
+      _rattachement(evenementId, uid).snapshots().compte('rattachement').map(_gymnasesDe);
 
   /// Tous les rattachements, par gestionnaire (réservé au responsable).
   Stream<Map<String, Set<String>>> suivreRattachements(String evenementId) =>
       _evenements
           .doc(evenementId)
           .collection('rattachements')
-          .snapshots()
+          .snapshots().compte('rattachements')
           .map((s) => {for (final d in s.docs) d.id: _gymnasesDe(d)});
 
   /// Fixe les gymnases d'un gestionnaire (responsable seul).
@@ -624,4 +594,53 @@ class DepotEvenements {
       _evenements
           .doc(id)
           .update({'nom': nom.trim(), 'date': date, 'modes': modes});
+}
+
+/// Stocks d'un gymnase : quantité et total de référence par produit, et produits
+/// signalés « vides ».
+class _StocksGymnase {
+  const _StocksGymnase(this.stocks, this.vides);
+
+  final Map<String, ({int quantite, int? reference})> stocks;
+  final Set<String> vides;
+}
+
+/// Partage une même écoute entre plusieurs abonnés : la source démarre au premier,
+/// s'arrête au départ du dernier, et chaque nouvel abonné reçoit tout de suite le
+/// dernier état connu.
+class _Partage<T> {
+  _Partage(this._demarrer);
+
+  final Stream<T> Function() _demarrer;
+  final List<MultiStreamController<T>> _abonnes = [];
+  StreamSubscription<T>? _source;
+  T? _dernier;
+  bool _aUnDernier = false;
+
+  Stream<T> get flux => Stream<T>.multi((c) {
+        _abonnes.add(c);
+        if (_aUnDernier) c.add(_dernier as T);
+        if (_source == null) {
+          _source = _demarrer().listen((v) {
+            _dernier = v;
+            _aUnDernier = true;
+            for (final a in List.of(_abonnes)) {
+              a.add(v);
+            }
+          }, onError: (Object e, StackTrace st) {
+            for (final a in List.of(_abonnes)) {
+              a.addError(e, st);
+            }
+          });
+        }
+        c.onCancel = () {
+          _abonnes.remove(c);
+          if (_abonnes.isEmpty) {
+            _source?.cancel();
+            _source = null;
+            _dernier = null;
+            _aUnDernier = false;
+          }
+        };
+      }, isBroadcast: true);
 }

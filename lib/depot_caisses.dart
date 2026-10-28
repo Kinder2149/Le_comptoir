@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'mesure.dart';
 import 'ticket.dart';
 
 /// Une ligne d'une vente : le produit tel qu'il était vendu (nom et prix figés).
@@ -565,7 +566,7 @@ class DepotCaisses {
   /// Identifiant de la caisse actuellement ouverte de ce membre sur l'événement
   /// (null = aucune), d'après son pointeur.
   Stream<String?> suivreCaisseOuverte(String uid) => _pointeur(uid)
-      .snapshots()
+      .snapshots().compte('pointeur')
       .map((d) => d.data()?['caisseId'] as String?);
 
   Caisse? _caisseDe(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -602,7 +603,7 @@ class DepotCaisses {
   }
 
   Stream<Caisse?> suivreCaisse(String caisseId) =>
-      _caisse(caisseId).snapshots().map(_caisseDe);
+      _caisse(caisseId).snapshots().compte('caisse').map(_caisseDe);
 
   void _trier(List<Caisse> liste) => liste.sort(
       (a, b) => a.prenom.toLowerCase().compareTo(b.prenom.toLowerCase()));
@@ -615,7 +616,7 @@ class DepotCaisses {
     List<Caisse> lire(QuerySnapshot<Map<String, dynamic>> s) =>
         [for (final d in s.docs) ?_caisseDe(d)];
     if (gymnaseIds == null) {
-      return _evenement.collection('caisses').snapshots().map((s) {
+      return _evenement.collection('caisses').snapshots().compte('caisses').map((s) {
         final liste = lire(s);
         _trier(liste);
         return liste;
@@ -638,7 +639,7 @@ class DepotCaisses {
           abonnements.add(_evenement
               .collection('caisses')
               .where('gymnaseId', isEqualTo: g)
-              .snapshots()
+              .snapshots().compte('caisses')
               .listen((s) {
             parGymnase[g] = lire(s);
             emettre();
@@ -762,7 +763,7 @@ class DepotCaisses {
 
   Stream<List<Vente>> suivreVentes(String caisseId) => _caisse(caisseId)
       .collection('ventes')
-      .snapshots(includeMetadataChanges: true)
+      .snapshots(includeMetadataChanges: true).compte('ventes')
       .map((s) {
         final liste = [for (final d in s.docs) _venteDe(d)];
         liste.sort((a, b) => b.creeLe.compareTo(a.creeLe));

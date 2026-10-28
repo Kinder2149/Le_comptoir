@@ -1,5 +1,12 @@
 # CHANGELOG — Le Comptoir
 
+## 28/10/2026 (nuit, fin) — Chantier « Stock et courses », étape 8 : recette
+- Parcours automatique complet de bout en bout (menu du modèle, 2 gymnases, courses pré-remplies et validées, ventes, stock bas puis rupture, « vide », bilan avec coût et résultat, CSV relu), chiffres calculés à la main.
+- Lectures Firestore mesurées (compteur `lib/mesure.dart`, inactif en production) et réduites : les stocks sont écoutés une seule fois par événement au lieu de 2 à 3. Par vente en direct : gestion 7,12 → 2,93 lectures, caisse 6,50 → 3,50. Projection : 3 gymnases ≈ 39 % du quota de 50 000 par jour ; 8 gymnases ≈ 79 % avec deux appareils de gestion (avant : 137 %). Détail en section 10 de `PLAN_STOCK_COURSES.md`.
+- Version 1.1.0 (numéro 2) ; APK de recette reconstruit dans `recette/` (70 Mo). Il est maintenant signé avec la clé de publication du projet (plus la clé d'essai) : l'ancienne version doit être désinstallée avant l'installation.
+- Texte de vérification pour une autre IA (section 11 de `PLAN_STOCK_COURSES.md`) ; `RECETTE.md` remis en ordre.
+- Tests : 210 de logique et d'écrans, 166 de règles, 26 parcours Android (nouveaux : `chantier_complet_test`, `lectures_test`).
+
 ## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 7 : bilan et export CSV
 - Bilan, vue commune : « Coût des courses » et « Résultat » (ventes moins coût) quand les courses sont validées ; « Courses non validées » sinon. Vue d'un gymnase : la mention que le coût concerne tout l'événement. Le coût n'apparaît que pour le responsable et le gestionnaire de tous les gymnases.
 - Bouton « Exporter (CSV) » : un fichier `bilan-<événement>-<date>.csv` pour la vue affichée (totaux, modes, produits et stock restant, caisses, jours, heures, ventes annulées), prêt pour Excel (« ; », virgule décimale, accents lisibles), remis à la feuille de partage d'Android.

@@ -1,20 +1,25 @@
 # RECETTE — Le Comptoir (votre test unique)
 
 Tout le reste a été testé automatiquement (voir CHANGELOG.md). Cette fiche ne liste que
-ce que je **n'ai pas pu tester moi-même**. Comptez 45 à 60 minutes avec **deux téléphones**
-Android (un seul suffit pour les points 1 à 4).
+ce que je **n'ai pas pu tester moi-même**. Comptez 1 h 30 avec **deux téléphones** Android
+(un seul suffit pour les points 1 à 4 et 14 à 20).
+
+**Ordre conseillé** : installer → points 1 à 8 (le socle : connexion, caisse, coupure réseau, rôles,
+clôtures, bilan) → points 9 à 13 (gymnases, QR, serveur réel) → points 14 à 20 (le chantier Stock et courses,
+dans l'ordre : produits et recettes, modèle et logos, stock, rupture, courses, validation, bilan et CSV).
 
 ## Avant de commencer (important)
 - **Supprimez vos anciennes associations d'essai** (celles créées avant les gymnases) :
   Paramètres → « Supprimer l'association ». Un événement de l'ancien format affiche
   « Événement créé avant la mise à jour : recréez-le » et ne peut plus ouvrir de caisse.
-- L'application demande **Android 7 ou plus récent** et pèse 66 Mo (lecture des QR codes).
+- **Désinstallez d'abord toute version précédente** (APK ou installation Play) : la signature a changé.
+- L'application demande **Android 7 ou plus récent** et pèse 70 Mo (lecture des QR codes).
 
 ## Installer
 1. Copiez `recette/le-comptoir-recette.apk` sur le téléphone (câble, e-mail ou Drive).
 2. Ouvrez-le ; Android demande d'autoriser l'installation depuis cette source : acceptez.
-3. L'application s'appelle **Le Comptoir**. Elle est signée avec la clé d'essai de ce
-   poste : bonne pour tester, **pas publiable sur le Play Store**.
+3. L'application s'appelle **Le Comptoir** (version 1.1.0, numéro 2). Elle est signée avec la clé de
+   publication du projet, comme celle du Play Store.
 
 ⚠ Elle travaille sur le **vrai projet Firebase** : ce que vous créez est réel. Utilisez une
 association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
