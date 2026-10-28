@@ -204,7 +204,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 ## 8. Suivi (à mettre à jour à la fin de chaque étape)
 | Étape | État | Date | Critère validé |
 |---|---|---|---|
-| 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles) ; captures dans `audit_front/captures_stock_courses/` ; règles NON déployées sur le vrai projet |
+| 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles) ; captures dans `audit_front/captures_stock_courses/` ; règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder) |
 | 2 Modèle générique et logos | à cadrer | | |
 | 3 Stock par rôle | à cadrer | | |
 | 4 Caisse : rupture et stock bas | à cadrer | | |
