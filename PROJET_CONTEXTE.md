@@ -370,7 +370,7 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
   puis demande d'accès à la production.
   (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
   (4) paiement carte avec Monetico : exploration en cours, voir section 7 (18/10/2026).
-- **Chantier « Stock et courses » (décisions 33 à 42, PLAN_STOCK_COURSES.md)** : étape 1 (types de produit et recettes) implémentée et testée le 28/10/2026 sur la branche `claude/comptoir-app-refinement-cnuyb4` (analyse sans erreur, 161 tests, 145 tests de règles). Règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder). Reste pour l'étape 1 : capture de Kinder et vérification par une autre IA. Prochaine : étape 2 (modèle générique et logos, à cadrer).
+- **Chantier « Stock et courses » (décisions 33 à 43, PLAN_STOCK_COURSES.md)** : étape 1 (types de produit et recettes) implémentée et testée le 28/10/2026 sur la branche `claude/comptoir-app-refinement-cnuyb4` (analyse sans erreur, 162 tests, 146 tests de règles, 18 parcours Android). Règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder). Reste pour l'étape 1 : vérification par une autre IA et capture de Kinder (le test sur téléphones se fera à la fin des étapes). Prochaine : étape 2 (modèle générique et logos, à cadrer).
 - Piège des règles : une requête évalue 1000 expressions au plus ; ne pas ajouter de contrôles lourds par ingrédient sans mesurer.
 - Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
 
