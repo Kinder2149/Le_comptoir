@@ -834,27 +834,24 @@ class DepotCaisses {
     final gymnaseId = RefCaisse.lire(caisseId).gymnaseId;
     final total =
         lignes.fold<int>(0, (s, l) => s + l.prixCentimes * l.quantite);
-    _enFile(
-      _caisse(caisseId).collection('ventes').doc().set({
-        'lignes': [for (final l in lignes) l.versDonnees()],
-        'totalCentimes': total,
-        'mode': mode,
-        'creeLe': Timestamp.now(),
-        'gymnaseId': gymnaseId,
-        'corrigeDe': ?corrigeDe,
-      }),
-      onErreur,
-    );
-    // Stock : une écriture par produit suivi (augmentation relative, donc
-    // plusieurs caisses hors réseau se cumulent correctement).
+    // La vente et la baisse des stocks partent dans UN MÊME lot : l'une n'arrive
+    // jamais sans les autres, même après une coupure du réseau. Les baisses sont
+    // relatives, donc plusieurs caisses hors réseau se cumulent correctement.
+    final lot = _db.batch();
+    lot.set(_caisse(caisseId).collection('ventes').doc(), {
+      'lignes': [for (final l in lignes) l.versDonnees()],
+      'totalCentimes': total,
+      'mode': mode,
+      'creeLe': Timestamp.now(),
+      'gymnaseId': gymnaseId,
+      'corrigeDe': ?corrigeDe,
+    });
     for (final l in lignes) {
       if (stocks[l.produitId] == null) continue;
-      _enFile(
-        _stock(gymnaseId, l.produitId)
-            .update({'quantite': FieldValue.increment(-l.quantite)}),
-        onErreur,
-      );
+      lot.update(_stock(gymnaseId, l.produitId),
+          {'quantite': FieldValue.increment(-l.quantite)});
     }
+    _enFile(lot.commit(), onErreur);
   }
 
   /// Annule une vente (la sienne, ou celle d'une autre caisse pour la
@@ -870,23 +867,20 @@ class DepotCaisses {
     void Function(Object erreur)? onErreur,
   }) {
     final gymnaseId = RefCaisse.lire(caisseId).gymnaseId;
-    _enFile(
-      _caisse(caisseId).collection('ventes').doc(vente.id).update({
-        'annulee': true,
-        'annuleePar': parUid,
-        'annuleeParPrenom': parPrenom,
-        'annuleeLe': Timestamp.now(),
-      }),
-      onErreur,
-    );
+    // Marque d'annulation et retour au stock : un seul lot, comme la vente.
+    final lot = _db.batch();
+    lot.update(_caisse(caisseId).collection('ventes').doc(vente.id), {
+      'annulee': true,
+      'annuleePar': parUid,
+      'annuleeParPrenom': parPrenom,
+      'annuleeLe': Timestamp.now(),
+    });
     for (final l in vente.lignes) {
       if (stocks[l.produitId] == null) continue;
-      _enFile(
-        _stock(gymnaseId, l.produitId)
-            .update({'quantite': FieldValue.increment(l.quantite)}),
-        onErreur,
-      );
+      lot.update(_stock(gymnaseId, l.produitId),
+          {'quantite': FieldValue.increment(l.quantite)});
     }
+    _enFile(lot.commit(), onErreur);
   }
 
   void _enFile(Future<void> ecriture, [void Function(Object)? onErreur]) {

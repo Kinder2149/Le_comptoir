@@ -10,6 +10,29 @@ import 'gymnase.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
+/// Fond d'un produit selon l'état de son stock (null = fond habituel).
+Color? fondEtat(EtatStock e) => switch (e) {
+  EtatStock.epuise || EtatStock.vide => Palette.briqueDoux,
+  EtatStock.bas => Palette.ocreDoux,
+  _ => null,
+};
+
+/// Couleur du texte d'état (null = couleur habituelle).
+Color? couleurEtat(EtatStock e) => switch (e) {
+  EtatStock.epuise || EtatStock.vide => Palette.briqueFonce,
+  EtatStock.bas => Palette.ocreFonce,
+  _ => null,
+};
+
+/// Libellé d'état, avec la quantité quand il y en a une.
+String libelleEtat(EtatStock e, int? quantite) => switch (e) {
+  EtatStock.epuise => 'Épuisé',
+  EtatStock.vide => 'Vide',
+  EtatStock.bas => 'Stock bas : $quantite',
+  EtatStock.normal => 'Stock : $quantite',
+  EtatStock.aucun => '',
+};
+
 /// Illustration de chaque icône modèle (mêmes clés que [cleIcones]).
 const iconesModeles = <String, IconData>{
   'croque': Icons.lunch_dining,
@@ -166,6 +189,8 @@ class _EtatCaisse extends State<EcranCaisse> {
   });
 
   void _encaisser(String mode) {
+    // Un second appui avant le redessin ne doit pas enregistrer une vente vide.
+    if (_ticket.estVide) return;
     widget.onEncaisser?.call(_ticket, mode, _corrigeDe);
     _vider();
   }
@@ -249,6 +274,7 @@ class _EtatCaisse extends State<EcranCaisse> {
               children: [
                 for (final p in widget.produits)
                   Card(
+                    color: fondEtat(p.etatAffiche),
                     child: InkWell(
                       key: Key('produit_${p.id}'),
                       onTap: widget.verrouillee ? null : () => _ajouter(p),
@@ -271,15 +297,17 @@ class _EtatCaisse extends State<EcranCaisse> {
                             formaterEuros(p.prixCentimes),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          if (p.stock != null)
+                          if (p.etatAffiche != EtatStock.aucun)
                             Text(
-                              p.stock! <= 0 ? 'Épuisé' : 'Stock : ${p.stock}',
+                              libelleEtat(p.etatAffiche, p.stock),
                               key: Key('stock_${p.id}'),
                               style: TextStyle(
                                 fontSize: 11,
-                                color: p.stock! <= 0
-                                    ? Theme.of(context).colorScheme.error
-                                    : null,
+                                fontWeight:
+                                    couleurEtat(p.etatAffiche) == null
+                                        ? null
+                                        : FontWeight.bold,
+                                color: couleurEtat(p.etatAffiche),
                               ),
                             ),
                         ],
@@ -491,6 +519,11 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
   List<Produit> _produits = const [];
   List<ProduitEvenement> _produitsEvenement = const [];
 
+  // Rupture, stock bas et « vide » du gymnase de cette caisse.
+  late final Stream<Map<String, Map<String, EtatStock>>> _etats = widget
+      .depotEvenements
+      .suivreEtats(widget.evenement.id, gymnases: {widget.gymnase.id});
+
   void _surErreur(Object _) {
     if (mounted) {
       setState(
@@ -614,32 +647,43 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
       ),
       builder: (context, p) {
         _produitsEvenement = p.data ?? const <ProduitEvenement>[];
-        _produits = [
-          for (final x in p.data ?? const <ProduitEvenement>[])
-            Produit(x.id, x.nom, x.prixCentimes, x.stock, x.icone, x.photo),
-        ];
-        return StreamBuilder<Caisse?>(
-          stream: widget.depotCaisses.suivreCaisse(_caisseId),
-          builder: (context, c) => StreamBuilder<List<Vente>>(
-            stream: widget.depotCaisses.suivreVentes(_caisseId),
-            builder: (context, v) {
-              final cloturee = c.data?.cloturee ?? false;
-              return EcranCaisse(
-                titre: 'Caisse de ${widget.prenom}',
-                sousTitre: widget.gymnase.nom,
-                produits: _produits,
-                modes: widget.evenement.modes,
-                onEncaisser: _encaisser,
-                onVoirVentes: () => _voirVentes(cloturee),
-                onCloturer: cloturee ? null : _cloturer,
-                onStock: _ouvrirStock,
-                verrouillee: cloturee,
-                bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
-              );
-            },
+        return StreamBuilder<Map<String, Map<String, EtatStock>>>(
+          stream: _etats,
+          builder: (context, e) => _avecEtats(
+            context,
+            e.data?[widget.gymnase.id] ?? const <String, EtatStock>{},
           ),
         );
       },
+    );
+  }
+
+  Widget _avecEtats(BuildContext context, Map<String, EtatStock> etats) {
+    _produits = [
+      for (final x in _produitsEvenement)
+        Produit(x.id, x.nom, x.prixCentimes, x.stock, x.icone, x.photo,
+            etats[x.id]),
+    ];
+    return StreamBuilder<Caisse?>(
+      stream: widget.depotCaisses.suivreCaisse(_caisseId),
+      builder: (context, c) => StreamBuilder<List<Vente>>(
+        stream: widget.depotCaisses.suivreVentes(_caisseId),
+        builder: (context, v) {
+          final cloturee = c.data?.cloturee ?? false;
+          return EcranCaisse(
+            titre: 'Caisse de ${widget.prenom}',
+            sousTitre: widget.gymnase.nom,
+            produits: _produits,
+            modes: widget.evenement.modes,
+            onEncaisser: _encaisser,
+            onVoirVentes: () => _voirVentes(cloturee),
+            onCloturer: cloturee ? null : _cloturer,
+            onStock: _ouvrirStock,
+            verrouillee: cloturee,
+            bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
+          );
+        },
+      ),
     );
   }
 }

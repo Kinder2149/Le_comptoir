@@ -1,5 +1,13 @@
 # CHANGELOG — Le Comptoir
 
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 4 : rupture et stock bas en caisse
+- Caisse : un produit épuisé passe en rouge clair (« Épuisé »), un produit à 10 % ou moins du dernier total de stock en orange clair (« Stock bas : n »), un produit sans quantité signalé « vide » en rouge clair (« Vide »). La vente n'est jamais bloquée. Visible par la gestion et par le bénévole.
+- Suivi en direct de la gestion : signal sous le produit ; en vue commune, les gymnases concernés ; en vue d'un gymnase, le signal seul.
+- La vente et les baisses de stock sont écrites dans un seul lot, ainsi que l'annulation et le retour au stock : une vente n'arrive plus sans sa baisse de stock, même après une coupure du réseau.
+- Règles d'accès : aucune modification (rien à déployer). Un test vérifie qu'un lot de 13 produits est accepté et qu'une baisse refusée annule aussi la vente.
+- Tests : 175 de logique et d'écrans (nouveau : `rupture_stock_test`), 157 de règles, 22 parcours Android (nouveau : `rupture_test`).
+- Aucune dépendance ajoutée.
+
 ## 28/10/2026 (nuit) — Chantier « Stock et courses », étape 3 : stock par rôle
 - Un bénévole dont la caisse est ouverte ajoute des parts (de 1 à 1000, produits de type « part » seulement) depuis le bouton « Parts et produits vides » de sa caisse. Il ne peut rien régler d'autre.
 - Le stock porte maintenant un **total de référence** (`reference`) : posé à la création du stock, remis à la quantité par un réglage de la gestion, augmenté par un réapprovisionnement ou un ajout de parts. Les stocks plus anciens, sans référence, la prennent d'après leur quantité au premier ajout. Il servira au « stock bas » (étape 4).

@@ -109,6 +109,13 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Événement clôturé : plus d'ajout de parts ni de signal « vide ».
 - [ ] **Hors réseau** : en mode avion, ajouter des parts puis remettre le réseau : le stock est mis à jour sans perte.
 
+**17. Rupture et stock bas (nouveau, chantier Stock et courses, étape 4)**
+- [ ] Caisse : un produit dont le stock est à 10 % ou moins du dernier total réglé passe en orange avec « Stock bas : n » ; à zéro il passe en rouge « Épuisé » et la vente reste possible.
+- [ ] Un produit sans quantité signalé « vide » passe en rouge « Vide » ; il redevient normal quand on retire le signal.
+- [ ] Suivi en direct (gestion) : « Stock bas », « Épuisé » ou « Vide » sous le produit ; en vue commune, avec le nom des gymnases concernés.
+- [ ] Les couleurs sont lisibles en plein jour sur le téléphone.
+- [ ] Hors réseau : une vente de plusieurs produits puis le retour du réseau — la vente et les baisses de stock arrivent ensemble.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

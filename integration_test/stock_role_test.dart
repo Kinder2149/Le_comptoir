@@ -6,7 +6,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/evenement.dart';
-import 'package:le_comptoir/gymnase.dart';
 
 import 'outils.dart';
 

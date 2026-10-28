@@ -8,6 +8,7 @@ import 'depot_caisses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'ticket.dart';
 
 /// Résultat de la vérification d'un QR code de gymnase.
 enum ResultatLien { ok, evenementIntrouvable, gymnaseInconnu }
@@ -156,6 +157,93 @@ class DepotEvenements {
         }
         abonnements.clear();
         parGymnase.clear();
+      },
+    );
+    return sortie.stream;
+  }
+
+  /// État du stock de chaque produit, gymnase par gymnase (gymnase -> produit ->
+  /// état) : rupture, stock bas, vide. [gymnases] limite aux gymnases voulus.
+  Stream<Map<String, Map<String, EtatStock>>> suivreEtats(String id,
+      {Set<String>? gymnases}) {
+    late final StreamController<Map<String, Map<String, EtatStock>>> sortie;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? abonnementGymnases;
+    final abonnements = <String, List<StreamSubscription<dynamic>>>{};
+    final stocks = <String, Map<String, ({int quantite, int? reference})>>{};
+    final vides = <String, Set<String>>{};
+
+    // Rien n'est émis tant que chaque gymnase n'a pas rendu stocks et signaux.
+    void emettre() {
+      if (sortie.isClosed ||
+          !abonnements.keys
+              .every((g) => stocks.containsKey(g) && vides.containsKey(g))) {
+        return;
+      }
+      sortie.add({
+        for (final g in abonnements.keys)
+          g: {
+            for (final p in {...stocks[g]!.keys, ...vides[g]!})
+              p: etatStock(
+                quantite: stocks[g]![p]?.quantite,
+                reference: stocks[g]![p]?.reference,
+                vide: vides[g]!.contains(p),
+              ),
+          },
+      });
+    }
+
+    sortie = StreamController<Map<String, Map<String, EtatStock>>>.broadcast(
+      onListen: () {
+        abonnementGymnases =
+            _evenements.doc(id).collection('gymnases').snapshots().listen((s) {
+          final presents = {
+            for (final d in s.docs)
+              if (gymnases == null || gymnases.contains(d.id)) d.id,
+          };
+          for (final g in abonnements.keys.toList()) {
+            if (!presents.contains(g)) {
+              for (final a in abonnements.remove(g)!) {
+                a.cancel();
+              }
+              stocks.remove(g);
+              vides.remove(g);
+            }
+          }
+          for (final g in presents) {
+            abonnements.putIfAbsent(g, () {
+              final gymnase = _evenements.doc(id).collection('gymnases').doc(g);
+              return [
+                gymnase.collection('stocks').snapshots().listen((st) {
+                  stocks[g] = {
+                    for (final d in st.docs)
+                      d.id: (
+                        quantite: d.data()['quantite'] as int,
+                        reference: d.data()['reference'] as int?,
+                      ),
+                  };
+                  emettre();
+                }, onError: sortie.addError),
+                gymnase.collection('vides').snapshots().listen((v) {
+                  vides[g] = {for (final d in v.docs) d.id};
+                  emettre();
+                }, onError: sortie.addError),
+              ];
+            });
+          }
+          emettre();
+        }, onError: sortie.addError);
+      },
+      onCancel: () async {
+        await abonnementGymnases?.cancel();
+        abonnementGymnases = null;
+        for (final liste in abonnements.values) {
+          for (final a in liste) {
+            await a.cancel();
+          }
+        }
+        abonnements.clear();
+        stocks.clear();
+        vides.clear();
       },
     );
     return sortie.stream;

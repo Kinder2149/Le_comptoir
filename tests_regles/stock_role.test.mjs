@@ -125,3 +125,45 @@ test('« vide » : produit inconnu, champ en trop, sans caisse ouverte ou évén
   assert.equal(await lot(chef, [effacer(v)]), 403);
   assert.equal(await lot(gestionnaire, [vide(`${c.gymnase()}/vides/p4`)]), 403);
 });
+
+// ---------- étape 4 : la vente et les stocks partent dans UN MÊME lot ----------
+import { MAINTENANT } from './outils.mjs';
+import { baisserStock, ligne, vente } from './outilsCaisse.mjs';
+
+const annuler = (chemin, uid) => ({
+  update: {
+    name: `${RACINE}/${chemin}`,
+    fields: {
+      annulee: { booleanValue: true },
+      annuleePar: { stringValue: uid },
+      annuleeParPrenom: { stringValue: 'Lea' },
+      annuleeLe: { timestampValue: MAINTENANT },
+    },
+  },
+  updateMask: { fieldPaths: ['annulee', 'annuleePar', 'annuleeParPrenom', 'annuleeLe'] },
+  currentDocument: { exists: true },
+});
+
+test('une vente de 13 produits et ses 13 baisses de stock passent dans un seul lot, puis son annulation', async () => {
+  const { chef, lea, id, c } = await evenementEnCours();
+  await lot(chef, Array.from({ length: 13 }, (_, i) => produitEvenement(id, 'e1', `q${i}`, { stock: 10 })));
+  await lot(lea, [caisse(c.caisse(lea.uid))]);
+  const v = c.vente(lea.uid, 'v1');
+  const lignes = Array.from({ length: 13 }, () => ligne());
+  assert.equal(await lot(lea, [
+    vente(v, { lignes: { arrayValue: { values: lignes } } }),
+    ...Array.from({ length: 13 }, (_, i) => baisserStock(c.stock(`q${i}`), 9)),
+  ]), 200);
+  assert.equal(await lot(lea, [
+    annuler(v, lea.uid),
+    ...Array.from({ length: 13 }, (_, i) => baisserStock(c.stock(`q${i}`), 10)),
+  ]), 200);
+});
+
+test('dans un lot, une baisse refusée annule aussi la vente', async () => {
+  const { lea, c } = await evenementEnCours();
+  await lot(lea, [caisse(c.caisse(lea.uid))]);
+  const v = c.vente(lea.uid, 'v9');
+  assert.equal(await lot(lea, [vente(v), baisserStock(c.stock('p1'), -100001)]), 403);
+  assert.equal(await lire(lea, v), 404); // la vente n'a pas été écrite
+});

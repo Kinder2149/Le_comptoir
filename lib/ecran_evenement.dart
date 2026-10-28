@@ -432,11 +432,13 @@ class _BlocGestion extends StatefulWidget {
 /// Les flux d'un écran de suivi ou de bilan. Un flux Firestore n'« envoie » son
 /// état qu'à l'abonnement : chaque écran (suivi, bilan) a donc les siens.
 class _Flux {
-  _Flux(this.tableau, this.produits, this.stocks, this.gymnases, this.caisses);
+  _Flux(this.tableau, this.produits, this.stocks, this.etats, this.gymnases,
+      this.caisses);
 
   final Stream<TableauDeBord> tableau;
   final Stream<List<ProduitEvenement>> produits;
   final Stream<Map<String, Map<String, int>>> stocks;
+  final Stream<Map<String, Map<String, EtatStock>>> etats;
   final Stream<List<Gymnase>> gymnases;
   final Stream<List<Caisse>> caisses;
 }
@@ -452,6 +454,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
       caisses.suivreTableauDeBord(gymnaseIds: filtre),
       widget.depot.suivreProduits(id, gymnases: filtre),
       widget.depot.suivreStocksParGymnase(id, gymnases: filtre),
+      widget.depot.suivreEtats(id, gymnases: filtre),
       // Seuls les gymnases que ce membre gère apparaissent dans les vues.
       widget.depot
           .suivreGymnases(id)
@@ -567,6 +570,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
           produits: _suivi.produits,
           gymnases: _suivi.gymnases,
           stocks: _suivi.stocks,
+          etats: _suivi.etats,
           commun: portee.toutVoir,
           onOuvrirCaisse: widget.onOuvrirCaisse,
         ),
@@ -734,6 +738,7 @@ class SuiviEnDirect extends StatefulWidget {
     required this.onOuvrirCaisse,
     this.gymnases,
     this.stocks,
+    this.etats,
     this.commun = true,
     this.maintenant = DateTime.now,
   });
@@ -746,6 +751,9 @@ class SuiviEnDirect extends StatefulWidget {
   /// sélecteur propose la vue commune ou la vue d'un gymnase.
   final Stream<List<Gymnase>>? gymnases;
   final Stream<Map<String, Map<String, int>>>? stocks;
+
+  /// Rupture, stock bas et « vide » de chaque gymnase.
+  final Stream<Map<String, Map<String, EtatStock>>>? etats;
 
   /// La vue commune est-elle offerte (responsable, ou gestionnaire de tous) ?
   final bool commun;
@@ -780,12 +788,17 @@ class _EtatSuivi extends State<SuiviEnDirect> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.gymnases == null) return _contenu(context, const [], null);
+    if (widget.gymnases == null) return _contenu(context, const [], null, null);
     return StreamBuilder<List<Gymnase>>(
       stream: widget.gymnases,
       builder: (context, g) => StreamBuilder<Map<String, Map<String, int>>>(
         stream: widget.stocks,
-        builder: (context, s) => _contenu(context, g.data ?? const [], s.data),
+        builder: (context, s) =>
+            StreamBuilder<Map<String, Map<String, EtatStock>>>(
+          stream: widget.etats,
+          builder: (context, e) =>
+              _contenu(context, g.data ?? const [], s.data, e.data),
+        ),
       ),
     );
   }
@@ -812,10 +825,43 @@ class _EtatSuivi extends State<SuiviEnDirect> {
     return ' · stock $total$parGymnase';
   }
 
+  /// Signal « Épuisé », « Vide » ou « Stock bas » d'un produit pour la vue
+  /// choisie, avec les gymnases concernés quand la vue est commune.
+  ({String texte, EtatStock pire})? _signal(
+    ProduitEvenement x,
+    String? vue,
+    Map<String, Map<String, EtatStock>>? etats,
+    List<Gymnase> gymnases,
+  ) {
+    if (etats == null) return null;
+    final concernes = vue == null ? etats.keys.toList() : [vue];
+    final parts = <String>[];
+    EtatStock? pire;
+    for (final etat in [EtatStock.epuise, EtatStock.vide, EtatStock.bas]) {
+      final noms = [
+        for (final g in concernes)
+          if (etats[g]?[x.id] == etat)
+            gymnases.where((y) => y.id == g).firstOrNull?.nom ?? '?',
+      ];
+      if (noms.isEmpty) continue;
+      pire ??= etat;
+      final libelle = switch (etat) {
+        EtatStock.epuise => 'Épuisé',
+        EtatStock.vide => 'Vide',
+        _ => 'Stock bas',
+      };
+      parts.add(vue == null && gymnases.length > 1
+          ? '$libelle : ${noms.join(', ')}'
+          : libelle);
+    }
+    return pire == null ? null : (texte: parts.join(' · '), pire: pire);
+  }
+
   Widget _contenu(
     BuildContext context,
     List<Gymnase> gymnases,
     Map<String, Map<String, int>>? stocks,
+    Map<String, Map<String, EtatStock>>? etats,
   ) {
     final multiple = gymnases.length > 1;
     if (!_choisie ||
@@ -879,12 +925,22 @@ class _EtatSuivi extends State<SuiviEnDirect> {
               builder: (context, p) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final x in p.data ?? const <ProduitEvenement>[])
+                  for (final x in p.data ?? const <ProduitEvenement>[]) ...[
                     Text(
                       '${x.nom} : ${pluriel(tab.vendus(x.id), 'vendu')}'
                       '${_texteStock(x, vue, stocks, gymnases)}',
                       key: Key('direct_produit_${x.id}'),
                     ),
+                    if (_signal(x, vue, etats, gymnases) case final s?)
+                      Text(
+                        s.texte,
+                        key: Key('direct_signal_${x.id}'),
+                        style: TextStyle(
+                          color: couleurEtat(s.pire),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
