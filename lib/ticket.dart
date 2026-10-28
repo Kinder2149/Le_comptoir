@@ -106,9 +106,9 @@ class Ticket {
 
 /// 350 -> « 3,50 € ».
 String formaterEuros(int centimes) {
-  final euros = centimes ~/ 100;
-  final reste = (centimes % 100).toString().padLeft(2, '0');
-  return '$euros,$reste €';
+  final signe = centimes < 0 ? '-' : '';
+  final a = centimes.abs();
+  return '$signe${a ~/ 100},${(a % 100).toString().padLeft(2, '0')} €';
 }
 
 /// Le « s » du pluriel quand [n] vaut plus de 1 (en français, 0 et 1 restent au singulier).

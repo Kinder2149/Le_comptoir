@@ -362,5 +362,19 @@ void main() {
     expect(doc['statut'], 'validee');
     expect(doc['coutCentimes'], 41250);
     expect(doc['valideeLe'], isNotNull);
+
+    // --- Le bilan affiche le coût (aucune vente : le résultat est négatif).
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    await toucher(tester, find.byKey(const Key('voir_bilan')));
+    await attendre(tester, find.byKey(const Key('bilan_cout')));
+    expect(texte(tester, 'bilan_cout'), 'Coût des courses : 412,50 €');
+    expect(texte(tester, 'bilan_resultat'), 'Résultat : -412,50 €');
+    expect(find.byKey(const Key('exporter_csv')), findsOneWidget);
+    // En vue d'un gymnase : la mention, pas de coût.
+    await toucher(tester, find.byKey(Key('vue_$gA')));
+    expect(find.byKey(const Key('bilan_cout_commun')), findsOneWidget);
+    expect(find.byKey(const Key('bilan_cout')), findsNothing);
   });
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
+import 'courses.dart';
 import 'depot_associations.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
@@ -434,7 +435,7 @@ class _BlocGestion extends StatefulWidget {
 /// état qu'à l'abonnement : chaque écran (suivi, bilan) a donc les siens.
 class _Flux {
   _Flux(this.tableau, this.produits, this.stocks, this.etats, this.gymnases,
-      this.caisses);
+      this.caisses, this.courses);
 
   final Stream<TableauDeBord> tableau;
   final Stream<List<ProduitEvenement>> produits;
@@ -442,6 +443,9 @@ class _Flux {
   final Stream<Map<String, Map<String, EtatStock>>> etats;
   final Stream<List<Gymnase>> gymnases;
   final Stream<List<Caisse>> caisses;
+
+  /// La liste de courses (coût au bilan) : seulement pour qui y a accès.
+  final Stream<ListeCourses?>? courses;
 }
 
 class _EtatBlocGestion extends State<_BlocGestion> {
@@ -466,6 +470,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             ],
           ),
       caisses.suivreCaisses(gymnaseIds: filtre),
+      widget.portee.toutVoir ? widget.depot.suivreListeCourses(id) : null,
     );
   }
 
@@ -575,6 +580,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                     produits: flux.produits,
                     gymnases: flux.gymnases,
                     stocks: flux.stocks,
+                    courses: flux.courses,
                     commun: portee.toutVoir,
                     limite: !portee.toutVoir,
                   ),

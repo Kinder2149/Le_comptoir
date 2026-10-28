@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'courses.dart';
 import 'depot_caisses.dart';
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
+import 'export_bilan.dart';
 import 'gymnase.dart';
+import 'partage.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -63,8 +66,10 @@ class EcranBilan extends StatefulWidget {
     required this.produits,
     this.gymnases,
     this.stocks,
+    this.courses,
     this.commun = true,
     this.limite = false,
+    this.partager = partagerFichierTexte,
   });
 
   final Evenement evenement;
@@ -75,8 +80,15 @@ class EcranBilan extends StatefulWidget {
   final Stream<List<Gymnase>>? gymnases;
   final Stream<Map<String, Map<String, int>>>? stocks;
 
+  /// La liste de courses de l'événement (pour le coût et le résultat). Sans elle
+  /// (gestionnaire limité à ses gymnases), le bilan n'affiche pas de coût.
+  final Stream<ListeCourses?>? courses;
+
   /// La vue commune est-elle offerte (responsable, ou gestionnaire de tous) ?
   final bool commun;
+
+  /// Remise du fichier CSV (remplaçable dans les tests).
+  final Partageur partager;
 
   /// Vue limitée aux gymnases du gestionnaire (pas celle de tout l'événement).
   final bool limite;
@@ -90,6 +102,70 @@ class _EtatBilan extends State<EcranBilan> {
   bool get limite => widget.limite;
   String? _vue;
   bool _choisie = false;
+
+  String? _erreurExport;
+
+  /// Le coût des courses (vue commune) ou, en vue d'un gymnase, la mention qu'il
+  /// concerne tout l'événement. Rien pour qui n'a pas accès aux courses.
+  List<Widget> _blocCout(String? vue, ListeCourses? courses, int ventesCentimes) {
+    if (widget.courses == null) return const [];
+    if (vue != null) {
+      return const [
+        Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            "Le coût des courses concerne tout l'événement : voir la vue commune.",
+            key: Key('bilan_cout_commun'),
+          ),
+        ),
+      ];
+    }
+    final cout = CoutBilan.depuis(courses, ventesCentimes);
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: switch (cout) {
+          CoutConnu c => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Coût des courses : ${formaterEuros(c.coutCentimes)}',
+                    key: const Key('bilan_cout')),
+                Text(
+                  'Résultat : ${formaterEuros(c.resultatCentimes)}',
+                  key: const Key('bilan_resultat'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: c.resultatCentimes < 0 ? Palette.brique : Palette.sauge,
+                  ),
+                ),
+              ],
+            ),
+          CoursesNonValidees() => const Text('Courses non validées',
+              key: Key('bilan_courses_non_validees')),
+        },
+      ),
+    ];
+  }
+
+  Future<void> _exporter(
+      Bilan b, String vue, List<Gymnase> gymnases, CoutBilan? cout) async {
+    final csv = bilanEnCsv(
+      evenement: evenement,
+      bilan: b,
+      vue: vue,
+      gymnases: gymnases,
+      cout: cout,
+    );
+    try {
+      await widget.partager(nomFichierBilan(evenement), csv);
+      if (mounted) setState(() => _erreurExport = null);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _erreurExport =
+            "Le fichier n'a pas pu être partagé. Réessayez.");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +190,22 @@ class _EtatBilan extends State<EcranBilan> {
 
   Widget _corps(BuildContext context, List<Gymnase> gymnases,
       Map<String, Map<String, int>>? stocks) {
+    if (widget.courses == null) {
+      return _corpsAvecCoursesCourantes(context, gymnases, stocks, null);
+    }
+    return StreamBuilder<ListeCourses?>(
+      stream: widget.courses,
+      builder: (context, c) => c.connectionState == ConnectionState.waiting
+          ? const Center(child: CircularProgressIndicator())
+          : _corpsAvecCoursesCourantes(context, gymnases, stocks, c.data),
+    );
+  }
+
+  Widget _corpsAvecCoursesCourantes(
+      BuildContext context,
+      List<Gymnase> gymnases,
+      Map<String, Map<String, int>>? stocks,
+      ListeCourses? courses) {
     // Le sélecteur n'apparaît que s'il y a un choix à faire.
     final choix = gymnases.length + (widget.commun ? 1 : 0);
     final multiple = gymnases.length > 1;
@@ -201,6 +293,34 @@ class _EtatBilan extends State<EcranBilan> {
                   ventes: pluriel(b.nbVentes, 'vente'),
                   annulees: b.nbAnnulees,
                 ),
+                ..._blocCout(vue, courses, b.totalCentimes),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      key: const Key('exporter_csv'),
+                      onPressed: () => _exporter(
+                        b,
+                        vue == null
+                            ? 'Commun'
+                            : nomGymnase(vue),
+                        gymnases,
+                        vue == null && widget.courses != null
+                            ? CoutBilan.depuis(courses, b.totalCentimes)
+                            : null,
+                      ),
+                      icon: const Icon(Icons.ios_share),
+                      label: const Text('Exporter (CSV)'),
+                    ),
+                  ),
+                ),
+                if (_erreurExport != null)
+                  Text(
+                    _erreurExport!,
+                    key: const Key('erreur_export'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 _Section(
                   titre: 'Par mode de paiement',
                   icone: Icons.payments_outlined,

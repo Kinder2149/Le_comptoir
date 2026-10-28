@@ -133,6 +133,14 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Sans réseau, la validation affiche un message et n'ajoute rien.
 - [ ] Les quantités annoncées sont plausibles par rapport à ce que vous avez réellement acheté.
 
+**20. Bilan : coût des courses et export CSV (nouveau, chantier Stock et courses, étape 7)**
+- [ ] Bilan, vue commune, courses validées : « Coût des courses » (celui saisi) et « Résultat » (ventes moins coût) ; courses non validées : « Courses non validées ».
+- [ ] Vue d'un gymnase : pas de coût, la mention « voir la vue commune ».
+- [ ] Un gestionnaire rattaché à un seul gymnase ne voit aucun coût.
+- [ ] « Exporter (CSV) » ouvre la feuille de partage d'Android ; envoyer le fichier vers Drive ou un e-mail, puis l'ouvrir dans Excel ou Google Sheets : accents lisibles, montants en colonnes (6,00), sections claires.
+- [ ] Les chiffres du fichier sont ceux de l'écran (total, produits, modes, jours, caisses).
+- [ ] Même export depuis la vue d'un gymnase : seulement ses chiffres.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

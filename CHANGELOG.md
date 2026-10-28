@@ -1,5 +1,13 @@
 # CHANGELOG — Le Comptoir
 
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 7 : bilan et export CSV
+- Bilan, vue commune : « Coût des courses » et « Résultat » (ventes moins coût) quand les courses sont validées ; « Courses non validées » sinon. Vue d'un gymnase : la mention que le coût concerne tout l'événement. Le coût n'apparaît que pour le responsable et le gestionnaire de tous les gymnases.
+- Bouton « Exporter (CSV) » : un fichier `bilan-<événement>-<date>.csv` pour la vue affichée (totaux, modes, produits et stock restant, caisses, jours, heures, ventes annulées), prêt pour Excel (« ; », virgule décimale, accents lisibles), remis à la feuille de partage d'Android.
+- Montants négatifs bien affichés (« -390,50 € »).
+- Dépendance ajoutée avec l'accord de Kinder : `share_plus` 10.1.4 (partage du fichier).
+- Règles d'accès : aucune modification (rien à déployer).
+- Tests : 210 de logique et d'écrans (nouveau : `export_bilan_test`, CSV comparé ligne à ligne à des chiffres calculés à la main), 166 de règles, 24 parcours Android (le bilan avec coût s'ajoute à `courses_test`).
+
 ## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 6 : courses, validation
 - Bouton « Valider les courses » : écran des quantités réellement achetées (pré-remplies, en kg ou L quand c'est lisible), de ce que cela ajoute au stock de chaque gymnase (« limité par … » quand un ingrédient manque) et du coût total (obligatoire, 0 si inconnu).
 - « Confirmer » ajoute tout au stock, démarre le suivi des produits qui n'en avaient pas, fait monter le total de référence, enregistre achats, rendements et coût, et fige la liste (bandeau « Courses validées le … »). Tout dans un seul lot : tout est ajouté ou rien. Une liste validée ne se rejoue pas. La validation demande le réseau.
