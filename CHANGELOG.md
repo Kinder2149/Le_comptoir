@@ -4,7 +4,7 @@
 - Un bénévole dont la caisse est ouverte ajoute des parts (de 1 à 1000, produits de type « part » seulement) depuis le bouton « Parts et produits vides » de sa caisse. Il ne peut rien régler d'autre.
 - Le stock porte maintenant un **total de référence** (`reference`) : posé à la création du stock, remis à la quantité par un réglage de la gestion, augmenté par un réapprovisionnement ou un ajout de parts. Les stocks plus anciens, sans référence, la prennent d'après leur quantité au premier ajout. Il servira au « stock bas » (étape 4).
 - Un produit sans quantité suivie peut être signalé « vide » (gestion ou bénévole à sa caisse) et retiré : interrupteur « Vide » dans « Gymnases et stocks » et dans l'écran du bénévole. Stocké dans `gymnases/{g}/vides/{produit}`, effacé avec l'association. L'affichage en caisse et en suivi viendra à l'étape 4.
-- Règles d'accès : trois écritures distinctes sur un stock (réglage de la gestion, vente ou annulation, ajout de parts) ; sous-collection `vides`. **Pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Règles d'accès : trois écritures distinctes sur un stock (réglage de la gestion, vente ou annulation, ajout de parts) ; sous-collection `vides`. Déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
 - Tests : 166 de logique et d'écrans, 155 de règles (nouveau fichier `stock_role.test.mjs`, 8 tests), 21 parcours Android (nouveau : `stock_role_test`).
 - Aucune dépendance ajoutée.
 
