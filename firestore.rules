@@ -21,8 +21,9 @@ rules_version = '2';
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
 //         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
 //                                                 (absent = pas de suivi de ce produit dans ce gymnase)
-//       courses/liste                             statut ('preparation'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
-//                                                 restes[] {cle, quantite}, majLe — la liste de courses de l'événement (gestion de tous les gymnases)
+//       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
+//                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
+//                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
 //                                                 evenements/{e}.nbJours (1 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
@@ -182,6 +183,19 @@ service cloud.firestore {
       return ajout >= 1 && ajout <= 1000
         && request.resource.data.get('reference', -1) == resource.data.get('reference', avant) + ajout
         && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p)).data.get('type', 'unite') == 'part';
+    }
+    // Liste de courses en préparation : champs et tailles bornés.
+    function listePreparationValide(d) {
+      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+        && d.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+        && d.statut == 'preparation'
+        && d.lignes is list
+        && d.lignes.size() <= 400
+        && d.libres is list
+        && d.libres.size() <= 60
+        && d.restes is list
+        && d.restes.size() <= 100
+        && d.majLe is timestamp;
     }
     function stockValide(q) {
       return q is int && q >= -100000 && q <= 100000;
@@ -433,19 +447,37 @@ service cloud.firestore {
         match /courses/{c} {
           allow read: if gereTout(a, e);
           allow delete: if suppressionEnCours(a);
-          allow create, update: if gereTout(a, e)
+          // En préparation : modifiable à volonté.
+          allow create: if gereTout(a, e)
             && c == 'liste'
             && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-            && request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe'])
-            && request.resource.data.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
-            && request.resource.data.statut == 'preparation'
-            && request.resource.data.lignes is list
-            && request.resource.data.lignes.size() <= 400
-            && request.resource.data.libres is list
-            && request.resource.data.libres.size() <= 60
-            && request.resource.data.restes is list
-            && request.resource.data.restes.size() <= 100
-            && request.resource.data.majLe is timestamp;
+            && listePreparationValide(request.resource.data);
+          allow update: if gereTout(a, e)
+            && c == 'liste'
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && resource.data.statut == 'preparation'
+            && (listePreparationValide(request.resource.data)
+                // Validation : la liste devient « validee » avec les achats, les rendements
+                // et le coût, et ne bouge plus ensuite (les ajouts de stock partent dans le
+                // même lot). Une liste déjà validée ne se rejoue pas.
+                || (request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                    && request.resource.data.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                    && request.resource.data.statut == 'validee'
+                    && request.resource.data.lignes is list
+                    && request.resource.data.lignes.size() <= 400
+                    && request.resource.data.libres is list
+                    && request.resource.data.libres.size() <= 60
+                    && request.resource.data.restes is list
+                    && request.resource.data.restes.size() <= 100
+                    && request.resource.data.achats is list
+                    && request.resource.data.achats.size() <= 100
+                    && request.resource.data.rendements is list
+                    && request.resource.data.rendements.size() <= 400
+                    && request.resource.data.coutCentimes is int
+                    && request.resource.data.coutCentimes >= 0
+                    && request.resource.data.coutCentimes <= 100000000
+                    && request.resource.data.majLe is timestamp
+                    && request.resource.data.valideeLe is timestamp));
         }
 
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par

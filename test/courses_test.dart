@@ -136,6 +136,99 @@ void main() {
     });
   });
 
+  group('calcul inverse (validation)', () {
+    Map<String, int> par(List<RendementProduit> r, String id) =>
+        r.firstWhere((x) => x.produitId == id).parGymnase;
+    RendementProduit de(List<RendementProduit> r, String id) =>
+        r.firstWhere((x) => x.produitId == id);
+
+    test('tout acheté comme proposé : le stock gagne exactement les quantités prévues',
+        () {
+      final liste = listeParDefaut(produits: produits, gymnases: gymnases, jours: 2);
+      final r = calculerRendements(produits, liste, const {});
+      expect(par(r, 'croque'), {'a': 320, 'b': 240});
+      expect(par(r, 'chevre'), {'a': 160, 'b': 120});
+      expect(par(r, 'cafe'), {'a': 320, 'b': 240});
+      expect(de(r, 'croque').limitant, isNull);
+    });
+
+    test('l’ingrédient limitant décide : moitié du gruyère, moitié des croques', () {
+      // 300 + 240 = 540 croques -> 3780 g de gruyère ; on en achète 1890 g.
+      const liste = ListeCourses(
+          lignes: [LigneCourse('a', 'croque', 300), LigneCourse('b', 'croque', 240)]);
+      final gruyere = calculerAchats(produits, liste).firstWhere((a) => a.nom == 'Gruyère râpé');
+      expect(gruyere.aAcheter, 3780);
+      final r = calculerRendements(produits, liste, {gruyere.cle: 1890});
+      expect(de(r, 'croque').total, 270);
+      expect(par(r, 'croque'), {'a': 150, 'b': 120});
+      expect(de(r, 'croque').limitant, 'Gruyère râpé');
+    });
+
+    test('café : des litres achetés aux verres', () {
+      final liste = listeParDefaut(produits: produits, gymnases: gymnases, jours: 2);
+      final cle = calculerAchats(produits, liste).firstWhere((a) => a.nom == 'Café').cle;
+      // 70 L proposés ; 35 L achetés -> 280 verres.
+      final r = calculerRendements(produits, liste, {cle: 3500});
+      expect(par(r, 'cafe'), {'a': 160, 'b': 120});
+    });
+
+    test('à la part : le total est conservé entre gymnases (plus grand reste)', () {
+      const liste = ListeCourses(
+          lignes: [LigneCourse('a', 'tarte', 12), LigneCourse('b', 'tarte', 8)]);
+      // 20 prévues, 21 achetées : 12,6 et 8,4 -> 13 et 8.
+      final r = calculerRendements(produits, liste, {'produit:tarte': 21});
+      expect(de(r, 'tarte').total, 21);
+      expect(par(r, 'tarte'), {'a': 13, 'b': 8});
+    });
+
+    test('ingrédient partagé : réparti entre toutes les recettes qui l’utilisent', () {
+      // Pain de mie : 2 × 100 (croque) + 2 × 100 (chèvre) = 400 ; on en achète 200.
+      const liste = ListeCourses(
+          lignes: [LigneCourse('a', 'croque', 100), LigneCourse('a', 'chevre', 100)]);
+      final pain = calculerAchats(produits, liste).firstWhere((a) => a.nom == 'Pain de mie');
+      expect(pain.aAcheter, 400);
+      final r = calculerRendements(produits, liste, {pain.cle: 200});
+      expect(de(r, 'croque').total, 50);
+      expect(de(r, 'chevre').total, 50);
+    });
+
+    test('« il reste » compte comme disponible', () {
+      // 100 croques : 200 tranches de pain, dont 50 déjà là -> 150 à acheter.
+      final base = const ListeCourses(lignes: [LigneCourse('a', 'croque', 100)]);
+      final pain0 = calculerAchats(produits, base).firstWhere((a) => a.nom == 'Pain de mie');
+      final liste = base.avec(restes: {pain0.cle: 50});
+      expect(calculerRendements(produits, liste, const {}).single.total, 100);
+      // Seulement 75 achetées : (75 + 50) / 200 = 0,625 -> 62 croques.
+      expect(calculerRendements(produits, liste, {pain0.cle: 75}).single.total, 62);
+    });
+
+    test('acheter plus d’un seul ingrédient ne donne rien de plus', () {
+      const liste = ListeCourses(lignes: [LigneCourse('a', 'croque', 100)]);
+      final gruyere = calculerAchats(produits, liste).firstWhere((a) => a.nom == 'Gruyère râpé');
+      final r = calculerRendements(produits, liste, {gruyere.cle: gruyere.aAcheter * 2});
+      expect(r.single.total, 100);
+      // Tout doublé : le double.
+      final double = {
+        for (final a in calculerAchats(produits, liste)) a.cle: a.aAcheter * 2.0,
+      };
+      expect(calculerRendements(produits, liste, double).single.total, 200);
+    });
+
+    test('unité de saisie d’un achat et montant en euros', () {
+      const kg = Achat(cle: 'x|g', nom: 'X', uniteBase: 'g', besoin: 3780, reste: 0);
+      const g = Achat(cle: 'x|g', nom: 'X', uniteBase: 'g', besoin: 250, reste: 0);
+      const l = Achat(cle: 'x|cl', nom: 'X', uniteBase: 'cl', besoin: 7000, reste: 0);
+      expect((uniteSaisie(kg).libelle, uniteSaisie(kg).facteur), ('kg', 1000.0));
+      expect((uniteSaisie(g).libelle, uniteSaisie(g).facteur), ('g', 1.0));
+      expect((uniteSaisie(l).libelle, uniteSaisie(l).facteur), ('L', 100.0));
+      expect(centimesDepuisTexte('412,50'), 41250);
+      expect(centimesDepuisTexte(' 0 '), 0);
+      expect(centimesDepuisTexte('12.3'), 1230);
+      expect(centimesDepuisTexte('abc'), isNull);
+      expect(centimesDepuisTexte('-1'), isNull);
+    });
+  });
+
   test('affichage des quantités', () {
     expect(formaterQuantite(3920, 'g'), '3,92 kg');
     expect(formaterQuantite(250, 'g'), '250 g');

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'courses.dart';
 import 'depot_evenements.dart';
 import 'ecran_caisse.dart' show couleurEtat;
+import 'ecran_validation_courses.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'ticket.dart';
@@ -115,6 +116,30 @@ class _EtatCourses extends State<EcranCourses> {
     }
   }
 
+  /// Enregistre tout de suite ce qui est en attente, puis ouvre la validation.
+  Future<void> _valider() async {
+    _minuteur?.cancel();
+    _listeModifiee = true; // le document doit exister avant la validation
+    await _enregistrer();
+    if (!mounted) return;
+    if (_erreurEnregistrement) return;
+    final fait = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EcranValidationCourses(
+          depot: widget.depot,
+          evenementId: widget.evenementId,
+          produits: _produits,
+          gymnases: _gymnases,
+          liste: _liste,
+        ),
+      ),
+    );
+    if (fait == true && mounted) {
+      setState(() => _charge = false);
+      await _charger();
+    }
+  }
+
   void _modifierListe(ListeCourses l) {
     _liste = l;
     _listeModifiee = true;
@@ -218,9 +243,71 @@ class _EtatCourses extends State<EcranCourses> {
     final titre = Theme.of(context).textTheme.titleMedium;
     final achats = calculerAchats(_produits, _liste);
     final aucunePersonne = _gymnases.every((g) => (_personnes[g.id] ?? 0) == 0);
+    final validee = _liste.validation;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (validee != null) _bandeauValidee(context, validee),
+        // Une liste validée ne bouge plus : on la relit seulement.
+        AbsorbPointer(
+          absorbing: validee != null,
+          child: Opacity(
+            opacity: validee != null ? 0.6 : 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _corps(context, titre, achats, aucunePersonne),
+            ),
+          ),
+        ),
+        if (validee == null) ...[
+          const SizedBox(height: 16),
+          FilledButton(
+            key: const Key('valider_courses'),
+            onPressed: _liste.lignes.isEmpty ? null : _valider,
+            child: const Text('Valider les courses'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _bandeauValidee(BuildContext context, ValidationCourses v) {
+    final noms = {for (final p in _produits) p.id: p.nom};
+    final parProduit = <String, int>{};
+    for (final r in v.rendements) {
+      parProduit[r.produitId] = (parProduit[r.produitId] ?? 0) + r.quantite;
+    }
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              v.valideeLe == null
+                  ? 'Courses validées'
+                  : 'Courses validées le ${dateHeureAffichee(v.valideeLe!)}',
+              key: const Key('courses_validee'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('Coût : ${coutAffiche(v.coutCentimes)}', key: const Key('cout_valide')),
+            const Text('Ajouté au stock :'),
+            for (final e in parProduit.entries)
+              Text('${noms[e.key] ?? '?'} +${e.value}', key: Key('ajout_${e.key}')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _corps(
+    BuildContext context,
+    TextStyle? titre,
+    List<Achat> achats,
+    bool aucunePersonne,
+  ) {
+    return [
         Text(
           _erreurEnregistrement
               ? "L'enregistrement a échoué : vérifiez votre connexion."
@@ -326,8 +413,7 @@ class _EtatCourses extends State<EcranCourses> {
             label: const Text('Ajouter une ligne'),
           ),
         ),
-      ],
-    );
+    ];
   }
 
   Widget _ligneProduit(Gymnase g, ProduitEvenement p) {

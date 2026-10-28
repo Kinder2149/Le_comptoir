@@ -429,6 +429,59 @@ class DepotEvenements {
         'majLe': FieldValue.serverTimestamp(),
       });
 
+  /// Valide les courses : ajoute les [rendements] au stock de chaque gymnase (et à
+  /// son total de référence) et fige la liste, dans UN SEUL lot : tout est ajouté ou
+  /// rien. Un produit sans suivi dans un gymnase commence à y être suivi. Demande le
+  /// réseau (lit l'état réel des stocks) ; une liste déjà validée est refusée par les
+  /// règles d'accès.
+  Future<void> validerCourses(
+    String evenementId, {
+    required ListeCourses liste,
+    required Map<String, double> achetes,
+    required List<Rendement> rendements,
+    required int coutCentimes,
+  }) async {
+    const serveur = GetOptions(source: Source.server);
+    final lot = _db.batch();
+    for (final r in rendements) {
+      if (r.quantite <= 0) continue;
+      final ref = _gymnase(evenementId, r.gymnaseId)
+          .collection('stocks')
+          .doc(r.produitId);
+      final actuel = await ref.get(serveur);
+      if (!actuel.exists) {
+        lot.set(ref, {'quantite': r.quantite, 'reference': r.quantite});
+      } else {
+        final data = actuel.data()!;
+        lot.update(ref, {
+          'quantite': FieldValue.increment(r.quantite),
+          // Un stock plus ancien n'a pas de total de référence : on le pose.
+          'reference': data['reference'] != null
+              ? FieldValue.increment(r.quantite)
+              : (data['quantite'] as int) + r.quantite,
+        });
+      }
+    }
+    lot.set(
+      _evenements.doc(evenementId).collection('courses').doc('liste'),
+      {
+        ...liste.versMap(),
+        'statut': 'validee',
+        'achats': [
+          for (final e in achetes.entries) {'cle': e.key, 'quantite': e.value},
+        ],
+        'rendements': [
+          for (final r in rendements)
+            if (r.quantite > 0) r.versMap(),
+        ],
+        'coutCentimes': coutCentimes,
+        'majLe': FieldValue.serverTimestamp(),
+        'valideeLe': FieldValue.serverTimestamp(),
+      },
+    );
+    await lot.commit();
+  }
+
   Future<void> renommerGymnase(
           String evenementId, String gymnaseId, String nom) =>
       _gymnase(evenementId, gymnaseId).update({'nom': nom.trim()});

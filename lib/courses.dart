@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -44,13 +46,46 @@ class LigneLibre {
   Map<String, dynamic> versMap() => {'nom': nom, 'quantite': quantite};
 }
 
-/// La liste de courses d'un événement, en préparation.
+/// Ce que la validation ajoute au stock d'un gymnase pour un produit.
+class Rendement {
+  const Rendement(this.gymnaseId, this.produitId, this.quantite);
+
+  final String gymnaseId;
+  final String produitId;
+  final int quantite;
+
+  Map<String, dynamic> versMap() =>
+      {'gymnaseId': gymnaseId, 'produitId': produitId, 'quantite': quantite};
+}
+
+/// Ce que la gestion a saisi à la validation, conservé avec la liste.
+class ValidationCourses {
+  const ValidationCourses({
+    required this.achetes,
+    required this.rendements,
+    required this.coutCentimes,
+    this.valideeLe,
+  });
+
+  /// Quantités réellement achetées, par clé d'achat, en unité de base.
+  final Map<String, double> achetes;
+  final List<Rendement> rendements;
+  final int coutCentimes;
+  final DateTime? valideeLe;
+}
+
+/// La liste de courses d'un événement : en préparation, puis validée (figée).
 class ListeCourses {
   const ListeCourses({
     this.lignes = const [],
     this.libres = const [],
     this.restes = const {},
+    this.validation,
   });
+
+  /// Renseignée quand la liste est validée : elle ne bouge plus.
+  final ValidationCourses? validation;
+  bool get validee => validation != null;
 
   /// Produits finaux voulus, par gymnase. Une ligne absente = produit non acheté.
   final List<LigneCourse> lignes;
@@ -61,6 +96,21 @@ class ListeCourses {
   final Map<String, double> restes;
 
   factory ListeCourses.depuis(Map<String, dynamic> d) => ListeCourses(
+        validation: d['statut'] != 'validee'
+            ? null
+            : ValidationCourses(
+                achetes: {
+                  for (final a in (d['achats'] as List?) ?? const [])
+                    a['cle'] as String: (a['quantite'] as num).toDouble(),
+                },
+                rendements: [
+                  for (final r in (d['rendements'] as List?) ?? const [])
+                    Rendement(r['gymnaseId'] as String, r['produitId'] as String,
+                        (r['quantite'] as num).toInt()),
+                ],
+                coutCentimes: (d['coutCentimes'] as num?)?.toInt() ?? 0,
+                valideeLe: (d['valideeLe'] as Timestamp?)?.toDate(),
+              ),
         lignes: [
           for (final l in (d['lignes'] as List?) ?? const [])
             LigneCourse(l['gymnaseId'] as String, l['produitId'] as String,
@@ -229,6 +279,108 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
   ];
   achats.sort((a, b) => cleIngredient(a.nom).compareTo(cleIngredient(b.nom)));
   return achats;
+}
+
+/// Rendement d'un produit : ce que les achats permettent d'ajouter au stock.
+class RendementProduit {
+  const RendementProduit({
+    required this.produitId,
+    required this.total,
+    required this.parGymnase,
+    this.limitant,
+  });
+
+  final String produitId;
+  final int total;
+
+  /// Quantité ajoutée dans chaque gymnase (gymnase -> quantité), dans l'ordre des lignes.
+  final Map<String, int> parGymnase;
+
+  /// Nom de l'ingrédient qui limite (achat inférieur au besoin), s'il y en a un.
+  final String? limitant;
+}
+
+/// Calcul inverse (décision 38) : le stock gagne ce que permet l'ingrédient LIMITANT.
+/// [achetes] : quantités réellement achetées par clé d'achat, en unité de base ;
+/// une clé absente vaut « ce qui était proposé ». Pour chaque ingrédient, le rapport
+/// (acheté + reste) / (proposé + reste) dit quelle part du besoin est couverte ;
+/// un produit gagne sa quantité prévue × le plus petit de ses rapports (un ingrédient
+/// partagé se répartit donc proportionnellement entre toutes les lignes qui l'utilisent).
+/// Arrondi vers le bas pour le total du produit, réparti entre gymnases au plus grand
+/// reste : aucune unité perdue entre gymnases.
+List<RendementProduit> calculerRendements(
+  List<ProduitEvenement> produits,
+  ListeCourses liste,
+  Map<String, double> achetes,
+) {
+  final achats = {for (final a in calculerAchats(produits, liste)) a.cle: a};
+
+  double? rapport(String cle) {
+    final a = achats[cle];
+    if (a == null) return null;
+    final propose = a.aAcheter + a.reste;
+    if (propose <= 0) return null; // rien n'était nécessaire
+    return ((achetes[cle] ?? a.aAcheter.toDouble()) + a.reste) / propose;
+  }
+
+  final res = <RendementProduit>[];
+  for (final p in produits) {
+    final lignes = [
+      for (final l in liste.lignes)
+        if (l.produitId == p.id && l.quantite > 0) l,
+    ];
+    if (lignes.isEmpty) continue;
+    final cles = p.fiche.type == 'compose'
+        ? [for (final i in p.fiche.ingredients) '${i.cle}|${uniteDeBase(i.unite)}']
+        : ['produit:${p.id}'];
+    double? plusPetit;
+    String? limitant;
+    for (final cle in cles) {
+      final r = rapport(cle);
+      if (r != null && (plusPetit == null || r < plusPetit)) {
+        plusPetit = r;
+        limitant = achats[cle]!.nom;
+      }
+    }
+    final facteur = plusPetit ?? 1.0;
+    if (facteur >= 1 - 1e-9) limitant = null;
+    final exacts = [for (final l in lignes) l.quantite * facteur];
+    final bases = [for (final x in exacts) (x + 1e-6).floor()];
+    final total = (exacts.fold<double>(0, (a, b) => a + b) + 1e-6).floor();
+    var reste = total - bases.fold<int>(0, (a, b) => a + b);
+    final ordre = List.generate(lignes.length, (i) => i)
+      ..sort((a, b) => (exacts[b] - bases[b]).compareTo(exacts[a] - bases[a]));
+    for (final i in ordre) {
+      if (reste <= 0) break;
+      bases[i]++;
+      reste--;
+    }
+    res.add(RendementProduit(
+      produitId: p.id,
+      total: bases.fold<int>(0, (a, b) => a + b),
+      parGymnase: {
+        for (var i = 0; i < lignes.length; i++) lignes[i].gymnaseId: bases[i],
+      },
+      limitant: limitant,
+    ));
+  }
+  return res;
+}
+
+/// Unité dans laquelle on saisit un achat : kg et L quand la quantité s'y prête.
+({String libelle, double facteur}) uniteSaisie(Achat a) => switch (a.uniteBase) {
+      'g' when a.aAcheter >= 1000 => (libelle: 'kg', facteur: 1000.0),
+      'cl' when a.aAcheter >= 100 => (libelle: 'L', facteur: 100.0),
+      'unite' => (libelle: '', facteur: 1.0),
+      final u => (libelle: libelleUniteReste(u), facteur: 1.0),
+    };
+
+/// « 412,50 » -> 41250 ; null si le texte n'est pas un montant valide (0 à 1 000 000 €).
+int? centimesDepuisTexte(String texte) {
+  final t = texte.trim().replaceAll(',', '.').replaceAll(' ', '');
+  final v = double.tryParse(t);
+  if (v == null || v < 0 || v > 1000000) return null;
+  return (v * 100).round();
 }
 
 /// Produits à réapprovisionner, par produit : les gymnases où il est en stock bas,

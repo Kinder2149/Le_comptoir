@@ -125,6 +125,14 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Quitter puis rouvrir : tout est retrouvé. Les chiffres sont plausibles par rapport à la liste de courses de l'an dernier (à corriger dans les consommations du menu si besoin).
 - [ ] Hors réseau : modifier la liste, remettre le réseau : « Enregistré ».
 
+**19. Courses : validation (nouveau, chantier Stock et courses, étape 6)**
+- [ ] Écran Courses → « Valider les courses » : les quantités achetées sont pré-remplies avec « À acheter » ; en baisser une (par exemple le gruyère à moitié) change le résultat annoncé et nomme l'ingrédient limitant.
+- [ ] Le coût total est obligatoire ; « Confirmer » ajoute au stock de chaque gymnase (vérifier dans « Gymnases et stocks »).
+- [ ] Un produit qui n'avait pas de suivi (le café, le croque du modèle) se met à suivre son stock après la validation.
+- [ ] La liste validée affiche « Courses validées le … », le coût et les ajouts, et ne se modifie plus ; le bouton de validation a disparu.
+- [ ] Sans réseau, la validation affiche un message et n'ajoute rien.
+- [ ] Les quantités annoncées sont plausibles par rapport à ce que vous avez réellement acheté.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   admin, RACINE, MAJ, ecrire, effacer, entier, lire, lot, modifier,
 } from './outils.mjs';
-import { ajoutGymnase, evenementEnCours, rattachement } from './outilsCaisse.mjs';
+import { ajoutGymnase, evenementEnCours, produitEvenement, rattachement } from './outilsCaisse.mjs';
 
 const liste = (extra = {}) => ({
   statut: { stringValue: 'preparation' },
@@ -84,4 +84,79 @@ test('la liste de courses ne se supprime pas à la main', async () => {
   const l = `${c.evt}/courses/liste`;
   await lot(chef, [ecrireListe(l)]);
   assert.equal(await lot(chef, [effacer(l)]), 403);
+});
+
+// ---------- étape 6 : validation ----------
+const validee = (extra = {}) => liste({
+  statut: { stringValue: 'validee' },
+  achats: { arrayValue: { values: [{ mapValue: { fields: {
+    cle: { stringValue: 'pain de mie|tranche' }, quantite: { doubleValue: 1080 },
+  } } }] } },
+  rendements: { arrayValue: { values: [{ mapValue: { fields: {
+    gymnaseId: { stringValue: 'g1' }, produitId: { stringValue: 'p1' }, quantite: entier(270),
+  } } }] } },
+  coutCentimes: entier(41250),
+  valideeLe: { timestampValue: MAJ.toISOString() },
+  ...extra,
+});
+const ecrireValidee = (chemin, extra = {}) => ({ update: { name: `${RACINE}/${chemin}`, fields: validee(extra) } });
+const stockPlus = (chemin, q, ref) => ({
+  update: { name: `${RACINE}/${chemin}`, fields: { quantite: entier(q), reference: entier(ref) } },
+  updateMask: { fieldPaths: ['quantite', 'reference'] },
+  currentDocument: { exists: true },
+});
+
+test('valider : la liste devient « validee » avec les stocks, dans un seul lot, puis elle ne bouge plus', async () => {
+  const { chef, gestionnaire, lea, id, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  assert.equal(await lot(chef, [ecrireListe(l)]), 200);
+  // Un bénévole ne valide pas.
+  assert.equal(await lot(lea, [ecrireValidee(l)]), 403);
+  // Validation par la gestion : stock existant augmenté + stock démarré pour un produit
+  // jusque-là sans suivi + liste figée, en un lot.
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'pz', { stock: 5 }), produitEvenement(id, 'e1', 'py')]), 200);
+  assert.equal(await lot(gestionnaire, [
+    stockPlus(c.stock('pz'), 275, 275),
+    ecrire(c.stock('py'), { quantite: 40, reference: 40 }),
+    ecrireValidee(l),
+  ]), 200);
+  assert.equal(await lire(chef, l), 200);
+  // Figée : ni retour en préparation, ni nouvelle validation, ni modification.
+  assert.equal(await lot(chef, [ecrireListe(l)]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { coutCentimes: entier(1) })]), 403);
+  assert.equal(await lot(gestionnaire, [ecrireValidee(l)]), 403);
+});
+
+test('valider : champs et bornes du coût, de la liste des achats et des rendements', async () => {
+  const { chef, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  await lot(chef, [ecrireListe(l)]);
+  assert.equal(await lot(chef, [ecrireValidee(l, { coutCentimes: entier(-1) })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { coutCentimes: entier(100000001) })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { coutCentimes: { stringValue: '12' } })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { valideeLe: { stringValue: 'hier' } })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { inconnu: entier(1) })]), 403);
+  const trop = (n) => ({ arrayValue: { values: Array.from({ length: n }, () => ({ mapValue: { fields: {} } })) } });
+  assert.equal(await lot(chef, [ecrireValidee(l, { rendements: trop(401) })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { achats: trop(101) })]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l, { rendements: trop(400) })]), 200);
+});
+
+test('valider un événement clôturé est refusé', async () => {
+  const { chef, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  await lot(chef, [ecrireListe(l)]);
+  await lot(admin, [modifier(c.evt, { statut: 'cloture' })]);
+  assert.equal(await lot(chef, [ecrireValidee(l)]), 403);
+});
+
+test('valider : 13 mises à jour de stock et la liste dans un seul lot', async () => {
+  const { chef, id, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  await lot(chef, [ecrireListe(l)]);
+  await lot(chef, Array.from({ length: 13 }, (_, k) => produitEvenement(id, 'e1', `v${k}`, { stock: 5 })));
+  assert.equal(await lot(chef, [
+    ...Array.from({ length: 13 }, (_, k) => stockPlus(c.stock(`v${k}`), 50, 50)),
+    ecrireValidee(l),
+  ]), 200);
 });
