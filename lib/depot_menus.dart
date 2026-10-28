@@ -218,13 +218,37 @@ class ProduitMenu {
   final Uint8List? photo;
 }
 
-/// Un produit du menu type (nom, prix, icône), lu dans assets/menu_type.json.
+/// Un produit du modèle (nom, prix, icône, fiche), lu dans assets/menu_type.json.
 class ProduitModele {
-  const ProduitModele(this.nom, this.prixCentimes, this.icone);
+  const ProduitModele(this.nom, this.prixCentimes, this.icone,
+      [this.fiche = FicheProduit.unite]);
 
   final String nom;
   final int prixCentimes;
   final String? icone;
+  final FicheProduit fiche;
+}
+
+/// Type, recette, ratio et consommation d'un produit du modèle. Refuse tout ce
+/// que l'application ou les règles d'accès refuseraient.
+FicheProduit _ficheModele(Map e) {
+  try {
+    final type = e['type'];
+    if (type != null && !typesProduit.contains(type)) {
+      throw FormatException('Type inconnu dans le modèle : $e');
+    }
+    final fiche = FicheProduit.depuis(Map<String, dynamic>.from(e));
+    for (final i in fiche.ingredients) {
+      if (!unitesIngredient.contains(i.unite)) {
+        throw FormatException('Unité inconnue dans le modèle : $e');
+      }
+    }
+    final erreur = fiche.erreur();
+    if (erreur != null) throw FormatException('$erreur ($e)');
+    return fiche;
+  } on TypeError {
+    throw FormatException('Produit invalide dans le modèle : $e');
+  }
 }
 
 /// Lit le menu type. Refuse (FormatException) tout ce que les règles refuseraient :
@@ -245,7 +269,7 @@ List<ProduitModele> lireMenuType(String json) {
           (e['prixCentimes'] as int) <= 100000 &&
           (e['icone'] == null || cleIcones.contains(e['icone'])))
         ProduitModele((e['nom'] as String).trim(), e['prixCentimes'] as int,
-            e['icone'] as String?)
+            e['icone'] as String?, _ficheModele(e))
       else
         throw FormatException('Produit invalide dans le menu type : $e'),
   ];
@@ -329,6 +353,22 @@ class DepotMenus {
         'nom': p.nom,
         'prixCentimes': p.prixCentimes,
         'icone': ?p.icone,
+        ...p.fiche.versMap(),
+        'creeLe': FieldValue.serverTimestamp(),
+      });
+    }
+    await lot.commit();
+    return ref.id;
+  }
+
+  /// Copie un menu existant : mêmes produits (types, recettes, images, stocks).
+  Future<String> copierMenu(String menuId, String nom) async {
+    final ref = _menus.doc();
+    final lot = _db.batch();
+    lot.set(ref, {'nom': nom.trim(), 'creeLe': FieldValue.serverTimestamp()});
+    for (final d in (await _produits(menuId).get()).docs) {
+      lot.set(ref.collection('produits').doc(), {
+        ...d.data(),
         'creeLe': FieldValue.serverTimestamp(),
       });
     }

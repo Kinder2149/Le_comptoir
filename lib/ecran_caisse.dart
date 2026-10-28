@@ -25,12 +25,29 @@ const iconesModeles = <String, IconData>{
   'eau': Icons.water_drop,
   'frites': Icons.fastfood,
   'glace': Icons.icecream,
+  'tarte': Icons.pie_chart,
+};
+
+/// Logos fournis par l'association pour certaines clés (assets/logos/) : ils
+/// remplacent l'icône du système. Les autres clés gardent leur icône.
+const logosModeles = <String, String>{
+  'croque': 'assets/logos/croque.png',
+  'salade': 'assets/logos/salade.png',
+  'fruit': 'assets/logos/fruit.png',
+  'the': 'assets/logos/the.png',
+  'cafe': 'assets/logos/cafe.png',
+  'barre': 'assets/logos/barre.png',
+  'soda': 'assets/logos/soda.png',
+  'gateau_sucre': 'assets/logos/gateau_sucre.png',
+  'crepe': 'assets/logos/crepe.png',
+  'tarte': 'assets/logos/tarte.png',
 };
 
 /// Icône d'une clé ; une icône générique si la clé est absente ou inconnue.
 IconData iconeDe(String? cle) => iconesModeles[cle] ?? Icons.restaurant;
 
-/// Image d'un produit : sa photo (vignette) si elle existe, sinon son icône.
+/// Image d'un produit : sa photo (vignette) si elle existe, sinon son logo,
+/// sinon son icône.
 class VignetteProduit extends StatelessWidget {
   const VignetteProduit({super.key, this.icone, this.photo, this.taille = 40});
 
@@ -41,7 +58,7 @@ class VignetteProduit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = photo;
-    if (p == null) return Icon(iconeDe(icone), size: taille);
+    if (p == null) return _logoOuIcone();
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: Image.memory(
@@ -51,8 +68,22 @@ class VignetteProduit extends StatelessWidget {
         fit: BoxFit.cover,
         gaplessPlayback: true,
         // Photo illisible : on retombe sur l'icône plutôt que de casser l'écran.
-        errorBuilder: (_, _, _) => Icon(iconeDe(icone), size: taille),
+        errorBuilder: (_, _, _) => _logoOuIcone(),
       ),
+    );
+  }
+
+  /// Le logo (entier, non rogné) s'il existe pour cette clé, sinon l'icône.
+  Widget _logoOuIcone() {
+    final logo = logosModeles[icone];
+    if (logo == null) return Icon(iconeDe(icone), size: taille);
+    return Image.asset(
+      logo,
+      width: taille,
+      height: taille,
+      fit: BoxFit.contain,
+      cacheWidth: (taille * 3).round(),
+      errorBuilder: (_, _, _) => Icon(iconeDe(icone), size: taille),
     );
   }
 }

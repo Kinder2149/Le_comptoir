@@ -117,7 +117,7 @@ service cloud.firestore {
         && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'conso', 'ingredients', 'verresParLitre'])
         && ficheValide(d)
         && (!('icone' in d)
-            || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace']))
+            || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte']))
         && (!('photo' in d)
             || (d.photo is bytes && d.photo.size() <= 30000))
         && texte(d.nom, 40)

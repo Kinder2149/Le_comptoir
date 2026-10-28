@@ -99,7 +99,18 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **Décision 43 (28/10/2026)** : ajouter au modèle buche de chèvre et tartiflette (produits composés), bonbons offerts (prix 0, sans consommation), Nutella et sucre pour les crêpes (sans estimation de quantité) ; pas de matériel d'organisation dans le modèle. Source : liste de courses de l'an dernier fournie par Kinder.
 - **À trancher** : correspondance des logos : la tarte confiture (03) est-elle un second gâteau sucré, et quel logo pour le gâteau salé ? (10 images, 9 produits distincts) ; soda (09) au style différent ; où se range le modèle (livré avec l'application,
   jamais modifiable lui-même : on le copie) ; le menu type actuel est-il remplacé ?
-- **Critère (Kinder)** : à écrire.
+- **Cadrage figé le 28/10/2026 (Kinder : « oui, figer et coder »)** :
+  - Modèle de 13 lignes (12 produits vendus + bonbons offerts), valeurs de départ modifiables, prix actuels conservés faute de prix reçus : Croque-monsieur (composé : 2 tranches de pain de mie, 1/3 de tranche de jambon, 7 g de gruyère ; conso 2) ; Croque chèvre (composé : 2 tranches de pain de mie, 30 g de bûche de chèvre, estimation) ; Tartiflette (part) ; Café (litre, 8 verres par litre ; conso 2) ; Thé (unité ; conso 1) ; Soda (litre, 5 verres par litre, estimation ; conso 1) ; Tarte (part ; conso 1) ; Flan (part ; conso 1) ; Barre chocolatée (unité ; conso 1) ; Fruit (unité ; conso 1) ; Salade (part) ; Crêpe (unité) ; Bonbons (unité, prix 0).
+  - Logos : café, thé, croque-monsieur, barre, fruit, salade, soda, crêpe gardent leur clé ; flan = `gateau_sucre` ; tarte = nouvelle clé `tarte` (à ajouter aux règles d'accès). Chèvre, tartiflette et bonbons gardent une icône du système. Priorité d'affichage : photo, puis logo, puis icône. Logos entiers (non rognés), conservés à 500 px.
+  - Création d'un menu : modèle, copie d'un menu existant, ou vide. « Partir du menu type » devient « Partir du modèle ».
+  - Gâteau salé retiré du modèle (remplacé par la tartiflette) ; Nutella et sucre hors modèle (décision 43).
+- **Critère de validation (proposé par Claude, validé le 28/10/2026)** :
+  1. Un menu créé « à partir du modèle » contient les 13 lignes avec logos, types, recettes et consommations.
+  2. Je rouvre le croque : mêmes quantités. Je modifie son prix : le modèle d'origine ne change pas.
+  3. Je copie un menu existant : tous les produits arrivent avec leurs types, recettes, images et stocks.
+  4. Un événement créé avec ce menu affiche les logos en caisse (hors réseau aussi).
+  5. Une photo ajoutée remplace le logo ; sans photo, le logo s'affiche.
+  6. Caisse, stock et bilan inchangés : les tests existants restent verts.
 
 ### Étape 3 — Stock par rôle (moyenne)
 - **Kinder voit** : la gestion règle le stock de ses gymnases ; un bénévole ajoute des parts (gâteau sucré,
@@ -208,7 +219,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 | Étape | État | Date | Critère validé |
 |---|---|---|---|
 | 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 162 tests de logique et d'écrans, 146 tests de règles, 18 parcours Android) ; captures dans `audit_front/captures_stock_courses/` ; règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder) |
-| 2 Modèle générique et logos | à cadrer | | |
+| 2 Modèle générique et logos | **implémentée, testée par Claude (28/10/2026)** ; reste la vérification par une autre IA et la capture de Kinder | 28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 166 tests de logique et d'écrans, 147 tests de règles, 19 parcours Android) ; captures `reel2_*` dans `audit_front/captures_stock_courses/` ; règles (clé `tarte`) **pas encore déployées**, en attente de l'accord de Kinder |
 | 3 Stock par rôle | à cadrer | | |
 | 4 Caisse : rupture et stock bas | à cadrer | | |
 | 5 Courses : préparation | à cadrer | | |

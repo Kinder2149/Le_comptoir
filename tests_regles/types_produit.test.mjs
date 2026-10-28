@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   assoAvecGestionnaire, ecrire, lire, lot, MAJ, produit, RACINE, entier,
 } from './outils.mjs';
-import { evenement, produitEvenement } from './outilsCaisse.mjs';
+import { evenement, gymnase, produitEvenement } from './outilsCaisse.mjs';
 
 const texte = (s) => ({ stringValue: s });
 const nombre = (n) => (Number.isInteger(n) ? entier(n) : { doubleValue: n });
@@ -175,4 +175,32 @@ test('copie dans l\'événement : 20 ingrédients acceptés, 21 refusés, image 
     updateMask: { fieldPaths: ['icone'] },
     currentDocument: { exists: true },
   }]), 200);
+});
+
+// Le modèle (assets/menu_type.json) : 13 produits, dont deux recettes, créés d'un seul lot.
+const modele13 = () => [
+  compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Jambon blanc', 0.333, 'tranche'), ingredient('Gruyère râpé', 7, 'g')),
+  compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Bûche de chèvre', 30, 'g')),
+  type('part'),
+  { ...type('litre'), verresParLitre: nombre(8), conso: nombre(2) },
+  { conso: nombre(1) },
+  { ...type('litre'), verresParLitre: nombre(5), conso: nombre(1) },
+  { ...type('part'), icone: texte('tarte') },
+  { ...type('part'), icone: texte('gateau_sucre') },
+  { icone: texte('barre') },
+  { icone: texte('fruit') },
+  type('part'),
+  { icone: texte('crepe') },
+  {},
+];
+
+test('le modèle : 13 produits d\'un menu, puis d\'un événement avec 3 gymnases, en un seul lot', async () => {
+  const { chef, id } = await avecMenu();
+  const champs = modele13();
+  assert.equal(await lot(chef, champs.map((c, i) => produitMenu(id, `p${i}`, c))), 200);
+  assert.equal(await lot(chef, [
+    ecrire(`associations/${id}/evenements/e1`, evenement({ nbGymnases: 3 })),
+    gymnase(id, 'e1', 'g1'), gymnase(id, 'e1', 'g2'), gymnase(id, 'e1', 'g3'),
+    ...champs.map((c, i) => produitEvenement(id, 'e1', `p${i}`, { champs: c, stock: 20 })),
+  ]), 200);
 });

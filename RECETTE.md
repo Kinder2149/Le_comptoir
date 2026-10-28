@@ -26,7 +26,7 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Fermer la fenêtre Google sans choisir ne crée rien et affiche « Connexion Google annulée ».
 
 **2. Photo d'un produit (le vrai choix)**
-- [ ] Menus → nouveau menu en cochant « Partir du menu type » : 10 produits avec icônes.
+- [ ] Menus → nouveau menu en cochant « Partir du modèle » : 13 produits avec logos (voir aussi le point 15).
 - [ ] Sur un produit : « Ajouter une photo » → galerie **et** appareil photo fonctionnent ; la vignette s'affiche dans la liste puis dans la caisse.
 
 **3. Caisse, au quotidien**
@@ -81,7 +81,7 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Changez le code de l'association (Paramètres), puis scannez l'**ancien** QR : « Ce QR code n'est plus valable ». Scannez un QR code quelconque : « QR code illisible ».
 
 **13. Contrôles sur le vrai serveur (nouveau, que je n'ai pu faire qu'en local)**
-- [ ] Créer un événement avec le **menu type (10 produits) et 3 ou 4 gymnases en un seul geste** : il se crée sans erreur (limite d'accès par lot des règles).
+- [ ] Créer un événement avec le **modèle (13 produits) et 3 ou 4 gymnases en un seul geste** : il se crée sans erreur (limite d'accès par lot des règles).
 - [ ] Faire créer un événement par un **gestionnaire** (pas le responsable), avec 2 gymnases : il se crée sans erreur.
 
 **14. Types de produit et recettes (nouveau, chantier Stock et courses, étape 1)**
@@ -92,12 +92,20 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Saisies refusées avec un message clair : composé sans ingrédient, quantité à zéro, verres par litre à zéro, plus de 20 ingrédients.
 - [ ] Créer un événement avec ce menu : dans le détail de l'événement, « Produits » affiche la recette et le ratio. Modifier ensuite la recette dans le menu : l'événement déjà créé ne change pas.
 
+**15. Modèle générique et logos (nouveau, chantier Stock et courses, étape 2)**
+- [ ] Menus → « Nouveau menu » : « Partir du modèle » et « Ou copier un menu existant » (liste de vos menus).
+- [ ] Partir du modèle : 13 produits avec vos logos (café, thé, croque, barre, fruit, salade, soda, crêpe, flan, tarte) ; bonbons (offerts, 0,00 €), tartiflette et croque chèvre présents.
+- [ ] Ouvrir « Croque-monsieur » : recette 2 tranches de pain de mie, 1/3 de tranche de jambon, 7 g de gruyère, consommation 2.
+- [ ] Modifier un prix dans le menu copié : le modèle d'origine ne change pas (recréez un menu depuis le modèle : l'ancien prix revient).
+- [ ] Copier un menu existant : tous les produits arrivent avec leurs types, recettes, images et stocks.
+- [ ] Événement créé avec ce menu : la caisse affiche les logos, aussi en mode avion ; ajouter une photo à un produit remplace son logo.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.
 - **Suppression de l'association** : définitive, sans corbeille.
 - **Gymnases** : 8 au maximum par événement, jamais supprimés ; un gymnase ajouté plus tard démarre avec un stock à zéro.
 - **Clôture de l'événement** : réservée au responsable et au gestionnaire rattaché à **tous** les gymnases.
-- **Menu type** : les produits et prix sont génériques ; donnez-moi votre menu, je remplace `assets/menu_type.json`.
+- **Modèle de menu** : les prix sont des valeurs de départ (vos prix réels ne m'ont pas été donnés) ; les recettes et consommations sont des estimations tirées de la liste de courses de l'an dernier. Donnez-moi vos prix, je remplace `assets/menu_type.json`.
 - Un bénévole sans compte qui **désinstalle** l'application perd son accès : il lui suffit de ressaisir le code (ou de rescanner un QR).
 - Les photos sont de petites vignettes (96 px) : voulu, pour rester gratuit (pas de stockage de fichiers).

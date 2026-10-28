@@ -6,6 +6,7 @@ import 'dart:typed_data';
 const cleIcones = <String>[
   'croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda',
   'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace',
+  'tarte',
 ];
 
 /// Photo d'un produit : vignette en octets (30 Ko max, comme dans les règles).

@@ -7,7 +7,7 @@ import {
 import { evenement, produitEvenement } from './outilsCaisse.mjs';
 
 const ICONES = ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda',
-  'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace'];
+  'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte'];
 
 const octets = (n) => ({ bytesValue: Buffer.alloc(n, 7).toString('base64') });
 const icone = (c) => ({ icone: { stringValue: c } });

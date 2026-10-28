@@ -38,10 +38,67 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:le_comptoir/depot_associations.dart';
+import 'package:le_comptoir/depot_menus.dart' show lireMenuType;
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
 
 import 'outils.dart';
+
+// Les 10 produits de l'ancien menu type (avant le modèle de l'étape 2).
+const _menuDeTest = '''
+[
+ {
+  "nom": "Croque-monsieur",
+  "prixCentimes": 300,
+  "icone": "croque"
+ },
+ {
+  "nom": "Salade",
+  "prixCentimes": 400,
+  "icone": "salade"
+ },
+ {
+  "nom": "Fruit",
+  "prixCentimes": 100,
+  "icone": "fruit"
+ },
+ {
+  "nom": "Thé",
+  "prixCentimes": 100,
+  "icone": "the"
+ },
+ {
+  "nom": "Café",
+  "prixCentimes": 100,
+  "icone": "cafe"
+ },
+ {
+  "nom": "Barre chocolatée",
+  "prixCentimes": 100,
+  "icone": "barre"
+ },
+ {
+  "nom": "Soda",
+  "prixCentimes": 150,
+  "icone": "soda"
+ },
+ {
+  "nom": "Part de gâteau sucrée",
+  "prixCentimes": 200,
+  "icone": "gateau_sucre"
+ },
+ {
+  "nom": "Part de gâteau salée",
+  "prixCentimes": 250,
+  "icone": "gateau_sale"
+ },
+ {
+  "nom": "Crêpe",
+  "prixCentimes": 250,
+  "icone": "crepe"
+ }
+]
+''';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -139,10 +196,10 @@ void main() {
     await attendre(tester, find.byKey(const Key('menus')));
     await toucher(tester, find.byKey(const Key('menus')));
     await attendre(tester, find.byKey(const Key('nouveau_menu')));
-    await toucher(tester, find.byKey(const Key('nouveau_menu')));
-    await tester.enterText(find.byKey(const Key('nom_menu')), 'Menu Tournoi');
-    await toucher(tester, find.byKey(const Key('menu_type')));
-    await toucher(tester, find.byKey(const Key('valider_nom')));
+    // Menu de test figé (les 10 produits de l'ancien menu type) : les chiffres de ce
+    // parcours ne dépendent pas du modèle fourni, qui évolue (copie_menu_test et
+    // images_test couvrent « partir du modèle »).
+    await menus.creerMenuDepuisModele('Menu Tournoi', lireMenuType(_menuDeTest));
     await attendre(tester, find.text('Menu Tournoi'));
     final menu = (await menus.suivreMenus().first).single;
     for (var i = 0; i < 100 && (await menus.suivreProduits(menu.id).first).length < 10; i++) {

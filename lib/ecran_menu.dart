@@ -590,7 +590,7 @@ class _EtatSelecteurImage extends State<SelecteurImage> {
             for (final cle in cleIcones)
               ChoiceChip(
                 key: Key('icone_$cle'),
-                label: Icon(iconeDe(cle), size: 20),
+                label: VignetteProduit(icone: cle, taille: 28),
                 selected: _icone == cle,
                 onSelected: (v) => _changer(icone: v ? cle : null, photo: _photo),
               ),

@@ -62,14 +62,20 @@ void main() {
     await attendre(tester, find.text('Menu Tournoi'));
     await finTransition(tester);
     final menu = (await menus.suivreMenus().first).single;
-    for (var i = 0; i < 100 && (await menus.suivreProduits(menu.id).first).length < 10; i++) {
+    for (var i = 0; i < 100 && (await menus.suivreProduits(menu.id).first).length < 13; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     var produits = await menus.suivreProduits(menu.id).first;
-    expect(produits.length, 10);
+    expect(produits.length, 13);
     expect(produits.map((p) => p.nom),
         containsAll(['Croque-monsieur', 'Thé', 'Café', 'Crêpe', 'Soda']));
-    expect(produits.every((p) => p.icone != null && p.photo == null), isTrue);
+    // Tartiflette et bonbons n'ont pas d'icône ; aucun produit du modèle n'a de photo.
+    expect(
+        produits
+            .where((p) => p.nom != 'Tartiflette' && !p.nom.startsWith('Bonbons'))
+            .every((p) => p.icone != null),
+        isTrue);
+    expect(produits.every((p) => p.photo == null), isTrue);
     expect(produits.firstWhere((p) => p.nom == 'Thé').icone, 'the');
     // Côté serveur aussi, avec leurs icônes.
     final serveurProduits = await db
@@ -79,10 +85,10 @@ void main() {
         .doc(menu.id)
         .collection('produits')
         .get(serveur);
-    expect(serveurProduits.docs.length, 10);
-    expect(serveurProduits.docs.every((d) => d.data()['icone'] != null), isTrue);
+    expect(serveurProduits.docs.length, 13);
+    expect(serveurProduits.docs.where((d) => d.data()['icone'] != null).length, 11);
 
-    // --- Dans le menu : la vignette de chaque produit est son icône.
+    // --- Dans le menu : la vignette de chaque produit est son logo (ou son icône).
     await toucher(tester, find.text('Menu Tournoi'));
     await attendre(tester, find.byKey(const Key('nouveau_produit')));
     await finTransition(tester);
@@ -90,8 +96,8 @@ void main() {
     expect(
         find.descendant(
             of: find.byKey(Key('produit_${cafe.id}')),
-            matching: find.byIcon(Icons.coffee)),
-        findsOneWidget);
+            matching: find.byType(Image)),
+        findsOneWidget); // le logo du café
 
     // --- Changer l'icône du café et lui ajouter une photo.
     await toucher(tester, find.byKey(Key('produit_${cafe.id}')));
@@ -213,13 +219,12 @@ void main() {
       expect(
           find.descendant(
               of: find.byKey(Key('produit_${croqueEvt.id}')),
-              matching: find.byIcon(Icons.lunch_dining)),
-          findsOneWidget); // le croque-monsieur : son icône
-      expect(
-          find.descendant(
-              of: find.byKey(Key('produit_${croqueEvt.id}')),
               matching: find.byType(Image)),
-          findsNothing);
+          findsOneWidget); // le croque-monsieur : son logo (pas une photo)
+      final logo = tester.widget<Image>(find.descendant(
+          of: find.byKey(Key('produit_${croqueEvt.id}')),
+          matching: find.byType(Image)));
+      expect(logo.image, isA<ResizeImage>()); // le logo (la photo, elle, n'est pas redimensionnée)
     }
 
     await ouvrirLaCaisse('benevole1');
