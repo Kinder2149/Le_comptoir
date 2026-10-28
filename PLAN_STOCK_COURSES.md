@@ -96,6 +96,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **Fichiers** : `assets/menu_type.json`, `pubspec.yaml` (déclarer les images, aucune dépendance), `lib/ecran_caisse.dart`
   (affichage des icônes), `lib/ecran_menus.dart`, `lib/depot_menus.dart`, tests.
 - **On ne fait pas** : réglages de l'événement, courses.
+- **Décision 43 (28/10/2026)** : ajouter au modèle buche de chèvre et tartiflette (produits composés), bonbons offerts (prix 0, sans consommation), Nutella et sucre pour les crêpes (sans estimation de quantité) ; pas de matériel d'organisation dans le modèle. Source : liste de courses de l'an dernier fournie par Kinder.
 - **À trancher** : correspondance des logos : la tarte confiture (03) est-elle un second gâteau sucré, et quel logo pour le gâteau salé ? (10 images, 9 produits distincts) ; soda (09) au style différent ; où se range le modèle (livré avec l'application,
   jamais modifiable lui-même : on le copie) ; le menu type actuel est-il remplacé ?
 - **Critère (Kinder)** : à écrire.
@@ -110,6 +111,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
   `firestore.rules`, tests (règles : tests_regles/).
 - **On ne fait pas** : alerte et couleurs (étape 4), courses, transferts entre gymnases.
 - **Confirmé par Kinder (27/10/2026)** : un bénévole ajoute des parts, rien d'autre.
+- **Décision 43 (28/10/2026)** : un produit sans quantité (ex. Nutella) peut être signalé « vide » dans le stock ; à cadrer : qui peut le signaler (bénévole ?) et comment cela s'affiche en caisse et en suivi.
 - **Point d'attention technique** : les règles autorisent aujourd'hui un membre dont la caisse est ouverte dans le gymnase
   à modifier la quantité (c'est ce qui permet la vente, qui baisse, et l'annulation, qui remonte). L'ajout de parts
   par un bénévole doit être limité aux produits de type « part » et distingué de l'annulation d'une vente.
@@ -138,6 +140,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 - **On ne fait pas** : validation des achats (étape 6), prix par élément, impression de la liste.
 - **Tranché (Kinder, 27/10/2026)** : une liste de courses pour TOUT l'événement ; quantités saisies par gymnase,
   pré-remplies depuis les personnes de ce gymnase ; la validation ajoute à chaque gymnase.
+- **Décision 43 (28/10/2026)** : la liste accepte des lignes libres ajoutées à la main (matériel d'organisation, etc.) pour tout centraliser ; elles n'entrent pas dans le stock ni le calcul inverse.
 - **À trancher** : qui lance les courses (gestion de tous les gymnases ?) ;
   arrondis (pain en paquets ?) ; ajouter une ligne à la main après calcul ; plusieurs listes dans un même événement.
 - **Critère (Kinder)** : à écrire.
@@ -175,7 +178,7 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 | Entrées, pertes/consommations internes, corrections | **Retenu en partie** : entrées et réglages (étape 3, courses 6) ; pertes et consommations internes **reportées** |
 | Inventaire de fin de journée (saisie directe, sans écart affiché) | **Couvert** par le réglage du stock par la gestion (étape 3) ; pas d'écran dédié |
 | Réapprovisionnements partiels pendant la journée | **À trancher** à l'étape 6 |
-| Unités et conversions (tranches, grammes) | **Retenu** (étape 1) |
+| Unités et conversions (tranches, grammes) | **Retenu** : liste d'unités à l'étape 1, conversions g/kg et cl/L aux étapes 5-6 |
 | Transferts entre gymnases | **Écarté** (à la main : -10 puis +10) |
 | Lots à prix différents, coût moyen pondéré | **Écarté** (coût total des courses seulement) |
 | Prévisions personnes × jours × coefficients, coefficients visibles et modifiables | **Retenu** en pré-remplissage modifiable (décision 42, étape 5) ; pas de stock cible |

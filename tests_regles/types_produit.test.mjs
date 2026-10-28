@@ -163,3 +163,16 @@ test('l\'événement reçoit la copie ; seule l\'image change ensuite', async ()
   assert.equal(await maj({ conso: nombre(5) }, ['conso']), 403);
   assert.equal(await maj({ icone: texte('croque') }, ['icone']), 200);
 });
+
+test('copie dans l\'événement : 20 ingrédients acceptés, 21 refusés, image modifiable avec 20', async () => {
+  const { chef, id } = await avecMenu();
+  assert.equal(await lot(chef, [ecrire(`associations/${id}/evenements/e1`, evenement())]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p20', { champs: compose(...plusieurs(20)) })]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p21', { champs: compose(...plusieurs(21)) })]), 403);
+  const chemin = `associations/${id}/evenements/e1/produits/p20`;
+  assert.equal(await lot(chef, [{
+    update: { name: `${RACINE}/${chemin}`, fields: { icone: texte('croque') } },
+    updateMask: { fieldPaths: ['icone'] },
+    currentDocument: { exists: true },
+  }]), 200);
+});

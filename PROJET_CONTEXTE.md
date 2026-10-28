@@ -24,7 +24,8 @@ les buvettes de la saison.
 
 ## 4. Fonctionnalités
 - Menus réutilisables et modifiables, prix par produit, suivi du stock
-  optionnel par produit.
+  optionnel par produit ; type de produit (composé avec recette, à l'unité,
+  à la part, au litre) et consommation par personne et par jour (décisions 36 et 42).
 - Images : modèle fourni intégré à l'application ; photo ajoutée par
   l'association réduite en vignette et stockée avec le produit.
 - Événement : menu associé et modes de paiement autorisés ; seuls ces
@@ -232,6 +233,7 @@ les buvettes de la saison.
     Exigences issues de la revue d'équipe Hermès (27/10/2026) : (a) la vente et la baisse de stock sont écrites dans UN MÊME lot (aujourd'hui deux écritures séparées) ; (b) mesurer les lectures du suivi en direct (quota gratuit 50 000/jour) avant de passer à 8 gymnases ; l'estimation d'écritures (environ 11 000/jour pour 3 gymnases et 6 caisses, quota 20 000) tient. L'identifiant unique de vente existe déjà.
 
 42. Pré-remplissage des quantités de courses (27/10/2026, modifie la décision 40) : à la création d'un événement, la gestion règle le nombre de personnes par gymnase et le nombre de jours (2 par défaut). Chaque produit du menu porte une consommation par personne et par jour, modifiable (exemple de départ pour 80 personnes par gymnase : 2 croque-monsieur, 1 boisson, 1 part de gâteau, 1 fruit ou barre, 2 cafés). Le module Courses PRÉ-REMPLIT avec ces réglages les quantités de produits finaux ; la gestion garde la main et modifie chaque chiffre. Estimations de départ du modèle, à corriger par l'association : croque = 2 tranches de pain de mie, 1/4 de tranche de jambon, 25 g de gruyère ; café = 1 litre pour 8 verres. Aucune quantité n'est imposée : rien ne se commande ni ne s'achète sans validation.
+43. Liste de courses de l'an dernier et modèle (28/10/2026, Kinder) : (a) le matériel d'organisation (liquide vaisselle, sopalin, papier toilette, torchons, ruban) n'est PAS dans le modèle de menu ; à la création d'une liste de courses on ajoute à la main des lignes libres (nom, quantité) pour garder une trace centralisée de tout ce qui s'achète. (b) Le modèle est complété : buche de chèvre et tartiflette (recettes alternatives au croque-monsieur) ; les bonbons sont offerts (gratuits, un petit plus) ; le Nutella et le sucre servent aux crêpes sans estimation de quantité (trop aléatoire). (c) Dans le stock, on peut signaler qu'un pot ou paquet est vide (signal « vide », sans quantité). Les valeurs d'exemple du croque restent à recaler : la liste de l'an dernier (1000 tranches de pain, 160 de jambon, 3 kg de gruyère) suggère environ 6 g de gruyère par croque, et non 25 g. Estimation retenue pour le modèle (Claude, faute de chiffres de vente, modifiable par l'association) : environ 400 croques l'an dernier, donc 2 tranches de pain de mie, 1/3 de tranche de jambon, 7 g de gruyère par croque.
 
 ## 7. Points ouverts
 - Menu type prêt à l'emploi : en place avec des produits génériques
@@ -348,7 +350,7 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
   ajoutés après la recette (décision 23). Menu type réel à fournir.
 - Point ouvert : un gestionnaire peut-il changer le code d'accès ?
 
-## 12. État au 05/10/2026 et reprise sur un autre poste
+## 12. État au 28/10/2026 et reprise sur un autre poste
 **Où on en est**
 - Application complète (étapes 1 à 15, gymnases M1-M6, images modifiables depuis l'événement, bilan redessiné,
   thème a1, logo et icône). Vérifié le 05/10/2026 : analyse sans erreur, 141 tests de logique et d'écrans,

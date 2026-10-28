@@ -5,8 +5,8 @@
 - L'événement copie type, recette, ratio et consommation avec le produit (figés comme le prix) ; le détail de l'événement les affiche.
 - Messages clairs : composé sans ingrédient, quantité à zéro ou négative, ratio à zéro, plus de 20 ingrédients.
 - Règles d'accès : champs `type`, `conso`, `ingredients`, `verresParLitre` contrôlés (menu et copie d'événement) ; la recette est vérifiée position par position, de façon compacte, à cause de la limite de 1000 expressions par requête. Déployées sur le vrai projet Firebase le 28/10/2026, sur accord de Kinder.
-- Vérifié : analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles (13 nouveaux). Captures : `audit_front/captures_stock_courses/` (rendu de test : les libellés de boutons y apparaissent en blocs, limite de la police de test).
-- Aucune dépendance ajoutée. Reste : capture de Kinder (ferme la mission), vérification par une autre IA, vérification par une autre IA.
+- Vérifié : analyse sans erreur, 162 tests de logique et d'écrans, 146 tests de règles (14 nouveaux), 18 parcours Android verts. Captures : `audit_front/captures_stock_courses/` (rendu de test : les libellés de boutons y apparaissent en blocs, limite de la police de test).
+- Aucune dépendance ajoutée. Reste : vérification par une autre IA, puis capture de Kinder (ferme la mission).
 
 ## 27/10/2026 (fin) — Cadrage de l'étape 1 clos
 - Critère de validation de l'étape 1 écrit (délégué par Kinder) dans `PLAN_STOCK_COURSES.md`. Étape 1 prête à implémenter.

@@ -177,12 +177,21 @@ String nombrePourSaisie(double n) {
   return s.replaceAll('.', ',');
 }
 
+/// « 2 tranches de pain de mie », « 0,25 tranche de jambon », « 25 g de gruyère » :
+/// pluriel à partir de 2, « × » devant un ingrédient compté à l'unité.
+String texteIngredient(Ingredient i) {
+  final q = nombrePourSaisie(i.quantite);
+  if (i.unite == 'unite') return '$q × ${i.nom}';
+  final unite = i.unite == 'tranche' && i.quantite >= 2 ? 'tranches' : libellesUnites[i.unite];
+  return '$q $unite de ${i.nom}';
+}
+
 /// Texte court de la fiche (sauts de ligne compris), vide pour un produit à
-/// l'unité sans consommation : « Composé : 2 tranche pain de mie, … ».
+/// l'unité sans consommation : « Recette : 2 tranches de pain de mie, … ».
 String resumeFiche(FicheProduit f) {
   final lignes = <String>[
     if (f.type == 'compose')
-      'Recette : ${f.ingredients.map((i) => '${nombrePourSaisie(i.quantite)} ${libellesUnites[i.unite]} ${i.nom}').join(', ')}'
+      'Recette : ${f.ingredients.map(texteIngredient).join(', ')}'
     else if (f.type == 'litre')
       'Au litre : ${nombrePourSaisie(f.verresParLitre ?? 0)} verres par litre'
     else if (f.type == 'part')

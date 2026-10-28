@@ -102,6 +102,18 @@ void main() {
     });
   });
 
+  group('texte de la recette', () {
+    test('pluriel à partir de 2, « de » devant l\'ingrédient', () {
+      expect(texteIngredient(const Ingredient('pain de mie', 2, 'tranche')),
+          '2 tranches de pain de mie');
+      expect(texteIngredient(const Ingredient('jambon', 0.25, 'tranche')),
+          '0,25 tranche de jambon');
+      expect(texteIngredient(const Ingredient('gruyère', 25, 'g')),
+          '25 g de gruyère');
+      expect(texteIngredient(const Ingredient('œuf', 2, 'unite')), '2 × œuf');
+    });
+  });
+
   group('ingrédient partagé', () {
     test('reconnu par son nom, sans casse ni accents ni espaces autour', () {
       expect(cleIngredient(' Pain de  MIÉ '), cleIngredient('pain de mie'));

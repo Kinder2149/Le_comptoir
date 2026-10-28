@@ -84,6 +84,14 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Créer un événement avec le **menu type (10 produits) et 3 ou 4 gymnases en un seul geste** : il se crée sans erreur (limite d'accès par lot des règles).
 - [ ] Faire créer un événement par un **gestionnaire** (pas le responsable), avec 2 gymnases : il se crée sans erreur.
 
+**14. Types de produit et recettes (nouveau, chantier Stock et courses, étape 1)**
+- [ ] Menus → un menu → « Nouveau produit » : un choix « Type de produit » (composé, à l'unité, à la part, au litre).
+- [ ] Type composé : ajouter « Croque-monsieur » avec 3 ingrédients (2 tranches de pain de mie, 1/4 de tranche de jambon, 25 g de gruyère) ; rouvrir le produit : mêmes valeurs.
+- [ ] Type au litre : « Café », 8 verres par litre, consommation 2 par personne et par jour ; rouvrir : mêmes valeurs.
+- [ ] Un produit déjà existant (ex. « Fruit ») garde son prix, son stock et son image.
+- [ ] Saisies refusées avec un message clair : composé sans ingrédient, quantité à zéro, verres par litre à zéro, plus de 20 ingrédients.
+- [ ] Créer un événement avec ce menu : dans le détail de l'événement, « Produits » affiche la recette et le ratio. Modifier ensuite la recette dans le menu : l'événement déjà créé ne change pas.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.
