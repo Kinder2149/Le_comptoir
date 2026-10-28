@@ -264,7 +264,8 @@ class DepotEvenements {
       // Chaque gymnase part du stock du menu.
       if (p.stock != null) {
         for (final g in refsGymnases) {
-          lot.set(g.collection('stocks').doc(produit.id), {'quantite': p.stock});
+          lot.set(g.collection('stocks').doc(produit.id),
+              {'quantite': p.stock, 'reference': p.stock});
         }
       }
     }
@@ -306,7 +307,8 @@ class DepotEvenements {
       'creeLe': FieldValue.serverTimestamp(),
     });
     for (final produitId in suivis.keys) {
-      lot.set(ref.collection('stocks').doc(produitId), {'quantite': 0});
+      lot.set(ref.collection('stocks').doc(produitId),
+          {'quantite': 0, 'reference': 0});
     }
     await lot.commit();
   }
@@ -322,16 +324,52 @@ class DepotEvenements {
       _gymnase(evenementId, gymnaseId)
           .collection('stocks')
           .doc(produitId)
-          .set({'quantite': quantite});
+          .set({'quantite': quantite, 'reference': quantite});
 
   /// Réapprovisionnement : ajoute [quantite] au stock du gymnase (écriture
-  /// relative, donc sûre même si des ventes arrivent en même temps).
+  /// relative, donc sûre même si des ventes arrivent en même temps) et au total
+  /// de référence.
   Future<void> reapprovisionner(String evenementId, String gymnaseId,
           String produitId, int quantite) =>
+      _ajouter(evenementId, gymnaseId, produitId, quantite);
+
+  /// Ajout de parts par un bénévole dont la caisse est ouverte dans ce gymnase :
+  /// même écriture que le réapprovisionnement (les règles la limitent aux
+  /// produits de type « part »).
+  Future<void> ajouterParts(String evenementId, String gymnaseId,
+          String produitId, int quantite) =>
+      _ajouter(evenementId, gymnaseId, produitId, quantite);
+
+  Future<void> _ajouter(String evenementId, String gymnaseId, String produitId,
+      int quantite) async {
+    final ref = _gymnase(evenementId, gymnaseId).collection('stocks').doc(produitId);
+    final actuel = (await ref.get()).data();
+    // Un stock plus ancien n'a pas de total de référence : on le pose d'après la
+    // quantité connue.
+    final reference = actuel != null && actuel['reference'] != null
+        ? FieldValue.increment(quantite)
+        : ((actuel?['quantite'] as int?) ?? 0) + quantite;
+    await ref.update({
+      'quantite': FieldValue.increment(quantite),
+      'reference': reference,
+    });
+  }
+
+  /// Les produits signalés « vides » dans un gymnase.
+  Stream<Set<String>> suivreVides(String evenementId, String gymnaseId) =>
       _gymnase(evenementId, gymnaseId)
-          .collection('stocks')
-          .doc(produitId)
-          .update({'quantite': FieldValue.increment(quantite)});
+          .collection('vides')
+          .snapshots()
+          .map((s) => {for (final d in s.docs) d.id});
+
+  /// Signale (ou retire le signal) qu'un produit est vide dans ce gymnase.
+  Future<void> signalerVide(String evenementId, String gymnaseId,
+      String produitId, bool vide) {
+    final ref = _gymnase(evenementId, gymnaseId).collection('vides').doc(produitId);
+    return vide
+        ? ref.set({'creeLe': FieldValue.serverTimestamp()})
+        : ref.delete();
+  }
 
   /// Arrête le suivi d'un produit dans un gymnase.
   Future<void> arreterSuivi(

@@ -100,6 +100,15 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Copier un menu existant : tous les produits arrivent avec leurs types, recettes, images et stocks.
 - [ ] Événement créé avec ce menu : la caisse affiche les logos, aussi en mode avion ; ajouter une photo à un produit remplace son logo.
 
+**16. Stock par rôle (nouveau, chantier Stock et courses, étape 3)**
+- [ ] Bénévole, caisse ouverte : le bouton « Parts et produits vides » (icône boîte) de la barre ouvre l'écran « Stock de mon gymnase ».
+- [ ] Il propose « Ajouter des parts » seulement pour les produits de type part (tarte, flan, tartiflette, salade) ; ajouter 6 parts : le stock affiché passe de 5 à 11 ; 0 est refusé.
+- [ ] Les autres produits (croque, soda…) n'ont pas de bouton d'ajout ; le bénévole ne peut changer ni prix ni autre quantité.
+- [ ] Un produit sans quantité (crêpe) : interrupteur « Vide » ; il apparaît « Pas de suivi · Vide » dans « Gymnases et stocks » côté gestion, et le signal se retire des deux côtés.
+- [ ] Gestion : « Changer la quantité » et « + » fonctionnent comme avant.
+- [ ] Événement clôturé : plus d'ajout de parts ni de signal « vide ».
+- [ ] **Hors réseau** : en mode avion, ajouter des parts puis remettre le réseau : le stock est mis à jour sans perte.
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

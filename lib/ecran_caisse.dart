@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -101,6 +102,7 @@ class EcranCaisse extends StatefulWidget {
     this.bandeau,
     this.onVoirVentes,
     this.onCloturer,
+    this.onStock,
     this.verrouillee = false,
   });
 
@@ -123,6 +125,9 @@ class EcranCaisse extends StatefulWidget {
 
   /// Ouvre l'écran de clôture de la caisse.
   final VoidCallback? onCloturer;
+
+  /// Ouvre l'écran « Stock » du bénévole (ajout de parts, produits vides).
+  final VoidCallback? onStock;
 
   /// Caisse clôturée : on regarde, on ne vend plus.
   final bool verrouillee;
@@ -209,6 +214,13 @@ class _EtatCaisse extends State<EcranCaisse> {
                 ],
               ),
         actions: [
+          if (widget.onStock != null && !widget.verrouillee)
+            IconButton(
+              key: const Key('ouvrir_stock'),
+              tooltip: 'Parts et produits vides',
+              icon: const Icon(Icons.inventory_2_outlined),
+              onPressed: widget.onStock,
+            ),
           if (widget.onCloturer != null)
             IconButton(
               key: const Key('ouvrir_cloture'),
@@ -477,6 +489,7 @@ class EcranCaisseEvenement extends StatefulWidget {
 class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
   String? _erreurEnvoi;
   List<Produit> _produits = const [];
+  List<ProduitEvenement> _produitsEvenement = const [];
 
   void _surErreur(Object _) {
     if (mounted) {
@@ -516,6 +529,17 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
           ),
         ),
       );
+
+  void _ouvrirStock() => showDialog<void>(
+    context: context,
+    builder: (_) => _DialogueStockBenevole(
+      depot: widget.depotEvenements,
+      evenementId: widget.evenement.id,
+      gymnaseId: widget.gymnase.id,
+      produits: _produitsEvenement,
+      onErreur: _surErreur,
+    ),
+  );
 
   void _cloturer() => Navigator.of(context).push<void>(
     MaterialPageRoute(
@@ -589,6 +613,7 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
         gymnaseId: widget.gymnase.id,
       ),
       builder: (context, p) {
+        _produitsEvenement = p.data ?? const <ProduitEvenement>[];
         _produits = [
           for (final x in p.data ?? const <ProduitEvenement>[])
             Produit(x.id, x.nom, x.prixCentimes, x.stock, x.icone, x.photo),
@@ -607,6 +632,7 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
                 onEncaisser: _encaisser,
                 onVoirVentes: () => _voirVentes(cloturee),
                 onCloturer: cloturee ? null : _cloturer,
+                onStock: _ouvrirStock,
                 verrouillee: cloturee,
                 bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
               );
@@ -614,6 +640,162 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Ce qu'un bénévole peut faire du stock de son gymnase : ajouter des parts
+/// (produits de type « part » suivis) et signaler un produit sans quantité
+/// comme vide. Rien d'autre.
+class _DialogueStockBenevole extends StatelessWidget {
+  const _DialogueStockBenevole({
+    required this.depot,
+    required this.evenementId,
+    required this.gymnaseId,
+    required this.produits,
+    required this.onErreur,
+  });
+
+  final DepotEvenements depot;
+  final String evenementId;
+  final String gymnaseId;
+  final List<ProduitEvenement> produits;
+  final void Function(Object) onErreur;
+
+  Future<void> _ajouter(BuildContext context, ProduitEvenement p) async {
+    final n = await showDialog<int>(
+      context: context,
+      builder: (_) => _DialogueParts(titre: 'Ajouter des parts : ${p.nom}'),
+    );
+    if (n == null) return;
+    // Sans réseau, l'écriture attend l'envoi : on n'attend pas sa fin.
+    unawaited(depot
+        .ajouterParts(evenementId, gymnaseId, p.id, n)
+        .catchError(onErreur));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = [
+      for (final p in produits)
+        if (p.fiche.type == 'part' && p.stock != null) p,
+    ];
+    final sansQuantite = [
+      for (final p in produits)
+        if (p.stock == null) p,
+    ];
+    return AlertDialog(
+      title: const Text('Stock de mon gymnase'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: StreamBuilder<Set<String>>(
+          stream: depot.suivreVides(evenementId, gymnaseId),
+          builder: (context, sv) {
+            final vides = sv.data ?? const <String>{};
+            return ListView(
+              shrinkWrap: true,
+              children: [
+                if (parts.isEmpty && sansQuantite.isEmpty)
+                  const Text(
+                    'Rien à régler ici : les quantités sont réglées par la gestion.',
+                    key: Key('stock_benevole_vide'),
+                  ),
+                if (parts.isNotEmpty)
+                  Text('Ajouter des parts',
+                      style: Theme.of(context).textTheme.titleSmall),
+                for (final p in parts)
+                  ListTile(
+                    dense: true,
+                    title: Text(p.nom),
+                    subtitle: Text('Stock : ${p.stock}'),
+                    trailing: IconButton(
+                      key: Key('ajout_parts_${p.id}'),
+                      icon: const Icon(Icons.add_circle_outline),
+                      tooltip: 'Ajouter des parts',
+                      onPressed: () => _ajouter(context, p),
+                    ),
+                  ),
+                if (sansQuantite.isNotEmpty)
+                  Text('Produits sans quantité',
+                      style: Theme.of(context).textTheme.titleSmall),
+                for (final p in sansQuantite)
+                  SwitchListTile(
+                    key: Key('vide_${p.id}'),
+                    dense: true,
+                    title: Text(p.nom),
+                    subtitle: const Text('Vide'),
+                    value: vides.contains(p.id),
+                    onChanged: (v) => unawaited(depot
+                        .signalerVide(evenementId, gymnaseId, p.id, v)
+                        .catchError(onErreur)),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('fermer_stock'),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Fermer'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Nombre de parts à ajouter : de 1 à 1000.
+class _DialogueParts extends StatefulWidget {
+  const _DialogueParts({required this.titre});
+
+  final String titre;
+
+  @override
+  State<_DialogueParts> createState() => _EtatDialogueParts();
+}
+
+class _EtatDialogueParts extends State<_DialogueParts> {
+  final _texte = TextEditingController();
+  String? _erreur;
+
+  @override
+  void dispose() {
+    _texte.dispose();
+    super.dispose();
+  }
+
+  void _valider() {
+    final n = int.tryParse(_texte.text.trim());
+    if (n == null || n < 1 || n > 1000) {
+      setState(() => _erreur = 'Entrez un nombre entier de 1 à 1000.');
+    } else {
+      Navigator.pop(context, n);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.titre),
+      content: TextField(
+        key: const Key('saisie_parts'),
+        controller: _texte,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration:
+            InputDecoration(labelText: 'Parts ajoutées', errorText: _erreur),
+        onSubmitted: (_) => _valider(),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Retour')),
+        FilledButton(
+            key: const Key('valider_parts'),
+            onPressed: _valider,
+            child: const Text('Ajouter')),
+      ],
     );
   }
 }

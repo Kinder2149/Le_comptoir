@@ -19,7 +19,9 @@ rules_version = '2';
 //                                                   forcee, nbCaissesOuvertes
 //       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
-//         stocks/{p}                              quantite (absent = pas de suivi de ce produit dans ce gymnase)
+//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
+//                                                 (absent = pas de suivi de ce produit dans ce gymnase)
+//         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
 //                                                 le stock que dans ses gymnases ; le responsable gère tout.
@@ -163,6 +165,20 @@ service cloud.firestore {
         && (roleDe(a) == 'responsable'
             || (roleDe(a) == 'gestionnaire'
                 && rattaches(a, e).size() >= get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)));
+    }
+    // Caisse ouverte de l'appelant dans CE gymnase.
+    function caisseOuverteDans(a, e, g) {
+      return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+        && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g;
+    }
+    // Ajout de parts par un bénévole : de 1 à 1000 parts, sur un produit de type « part »,
+    // et le total de référence monte de la même quantité.
+    function ajoutPartsValide(a, e, p) {
+      let avant = resource.data.quantite;
+      let ajout = request.resource.data.quantite - avant;
+      return ajout >= 1 && ajout <= 1000
+        && request.resource.data.get('reference', -1) == resource.data.get('reference', avant) + ajout
+        && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p)).data.get('type', 'unite') == 'part';
     }
     function stockValide(q) {
       return q is int && q >= -100000 && q <= 100000;
@@ -336,21 +352,58 @@ service cloud.firestore {
                       && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
                       && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
               && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-              && request.resource.data.keys().hasOnly(['quantite'])
+              && request.resource.data.keys().hasOnly(['quantite', 'reference'])
+              && request.resource.data.keys().hasAll(['quantite'])
               && request.resource.data.quantite is int
               && request.resource.data.quantite >= 0
-              && request.resource.data.quantite <= 100000;
+              && request.resource.data.quantite <= 100000
+              && (!('reference' in request.resource.data)
+                  || (request.resource.data.reference is int
+                      && request.resource.data.reference >= 0
+                      && request.resource.data.reference <= 100000));
 
-            // Réglage par la gestion, ou vente par un membre dont la caisse ouverte
-            // est dans CE gymnase. Le stock peut passer sous zéro : on avertit le
-            // bénévole, on ne bloque pas la vente.
+            // Trois écritures possibles, tant que l'événement est en cours :
+            //  - réglage ou réapprovisionnement par la gestion de CE gymnase (quantité et
+            //    total de référence) ;
+            //  - vente ou annulation par un membre dont la caisse ouverte est dans CE
+            //    gymnase (la quantité seule ; elle peut passer sous zéro : on avertit le
+            //    bénévole, on ne bloque pas la vente) ;
+            //  - ajout de parts par ce même membre (quantité et référence montent ensemble,
+            //    produit de type « part » seulement).
             allow update: if estMembre(a)
               && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite'])
               && stockValide(request.resource.data.quantite)
-              && (gereGymnase(a, e, g)
-                  || (exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
-                      && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g));
+              && (
+                (gereGymnase(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && (!('reference' in request.resource.data)
+                      || (request.resource.data.reference is int
+                          && request.resource.data.reference >= 0
+                          && request.resource.data.reference <= 100000)))
+                || (caisseOuverteDans(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite']))
+                || (caisseOuverteDans(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && ajoutPartsValide(a, e, p)));
+          }
+
+          // Produit signalé « vide » dans ce gymnase : par la gestion de CE gymnase ou par un
+          // membre dont la caisse ouverte y est. Document présent = vide.
+          match /vides/{p} {
+            allow read: if estGestion(a)
+              || (estMembre(a)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+            allow create: if estMembre(a)
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && (gereGymnase(a, e, g) || caisseOuverteDans(a, e, g))
+              && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p))
+              && request.resource.data.keys().hasOnly(['creeLe'])
+              && request.resource.data.keys().hasAll(['creeLe'])
+              && request.resource.data.creeLe is timestamp;
+            allow delete: if suppressionEnCours(a)
+              || (estMembre(a)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+                  && (gereGymnase(a, e, g) || caisseOuverteDans(a, e, g)));
           }
         }
 

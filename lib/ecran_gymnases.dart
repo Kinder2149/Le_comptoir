@@ -297,10 +297,13 @@ class _CarteGymnase extends StatelessWidget {
                 ],
               ),
             ),
-            StreamBuilder<List<ProduitEvenement>>(
+            StreamBuilder<Set<String>>(
+              stream: depot.suivreVides(evenementId, g),
+              builder: (context, sv) => StreamBuilder<List<ProduitEvenement>>(
               stream: depot.suivreProduits(evenementId, gymnaseId: g),
               builder: (context, s) {
                 final produits = s.data;
+                final vides = sv.data ?? const <String>{};
                 if (produits == null) {
                   return const Padding(
                     padding: EdgeInsets.all(16),
@@ -314,7 +317,11 @@ class _CarteGymnase extends StatelessWidget {
                         dense: true,
                         title: Text(p.nom),
                         subtitle: Text(
-                          p.stock == null ? 'Pas de suivi' : 'Stock : ${p.stock}',
+                          p.stock != null
+                              ? 'Stock : ${p.stock}'
+                              : vides.contains(p.id)
+                                  ? 'Pas de suivi · Vide'
+                                  : 'Pas de suivi',
                           key: Key('stock_${g}_${p.id}'),
                         ),
                         trailing: Row(
@@ -349,6 +356,15 @@ class _CarteGymnase extends StatelessWidget {
                                 },
                               ),
                             ],
+                            if (p.stock == null) ...[
+                              const Text('Vide'),
+                              Switch(
+                                key: Key('vide_${g}_${p.id}'),
+                                value: vides.contains(p.id),
+                                onChanged: (v) => _essayer(() =>
+                                    depot.signalerVide(evenementId, g, p.id, v)),
+                              ),
+                            ],
                             Switch(
                               key: Key('suivi_${g}_${p.id}'),
                               value: p.stock != null,
@@ -362,6 +378,7 @@ class _CarteGymnase extends StatelessWidget {
                   ],
                 );
               },
+            ),
             ),
           ],
         ),
