@@ -2,7 +2,7 @@
 
 ## 29/10/2026 — Vérification indépendante du chantier « Stock et courses »
 - Une IA qui n'a pas écrit le code a refait toutes les suites et vérifié les 11 critères : tous réussis, aucun défaut bloquant. Rapport et captures dans `audit_front/captures_stock_courses/verif_ia/`.
-- Règles d'accès : le compteur de gymnases d'un événement ne monte plus qu'avec la naissance du gymnase (nouveau champ `dernierGymnase` posé dans le même lot) ; avant, un gestionnaire pouvait le monter seul et retirer à tous les gestionnaires l'accès aux courses et à la clôture. **Pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Règles d'accès : le compteur de gymnases d'un événement ne monte plus qu'avec la naissance du gymnase (nouveau champ `dernierGymnase` posé dans le même lot) ; avant, un gestionnaire pouvait le monter seul et retirer à tous les gestionnaires l'accès aux courses et à la clôture. Déployées sur le vrai projet le 29/10/2026 (accord de Kinder).
 - Décision 44 : limite acceptée par Kinder sur le stock (un bénévole peut techniquement, en contournant l'application, corriger la quantité d'un produit de son gymnase).
 - Projection des lectures corrigée à la hausse (section 10 du plan) : 3 gymnases ≈ 53 % du quota ; 8 gymnases ≈ 81 % avec un seul appareil de gestion, dépassement avec deux. À confirmer dans la console Firebase après un vrai événement.
 

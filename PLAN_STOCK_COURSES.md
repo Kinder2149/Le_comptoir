@@ -326,7 +326,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
   la durcir compliquerait la vente sans réseau. Seul « ajouter des parts » est borné par le serveur.
 - Compteur de gymnases : un gestionnaire pouvait le monter sans créer de gymnase, ce qui retirait à tous les gestionnaires
   l'accès aux courses et à la clôture. **Corrigé** : le compteur ne monte qu'avec la naissance du gymnase (`dernierGymnase`),
-  vérifié dans les règles et par des tests (règles à redéployer).
+  vérifié dans les règles et par des tests (règles déployées sur le vrai projet le 29/10/2026, accord de Kinder).
 - Mesure des lectures : projection corrigée ci-dessus.
 - Restent connus et sans gravité : contenu des listes de courses non borné en taille (limite de 1 Mo par document, gestion
   seule) ; signal « vide » accepté sur un produit qui a une quantité (effet visuel seulement) ; deux validations de courses au
