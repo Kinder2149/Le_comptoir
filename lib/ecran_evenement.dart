@@ -535,6 +535,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                       builder: (_) => EcranGymnases(
                         depot: widget.depot,
                         evenementId: ev.id,
+                        evenementNom: ev.nom,
                         portee: portee,
                         membres: widget.membres,
                         codeAssociation: widget.codeAssociation,

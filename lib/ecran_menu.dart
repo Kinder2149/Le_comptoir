@@ -141,6 +141,13 @@ class EcranMenu extends StatelessWidget {
               }
               return ListView(
                 children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text(
+                      "Catalogue : le stock se règle dans l'événement.",
+                      key: Key('bandeau_menu'),
+                    ),
+                  ),
                   for (final p in produits)
                     ListTile(
                       key: Key('produit_${p.id}'),

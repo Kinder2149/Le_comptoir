@@ -25,7 +25,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
     }
-    await tester.ensureVisible(cible);
+    // Au milieu de l'écran : un élément collé au bord haut passerait sous la barre.
+    await Scrollable.ensureVisible(cible.evaluate().first,
+        alignment: 0.5, duration: Duration.zero);
+    await tester.pump();
   }
 
   Future<void> toucher(WidgetTester tester, Finder cible) async {
@@ -163,11 +166,16 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_gymnases')));
     await attendre(tester, find.byKey(Key('gymnase_$gA')));
     await finTransition(tester);
+    // B3 : le stock est celui de l'événement.
+    expect(texte(tester, 'titre_stock_evenement'),
+        "Stock de l'événement « Tournoi »");
 
     await toucher(tester, find.byKey(Key('modifier_stock_${gA}_$croque')));
     await saisir(tester, 'saisie_quantite', '20');
     await toucher(tester, find.byKey(const Key('valider_quantite')));
     await attendreTexte(tester, 'stock_${gA}_$croque', 'Stock : 20');
+    // B3 : le stock est celui de l'événement ; rien n'est encore vendu.
+    await attendreTexte(tester, 'vendu_${gA}_$croque', 'Vendu : 0');
 
     await toucher(tester, find.byKey(Key('reappro_${gB}_$croque')));
     await saisir(tester, 'saisie_quantite', '5');
@@ -179,8 +187,15 @@ void main() {
     await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // suivre le café
     await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock : 0');
     await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // ne plus le suivre
-    await attendreTexte(tester, 'stock_${gA}_$cafe', 'Pas de suivi');
+    await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock non suivi');
     expect(await stock(gA, cafe), isNull);
+    // « Suivre tous les produits » : le café (non suivi) démarre à zéro, le croque ne bouge pas.
+    await toucher(tester, find.byKey(Key('suivre_tous_$gA')));
+    await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock : 0');
+    expect(await stock(gA, croque), 20);
+    await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // on le laisse non suivi
+    await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock non suivi');
+    expect(find.byKey(Key('suivre_tous_$gA')), findsOneWidget);
 
     await toucher(tester, find.byKey(Key('modifier_stock_${gA}_$croque')));
     await saisir(tester, 'saisie_quantite', 'abc');

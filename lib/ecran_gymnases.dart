@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'depot_associations.dart';
+import 'depot_caisses.dart';
 import 'depot_evenements.dart';
+import 'ecran_caisse.dart' show VignetteProduit, couleurEtat, fondEtat;
 import 'ecran_qr.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'theme.dart';
+import 'ticket.dart';
 
 /// Gymnases d'un événement et stock de chacun (gestion). Les gymnases peuvent
 /// être ajoutés et renommés, jamais supprimés.
@@ -17,10 +20,15 @@ class EcranGymnases extends StatelessWidget {
     required this.portee,
     required this.membres,
     required this.codeAssociation,
+    this.evenementNom,
   });
 
   final DepotEvenements depot;
   final String evenementId;
+
+  /// Nom de l'événement, rappelé en tête : ce stock est celui de CET événement
+  /// (le menu n'a pas de stock, décision 45).
+  final String? evenementNom;
 
   /// Le code d'accès actuel de l'association (pour les QR codes à partager).
   final Stream<String> codeAssociation;
@@ -73,6 +81,16 @@ class EcranGymnases extends StatelessWidget {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        evenementNom == null
+                            ? 'Stock de l\'événement'
+                            : 'Stock de l\'événement « $evenementNom »',
+                        key: const Key('titre_stock_evenement'),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
                     for (final g in gymnases)
                       _CarteGymnase(
                         key: Key('gymnase_${g.id}'),
@@ -297,91 +315,213 @@ class _CarteGymnase extends StatelessWidget {
                 ],
               ),
             ),
-            StreamBuilder<Set<String>>(
-              stream: depot.suivreVides(evenementId, g),
+            StreamBuilder<TableauDeBord>(
+              stream: depot.caisses(evenementId).suivreTableauDeBord(gymnaseIds: {g}),
+              builder: (context, sTab) => StreamBuilder<Map<String, Map<String, EtatStock>>>(
+              stream: depot.suivreEtats(evenementId, gymnases: {g}),
               builder: (context, sv) => StreamBuilder<List<ProduitEvenement>>(
               stream: depot.suivreProduits(evenementId, gymnaseId: g),
               builder: (context, s) {
                 final produits = s.data;
-                final vides = sv.data ?? const <String>{};
+                final etats = sv.data?[g] ?? const <String, EtatStock>{};
+                final tableau = sTab.data;
                 if (produits == null) {
                   return const Padding(
                     padding: EdgeInsets.all(16),
                     child: LinearProgressIndicator(),
                   );
                 }
-                return Column(
-                  children: [
-                    for (final p in produits)
-                      ListTile(
-                        dense: true,
-                        title: Text(p.nom),
-                        subtitle: Text(
-                          p.stock != null
-                              ? 'Stock : ${p.stock}'
-                              : vides.contains(p.id)
-                                  ? 'Pas de suivi · Vide'
-                                  : 'Pas de suivi',
-                          key: Key('stock_${g}_${p.id}'),
+                final aucunSuivi = produits.every((p) => p.stock == null);
+                final tousSuivis = produits.every((p) => p.stock != null);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (aucunSuivi)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                          child: Text(
+                            "Aucun stock n'est suivi dans ce gymnase. "
+                            'Suivez les produits à compter, puis réglez leur quantité.',
+                            key: Key('aucun_suivi_$g'),
+                          ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (p.stock != null) ...[
-                              IconButton(
-                                key: Key('reappro_${g}_${p.id}'),
-                                icon: const Icon(Icons.add_circle_outline),
-                                tooltip: 'Réapprovisionner',
-                                onPressed: () async {
-                                  final n = await _demanderNombre(context,
-                                      'Réapprovisionner ${p.nom} (+)');
-                                  if (n != null) {
-                                    await _essayer(() => depot.reapprovisionner(
-                                        evenementId, g, p.id, n));
-                                  }
-                                },
-                              ),
-                              IconButton(
-                                key: Key('modifier_stock_${g}_${p.id}'),
-                                icon: const Icon(Icons.edit_outlined),
-                                tooltip: 'Changer la quantité',
-                                onPressed: () async {
-                                  final n = await _demanderNombre(
-                                      context, 'Stock de ${p.nom}',
-                                      initial: p.stock);
-                                  if (n != null) {
-                                    await _essayer(() => depot.definirStock(
-                                        evenementId, g, p.id, n));
-                                  }
-                                },
-                              ),
-                            ],
-                            if (p.stock == null) ...[
-                              const Text('Vide'),
-                              Switch(
-                                key: Key('vide_${g}_${p.id}'),
-                                value: vides.contains(p.id),
-                                onChanged: (v) => _essayer(() =>
-                                    depot.signalerVide(evenementId, g, p.id, v)),
-                              ),
-                            ],
-                            Switch(
-                              key: Key('suivi_${g}_${p.id}'),
-                              value: p.stock != null,
-                              onChanged: (v) => _essayer(() => v
-                                  ? depot.definirStock(evenementId, g, p.id, 0)
-                                  : depot.arreterSuivi(evenementId, g, p.id)),
-                            ),
-                          ],
+                      if (!tousSuivis)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: OutlinedButton(
+                            key: Key('suivre_tous_$g'),
+                            style: TypeAction.gerer.contour,
+                            onPressed: () => _essayer(() async {
+                              for (final p in produits) {
+                                if (p.stock == null) {
+                                  await depot.definirStock(evenementId, g, p.id, 0);
+                                }
+                              }
+                            }),
+                            child: const Text('Suivre tous les produits'),
+                          ),
                         ),
-                      ),
-                  ],
+                      for (final p in produits)
+                        _LigneStock(
+                          key: Key('ligne_${g}_${p.id}'),
+                          produit: p,
+                          gymnaseId: g,
+                          etat: etats[p.id] ?? etatStock(quantite: p.stock),
+                          vendu: tableau?.vendus(p.id),
+                          onAjouter: () async {
+                            final n = await _demanderNombre(
+                                context, 'Ajouter au stock de ${p.nom}');
+                            if (n != null) {
+                              await _essayer(() => depot.reapprovisionner(
+                                  evenementId, g, p.id, n));
+                            }
+                          },
+                          onCorriger: () async {
+                            final n = await _demanderNombre(
+                                context, 'Stock de ${p.nom}',
+                                initial: p.stock);
+                            if (n != null) {
+                              await _essayer(() =>
+                                  depot.definirStock(evenementId, g, p.id, n));
+                            }
+                          },
+                          onSuivre: (v) => _essayer(() => v
+                              ? depot.definirStock(evenementId, g, p.id, 0)
+                              : depot.arreterSuivi(evenementId, g, p.id)),
+                          onVide: (v) => _essayer(
+                              () => depot.signalerVide(evenementId, g, p.id, v)),
+                        ),
+                    ],
+                  ),
                 );
               },
             ),
             ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Un produit dans le stock d'un gymnase : image, état coloré (comme en caisse),
+/// quantité, vendu, et des actions nommées (zones d'appui de 48 px).
+class _LigneStock extends StatelessWidget {
+  const _LigneStock({
+    super.key,
+    required this.produit,
+    required this.gymnaseId,
+    required this.etat,
+    required this.vendu,
+    required this.onAjouter,
+    required this.onCorriger,
+    required this.onSuivre,
+    required this.onVide,
+  });
+
+  final ProduitEvenement produit;
+  final String gymnaseId;
+  final EtatStock etat;
+
+  /// Quantité vendue (ventes non annulées) ; null tant que le suivi se charge.
+  final int? vendu;
+  final VoidCallback onAjouter;
+  final VoidCallback onCorriger;
+  final ValueChanged<bool> onSuivre;
+  final ValueChanged<bool> onVide;
+
+  static String? _libelleAlerte(EtatStock e) => switch (e) {
+        EtatStock.bas => 'Stock bas',
+        EtatStock.epuise => 'Épuisé',
+        EtatStock.vide => 'Vide',
+        _ => null,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final p = produit;
+    final g = gymnaseId;
+    final suivi = p.stock != null;
+    final alerte = _libelleAlerte(etat);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: fondEtat(etat) ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Palette.filet),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              VignetteProduit(icone: p.icone, photo: p.photo),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(p.nom, style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      suivi ? 'Stock : ${p.stock}' : 'Stock non suivi',
+                      key: Key('stock_${g}_${p.id}'),
+                      style: TextStyle(color: couleurEtat(etat)),
+                    ),
+                    if (suivi)
+                      Text(
+                        vendu == null ? 'Vendu : …' : 'Vendu : $vendu',
+                        key: Key('vendu_${g}_${p.id}'),
+                      ),
+                  ],
+                ),
+              ),
+              if (alerte != null)
+                Text(alerte,
+                    key: Key('etat_${g}_${p.id}'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, color: couleurEtat(etat))),
+            ],
+          ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (suivi) ...[
+                TextButton.icon(
+                  key: Key('reappro_${g}_${p.id}'),
+                  style: TypeAction.gerer.texte,
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Ajouter'),
+                  onPressed: onAjouter,
+                ),
+                TextButton.icon(
+                  key: Key('modifier_stock_${g}_${p.id}'),
+                  style: TypeAction.gerer.texte,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Corriger'),
+                  onPressed: onCorriger,
+                ),
+              ],
+              if (!suivi) ...[
+                const Text('Vide'),
+                Switch(
+                  key: Key('vide_${g}_${p.id}'),
+                  value: etat == EtatStock.vide,
+                  onChanged: onVide,
+                ),
+              ],
+              const Text('Suivre le stock'),
+              Switch(
+                key: Key('suivi_${g}_${p.id}'),
+                value: suivi,
+                onChanged: onSuivre,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

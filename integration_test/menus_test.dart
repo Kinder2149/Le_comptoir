@@ -61,6 +61,8 @@ void main() {
     await ajouterProduit(tester, 'Café', '1,5');
     await attendre(tester, find.text('1,50 €'));
     expect(find.text('Croque-monsieur'), findsOneWidget);
+    // B3 : le menu est un catalogue, le stock se règle dans l'événement.
+    expect(find.byKey(const Key('bandeau_menu')), findsOneWidget);
 
     // --- Prix invalide : refusé avec un message, rien n'est créé.
     await toucher(tester, find.byKey(const Key('nouveau_produit')));
