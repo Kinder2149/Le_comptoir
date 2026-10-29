@@ -247,3 +247,28 @@ test('un ancien produit de menu avec stock reste enregistrable sans stock', asyn
     currentDocument: { exists: true },
   }]), 200);
 });
+
+// Étape B2 : parts par gâteau (type « part » seulement, entier de 1 à 100).
+const parts = (n) => ({ partsParEntier: nombre(n) });
+
+test('parts par gâteau : 1 à 100 sur le type part, menu et événement', async () => {
+  const { chef, id } = await avecMenu();
+  for (const n of [1, 8, 100]) {
+    assert.equal(await lot(chef, [produitMenu(id, `g${n}`, { ...type('part'), ...parts(n) })]), 200, `${n}`);
+  }
+  assert.equal(await lot(chef, [ecrire(`associations/${id}/evenements/e1`, evenement())]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p1', { champs: { ...type('part'), ...parts(8) } })]), 200);
+});
+
+test('parts par gâteau : zéro, trop grand, décimal, texte ou autre type refusés', async () => {
+  const { chef, id } = await avecMenu();
+  for (const n of [0, -2, 101, 2.5]) {
+    assert.equal(await lot(chef, [produitMenu(id, 'x', { ...type('part'), ...parts(n) })]), 403, `${n}`);
+  }
+  assert.equal(await lot(chef, [produitMenu(id, 'x', { ...type('part'), partsParEntier: texte('8') })]), 403);
+  assert.equal(await lot(chef, [produitMenu(id, 'x', { ...type('unite'), ...parts(8) })]), 403);
+  assert.equal(await lot(chef, [produitMenu(id, 'x', parts(8))]), 403); // sans type = unité
+  assert.equal(await lot(chef, [produitMenu(id, 'x', { ...type('litre'), verresParLitre: nombre(8), ...parts(8) })]), 403);
+  assert.equal(await lot(chef, [ecrire(`associations/${id}/evenements/e1`, evenement())]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p1', { champs: { ...type('unite'), ...parts(8) } })]), 403);
+});

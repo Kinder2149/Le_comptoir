@@ -119,6 +119,31 @@ void main() {
       expect(t.uniteBase, 'unite');
     });
 
+    test('gâteau avec parts par gâteau : gâteaux entiers, arrondis au-dessus (B2)', () {
+      const flan = ProduitEvenement('flan', 'Flan', 200, null,
+          fiche: FicheProduit(type: 'part', partsParEntier: 8));
+      // 12 + 8 = 20 parts / 8 = 2,5 -> 3 gâteaux.
+      final l = const ListeCourses(
+          lignes: [LigneCourse('a', 'flan', 12), LigneCourse('b', 'flan', 8)]);
+      final f = achat(calculerAchats(const [flan], l), 'Flan');
+      expect(f.aAcheter, 3);
+      expect(f.uniteBase, 'gateau');
+      expect(formaterQuantite(3, 'gateau'), '3 gâteaux');
+      expect(formaterQuantite(1, 'gateau'), '1 gâteau');
+      // « Il reste » 1 gâteau : 2 à acheter.
+      final avecReste = l.avec(restes: {f.cle: 1});
+      expect(achat(calculerAchats(const [flan], avecReste), 'Flan').aAcheter, 2);
+    });
+
+    test('gâteau sans parts par gâteau : acheté tel quel, comme avant (B2)', () {
+      const sans = ProduitEvenement('t', 'Tarte', 200, null,
+          fiche: FicheProduit(type: 'part'));
+      final t = achat(
+          calculerAchats(const [sans], const ListeCourses(lignes: [LigneCourse('a', 't', 5)])),
+          'Tarte');
+      expect((t.aAcheter, t.uniteBase), (5, 'unite'));
+    });
+
     test('kg et g, L et cl s’additionnent dans l’unité de base', () {
       const sauce = ProduitEvenement('s', 'Sauce', 100, null,
           fiche: FicheProduit(type: 'compose', ingredients: [
@@ -150,6 +175,22 @@ void main() {
       expect(par(r, 'chevre'), {'a': 160, 'b': 120});
       expect(par(r, 'cafe'), {'a': 320, 'b': 240});
       expect(de(r, 'croque').limitant, isNull);
+    });
+
+    test('gâteaux entiers achetés : le stock gagne gâteaux × parts, au prorata (B2)', () {
+      const flan = ProduitEvenement('flan', 'Flan', 200, null,
+          fiche: FicheProduit(type: 'part', partsParEntier: 8));
+      const liste = ListeCourses(
+          lignes: [LigneCourse('a', 'flan', 12), LigneCourse('b', 'flan', 8)]);
+      // Tout acheté comme proposé : 3 gâteaux = 24 parts (A 14,4 -> 14 + B 9,6 -> 10).
+      final r = calculerRendements(const [flan], liste, const {});
+      expect(de(r, 'flan').total, 24);
+      expect(par(r, 'flan').values.fold<int>(0, (a, b) => a + b), 24);
+      expect(par(r, 'flan'), {'a': 14, 'b': 10});
+      // 2 gâteaux seulement : 16 parts.
+      final cle = calculerAchats(const [flan], liste).first.cle;
+      final deux = calculerRendements(const [flan], liste, {cle: 2});
+      expect(de(deux, 'flan').total, 16);
     });
 
     test('l’ingrédient limitant décide : moitié du gruyère, moitié des croques', () {

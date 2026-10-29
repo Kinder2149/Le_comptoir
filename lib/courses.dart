@@ -265,6 +265,9 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
         if (verres > 0) {
           ajouter('produit:${p.id}', p.nom, 'cl', l.quantite / verres * 100);
         }
+      case 'part' when (fiche.partsParEntier ?? 0) > 0:
+        // Des parts vendues -> des gâteaux entiers à acheter.
+        ajouter('produit:${p.id}', p.nom, 'gateau', l.quantite / fiche.partsParEntier!);
       default:
         ajouter('produit:${p.id}', p.nom, 'unite', l.quantite.toDouble());
     }
@@ -345,8 +348,18 @@ List<RendementProduit> calculerRendements(
         limitant = achats[cle]!.nom;
       }
     }
-    final facteur = plusPetit ?? 1.0;
+    var facteur = plusPetit ?? 1.0;
     if (facteur >= 1 - 1e-9) limitant = null;
+    final parts = p.fiche.type == 'part' ? (p.fiche.partsParEntier ?? 0) : 0;
+    if (parts > 0 && achats['produit:${p.id}'] != null) {
+      // Gâteaux entiers : le stock gagne les gâteaux achetés × leurs parts,
+      // répartis entre gymnases au prorata des parts prévues.
+      final a = achats['produit:${p.id}']!;
+      final prevu = lignes.fold<int>(0, (s, l) => s + l.quantite);
+      final gateaux = achetes['produit:${p.id}'] ?? a.aAcheter.toDouble();
+      facteur = prevu > 0 ? gateaux * parts / prevu : 1.0;
+      limitant = null;
+    }
     final exacts = [for (final l in lignes) l.quantite * facteur];
     final bases = [for (final x in exacts) (x + 1e-6).floor()];
     final total = (exacts.fold<double>(0, (a, b) => a + b) + 1e-6).floor();
@@ -429,6 +442,7 @@ String formaterQuantite(int n, String uniteBase) => switch (uniteBase) {
       'g' => n >= 1000 ? '${_decimal(n / 1000)} kg' : '${_groupes(n)} g',
       'cl' => n >= 100 ? '${_decimal(n / 100)} L' : '${_groupes(n)} cl',
       'tranche' => '${_groupes(n)} tranche${n > 1 ? 's' : ''}',
+      'gateau' => '${_groupes(n)} gâteau${n > 1 ? 'x' : ''}',
       _ => _groupes(n),
     };
 
@@ -436,5 +450,6 @@ String formaterQuantite(int n, String uniteBase) => switch (uniteBase) {
 String libelleUniteReste(String uniteBase) => switch (uniteBase) {
       'unite' => 'unités',
       'tranche' => 'tranches',
+      'gateau' => 'gâteaux',
       _ => uniteBase,
     };

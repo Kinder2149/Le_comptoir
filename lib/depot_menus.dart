@@ -91,11 +91,15 @@ class FicheProduit {
     this.ingredients = const [],
     this.verresParLitre,
     this.provenance = 'achete',
+    this.partsParEntier,
   });
 
   static const unite = FicheProduit();
 
   final String type;
+
+  /// Type « part » : nombre de parts d'un gâteau entier (facultatif, 1 à 100).
+  final int? partsParEntier;
 
   /// 'achete' ou 'apporte' (voir [provenancesProduit]).
   final String provenance;
@@ -121,6 +125,7 @@ class FicheProduit {
               i['unite'] as String),
       ],
       verresParLitre: (d['verresParLitre'] as num?)?.toDouble(),
+      partsParEntier: (d['partsParEntier'] as num?)?.toInt(),
     );
   }
 
@@ -141,6 +146,10 @@ class FicheProduit {
           'verresParLitre': verresParLitre
         else if (supprimerLeReste)
           'verresParLitre': FieldValue.delete(),
+        if (type == 'part' && partsParEntier != null)
+          'partsParEntier': partsParEntier
+        else if (supprimerLeReste)
+          'partsParEntier': FieldValue.delete(),
       };
 
   /// Message d'erreur en français si la fiche est incohérente, sinon null.
@@ -166,6 +175,12 @@ class FicheProduit {
         if (!(i.quantite > 0) || i.quantite > 100000) {
           return 'La quantité de « ${i.nom.trim()} » doit être supérieure à zéro.';
         }
+      }
+    }
+    if (type == 'part' && partsParEntier != null) {
+      final n = partsParEntier!;
+      if (n < 1 || n > 100) {
+        return 'Le nombre de parts par gâteau doit être entre 1 et 100.';
       }
     }
     if (type == 'litre') {
@@ -216,7 +231,9 @@ String resumeFiche(FicheProduit f) {
     else if (f.type == 'litre')
       'Au litre : ${nombrePourSaisie(f.verresParLitre ?? 0)} verres par litre'
     else if (f.type == 'part')
-      'À la part',
+      f.partsParEntier == null
+          ? 'À la part'
+          : 'À la part : ${f.partsParEntier} parts par gâteau',
     if (f.provenance == 'apporte') 'Apporté par les bénévoles',
     if (f.conso != null)
       'Consommation : ${nombrePourSaisie(f.conso!)} par personne et par jour',

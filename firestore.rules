@@ -112,6 +112,8 @@ service cloud.firestore {
     function ficheValide(d) {
       return (!('type' in d) || d.type in ['compose', 'unite', 'part', 'litre'])
         && (!('provenance' in d) || d.provenance in ['achete', 'apporte'])
+        && (!('partsParEntier' in d)
+            || (d.get('type', 'unite') == 'part' && d.partsParEntier is int && d.partsParEntier >= 1 && d.partsParEntier <= 100))
         && (!('conso' in d) || (d.conso is number && d.conso >= 0 && d.conso <= 1000))
         && (d.get('type', 'unite') == 'compose'
             ? ('ingredients' in d && ingredientsValides(d.ingredients))
@@ -122,7 +124,7 @@ service cloud.firestore {
     }
     function produitValide(d) {
       return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
-        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'conso', 'ingredients', 'verresParLitre'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'conso', 'ingredients', 'verresParLitre', 'partsParEntier'])
         && ficheValide(d)
         && (!('icone' in d)
             || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte']))

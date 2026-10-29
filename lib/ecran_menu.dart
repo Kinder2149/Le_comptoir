@@ -237,6 +237,8 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
       text: widget.produit?.fiche.verresParLitre == null
           ? ''
           : nombrePourSaisie(widget.produit!.fiche.verresParLitre!));
+  late final _parts = TextEditingController(
+      text: widget.produit?.fiche.partsParEntier?.toString() ?? '');
   late final List<_LigneIngredient> _lignes = [
     for (final i in widget.produit?.fiche.ingredients ?? const <Ingredient>[])
       _LigneIngredient(i),
@@ -258,6 +260,7 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
     _prix.dispose();
     _conso.dispose();
     _verres.dispose();
+    _parts.dispose();
     for (final l in _lignes) {
       l.liberer();
     }
@@ -281,6 +284,10 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             ]
           : const [],
       verresParLitre: _type == 'litre' ? parserNombre(_verres.text) : null,
+      // Un nombre illisible devient 0 : refusé par la vérification.
+      partsParEntier: _type == 'part' && _parts.text.trim().isNotEmpty
+          ? (int.tryParse(_parts.text.trim()) ?? 0)
+          : null,
     );
     final erreurFiche = fiche.erreur();
     if (nom.isEmpty || nom.length > 40) {
@@ -322,6 +329,16 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             controller: _verres,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Verres par litre'),
+          ),
+        ],
+        if (_type == 'part') ...[
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('parts_par_gateau'),
+            controller: _parts,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+                labelText: 'Parts par gâteau', helperText: 'Facultatif'),
           ),
         ],
         if (_type == 'compose') ...[

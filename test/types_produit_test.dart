@@ -15,6 +15,7 @@ const croque = FicheProduit(type: 'compose', ingredients: [
 ]);
 
 void main() {
+  testsPartsParGateau();
   group('fiche produit : saisies refusées', () {
     test('composé sans ingrédient', () {
       expect(const FicheProduit(type: 'compose').erreur(), contains('ingrédient'));
@@ -267,6 +268,47 @@ void main() {
       expect(r.fiche.ingredients, croque.ingredients);
     });
 
+    testWidgets('gâteau à la part : 8 parts par gâteau saisies puis retrouvées (B2)',
+        (tester) async {
+      late Future<ProduitSaisi?> futur;
+      await ouvrir(tester, (f) => futur = f);
+      expect(find.byKey(const Key('parts_par_gateau')), findsNothing);
+      await saisir(tester, 'nom_produit', 'Flan');
+      await saisir(tester, 'prix_produit', '2');
+      await choisirType(tester, 'part');
+      await saisir(tester, 'parts_par_gateau', '8');
+      await valider(tester);
+      final r = (await futur)!;
+      expect(r.fiche.type, 'part');
+      expect(r.fiche.partsParEntier, 8);
+
+      // Rouvert : la valeur est là.
+      late Future<ProduitSaisi?> futur2;
+      await tester.pumpWidget(const SizedBox());
+      await ouvrir(tester, (f) => futur2 = f,
+          produit: const ProduitMenu('p', 'Flan', 200,
+              fiche: FicheProduit(type: 'part', partsParEntier: 8)));
+      expect(find.text('8'), findsOneWidget);
+      await valider(tester);
+      expect((await futur2)!.fiche.partsParEntier, 8);
+    });
+
+    testWidgets('gâteau sans parts par gâteau, ou à zéro : sans = comme avant, zéro refusé (B2)',
+        (tester) async {
+      late Future<ProduitSaisi?> futur;
+      await ouvrir(tester, (f) => futur = f);
+      await saisir(tester, 'nom_produit', 'Tarte');
+      await saisir(tester, 'prix_produit', '2');
+      await choisirType(tester, 'part');
+      await saisir(tester, 'parts_par_gateau', '0');
+      await valider(tester);
+      expect(find.byKey(const Key('erreur_produit')), findsOneWidget);
+      await saisir(tester, 'parts_par_gateau', '');
+      await valider(tester);
+      final r = (await futur)!;
+      expect(r.fiche.partsParEntier, isNull);
+    });
+
     testWidgets('café au litre : 8 verres par litre, consommation 2',
         (tester) async {
       late Future<ProduitSaisi?> futur;
@@ -353,6 +395,34 @@ void main() {
       await tester.tap(find.text('Annuler'));
       await tester.pumpAndSettle();
       expect(await futur, isNull);
+    });
+  });
+}
+
+void testsPartsParGateau() {
+  group('parts par gâteau (B2)', () {
+    test('lue, écrite, et effacée hors du type « part »', () {
+      final f = FicheProduit.depuis({'type': 'part', 'partsParEntier': 8});
+      expect(f.partsParEntier, 8);
+      expect(f.versMap()['partsParEntier'], 8);
+      expect(FicheProduit.depuis({'type': 'part'}).partsParEntier, isNull);
+      expect(const FicheProduit(type: 'part').versMap().containsKey('partsParEntier'), isFalse);
+      // Hors du type « part », rien n'est écrit.
+      expect(const FicheProduit(type: 'unite', partsParEntier: 8).versMap().containsKey('partsParEntier'),
+          isFalse);
+    });
+
+    test('erreur si hors de 1 à 100', () {
+      expect(const FicheProduit(type: 'part', partsParEntier: 8).erreur(), isNull);
+      expect(const FicheProduit(type: 'part', partsParEntier: 100).erreur(), isNull);
+      for (final n in [0, -1, 101]) {
+        expect(FicheProduit(type: 'part', partsParEntier: n).erreur(), isNotNull, reason: '$n');
+      }
+    });
+
+    test('résumé du produit', () {
+      expect(resumeFiche(const FicheProduit(type: 'part', partsParEntier: 8)),
+          contains('8 parts par gâteau'));
     });
   });
 }
