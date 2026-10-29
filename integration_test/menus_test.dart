@@ -21,14 +21,16 @@ void main() {
     WidgetTester tester,
     String nom,
     String prix, {
-    String? stock,
+    bool apporte = false,
   }) async {
     await toucher(tester, find.byKey(const Key('nouveau_produit')));
     await saisir(tester, 'nom_produit', nom);
     await saisir(tester, 'prix_produit', prix);
-    if (stock != null) {
-      await toucher(tester, find.byKey(const Key('suivi_stock')));
-      await saisir(tester, 'quantite_stock', stock);
+    if (apporte) {
+      await toucher(tester, find.byKey(const Key('provenance_produit')));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(const Key('provenance_apporte')).last);
+      await tester.pump(const Duration(seconds: 1));
     }
     await toucher(tester, find.byKey(const Key('valider_produit')));
   }
@@ -53,9 +55,9 @@ void main() {
     await toucher(tester, find.text('Menu Tournoi'));
     await attendre(tester, find.byKey(const Key('aucun_produit')));
 
-    // --- Produits : avec stock, sans stock.
-    await ajouterProduit(tester, 'Croque-monsieur', '3', stock: '20');
-    await attendre(tester, find.text('3,00 € · Stock : 20'));
+    // --- Produits : apporté par les bénévoles, acheté (par défaut).
+    await ajouterProduit(tester, 'Croque-monsieur', '3', apporte: true);
+    await attendre(tester, find.text('3,00 € · Apporté par les bénévoles'));
     await ajouterProduit(tester, 'Café', '1,5');
     await attendre(tester, find.text('1,50 €'));
     expect(find.text('Croque-monsieur'), findsOneWidget);
@@ -70,12 +72,16 @@ void main() {
     await tester.pump(const Duration(seconds: 1)); // fin de l'animation de fermeture
     expect(find.text('Raté'), findsNothing);
 
-    // --- Modifier : nouveau prix, fin du suivi du stock.
+    // --- Modifier : nouveau prix ; la provenance « apportée » est retrouvée à la réouverture.
     await toucher(tester, find.text('Croque-monsieur'));
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('provenance_produit')),
+            matching: find.text('Apporté par les bénévoles')),
+        findsOneWidget);
     await saisir(tester, 'prix_produit', '3,5');
-    await toucher(tester, find.byKey(const Key('suivi_stock')));
     await toucher(tester, find.byKey(const Key('valider_produit')));
-    await attendre(tester, find.text('3,50 €'));
+    await attendre(tester, find.text('3,50 € · Apporté par les bénévoles'));
     expect(find.textContaining('Stock'), findsNothing);
 
     // --- Supprimer un produit.
@@ -98,7 +104,7 @@ void main() {
     await toucher(tester, find.byKey(const Key('menus')));
     await attendre(tester, find.text('Menu Final'));
     await toucher(tester, find.text('Menu Final'));
-    await attendre(tester, find.text('3,50 €'));
+    await attendre(tester, find.text('3,50 € · Apporté par les bénévoles'));
     expect(find.text('Croque-monsieur'), findsOneWidget);
 
     // --- Supprimer le menu : retour à la liste vide.

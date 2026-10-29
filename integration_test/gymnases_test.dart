@@ -99,7 +99,7 @@ void main() {
     final menus = depotAsso.menus(assoId);
     final menuId = await menus.creerMenu('Menu Tournoi');
     await menus.ajouterProduit(menuId,
-        nom: 'Croque-monsieur', prixCentimes: 300, stock: 10);
+        nom: 'Croque-monsieur', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
 
@@ -136,6 +136,8 @@ void main() {
     final produits = await depotEv.suivreProduits(evt).first;
     final croque = produits.firstWhere((p) => p.nom == 'Croque-monsieur').id;
     final cafe = produits.firstWhere((p) => p.nom == 'Café').id;
+    // Le menu n'a plus de stock : on donne 10 au croque-monsieur dans chaque gymnase.
+    await donnerStock(depotEv, evt, 'Croque-monsieur', 10);
 
     Future<int?> stock(String g, String p) async => (await db
             .collection('associations')
@@ -149,7 +151,7 @@ void main() {
             .get(serveur))
         .data()?['quantite'] as int?;
 
-    // Chaque gymnase part du stock du menu.
+    // Chaque gymnase a le stock donné (10).
     expect(await stock(gA, croque), 10);
     expect(await stock(gB, croque), 10);
     expect(await stock(gA, cafe), isNull); // pas de suivi

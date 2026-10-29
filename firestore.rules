@@ -13,7 +13,7 @@ rules_version = '2';
 //   associations/{a}                              nom, code, responsableUid, creeLe
 //     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
 //     menus/{m}                                   nom, creeLe                       (gestion seulement)
-//       produits/{p}                              nom, prixCentimes, stock?, icone?, photo?, type?, conso?, ingredients?, verresParLitre?, creeLe
+//       produits/{p}                              nom, prixCentimes, stock? (ancien, toléré), icone?, photo?, type?, provenance?, conso?, ingredients?, verresParLitre?, creeLe
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
@@ -111,6 +111,7 @@ service cloud.firestore {
     // seulement pour un produit composé, un ratio seulement pour un produit au litre.
     function ficheValide(d) {
       return (!('type' in d) || d.type in ['compose', 'unite', 'part', 'litre'])
+        && (!('provenance' in d) || d.provenance in ['achete', 'apporte'])
         && (!('conso' in d) || (d.conso is number && d.conso >= 0 && d.conso <= 1000))
         && (d.get('type', 'unite') == 'compose'
             ? ('ingredients' in d && ingredientsValides(d.ingredients))
@@ -121,7 +122,7 @@ service cloud.firestore {
     }
     function produitValide(d) {
       return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
-        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'conso', 'ingredients', 'verresParLitre'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'conso', 'ingredients', 'verresParLitre'])
         && ficheValide(d)
         && (!('icone' in d)
             || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte']))

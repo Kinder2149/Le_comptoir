@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:le_comptoir/courses.dart';
+import 'package:le_comptoir/evenement.dart';
+import 'package:le_comptoir/gymnase.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/ecran_menu.dart';
 
@@ -82,7 +85,55 @@ void main() {
       expect(relue.ingredients, isEmpty);
     });
     test('un produit à l\'unité n\'écrit ni recette ni ratio', () {
-      expect(FicheProduit.unite.versMap().keys, ['type']);
+      expect(FicheProduit.unite.versMap().keys, ['type', 'provenance']);
+    });
+  });
+
+  group('provenance du produit (décision 45)', () {
+    test('sans champ provenance : acheté', () {
+      expect(FicheProduit.depuis({'nom': 'Fruit'}).provenance, 'achete');
+    });
+    test('« apporte » est relu', () {
+      expect(FicheProduit.depuis({'provenance': 'apporte'}).provenance, 'apporte');
+    });
+    test('valeur inconnue : retombe sur acheté', () {
+      expect(FicheProduit.depuis({'provenance': 'volé'}).provenance, 'achete');
+    });
+    test('versMap contient la provenance', () {
+      expect(FicheProduit.unite.versMap()['provenance'], 'achete');
+      expect(const FicheProduit(provenance: 'apporte').versMap()['provenance'],
+          'apporte');
+    });
+    test('erreur() refuse une provenance invalide', () {
+      expect(const FicheProduit(provenance: 'trouvé').erreur(), isNotNull);
+      expect(const FicheProduit(provenance: 'apporte').erreur(), isNull);
+    });
+    test('liste de courses de départ : sans les produits apportés', () {
+      const achete = ProduitEvenement('a', 'Croque', 300, null,
+          fiche: FicheProduit(conso: 2));
+      const apporte = ProduitEvenement('b', 'Tarte', 250, null,
+          fiche: FicheProduit(conso: 2, provenance: 'apporte'));
+      final liste = listeParDefaut(
+          produits: [achete, apporte],
+          gymnases: const [Gymnase('g', 'Gymnase', 10)],
+          jours: 1);
+      expect(liste.lignes.map((l) => l.produitId), ['a']);
+    });
+    test('menu type : Tarte, Flan, Salade apportés, Tartiflette achetée', () {
+      final modele =
+          lireMenuType(File('assets/menu_type.json').readAsStringSync());
+      String prov(String nom) =>
+          modele.firstWhere((p) => p.nom == nom).fiche.provenance;
+      expect(prov('Tarte'), 'apporte');
+      expect(prov('Flan'), 'apporte');
+      expect(prov('Salade'), 'apporte');
+      expect(prov('Tartiflette'), 'achete');
+    });
+    test('menu type : provenance inconnue refusée', () {
+      expect(
+          () => lireMenuType(
+              '[{"nom":"X","prixCentimes":100,"provenance":"volé"}]'),
+          throwsFormatException);
     });
   });
 
@@ -142,7 +193,8 @@ void main() {
     Future<void> ouvrir(
         WidgetTester tester, void Function(Future<ProduitSaisi?>) f,
         {ProduitMenu? produit}) async {
-      tester.view.physicalSize = const Size(1080, 2400);
+      // Assez large pour la liste « Provenance » (police de test plus large que la vraie).
+      tester.view.physicalSize = const Size(1500, 2400);
       tester.view.devicePixelRatio = 2.5;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
@@ -235,7 +287,7 @@ void main() {
         (tester) async {
       late Future<ProduitSaisi?> futur;
       await ouvrir(tester, (f) => futur = f,
-          produit: const ProduitMenu('p', 'Croque-monsieur', 300, null,
+          produit: const ProduitMenu('p', 'Croque-monsieur', 300,
               fiche: FicheProduit(type: 'compose', conso: 2, ingredients: [
                 Ingredient('Pain de mie', 2, 'tranche'),
                 Ingredient('Jambon', 0.25, 'tranche'),
@@ -254,14 +306,13 @@ void main() {
         (tester) async {
       late Future<ProduitSaisi?> futur;
       await ouvrir(tester, (f) => futur = f,
-          produit: const ProduitMenu('f', 'Fruit', 100, 12, icone: 'fruit'));
+          produit: const ProduitMenu('f', 'Fruit', 100, icone: 'fruit'));
       expect(find.byKey(const Key('ajouter_ingredient')), findsNothing);
       expect(find.byKey(const Key('verres_par_litre')), findsNothing);
       await valider(tester);
       final r = (await futur)!;
       expect(r.fiche.type, 'unite');
       expect(r.prixCentimes, 100);
-      expect(r.stock, 12);
       expect(r.icone, 'fruit');
     });
 

@@ -40,9 +40,8 @@ void main() {
     await menus.ajouterProduit(menuId,
         nom: 'Tarte',
         prixCentimes: 250,
-        stock: 5,
         fiche: const FicheProduit(type: 'part'));
-    await menus.ajouterProduit(menuId, nom: 'Croque', prixCentimes: 300, stock: 10);
+    await menus.ajouterProduit(menuId, nom: 'Croque', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Crêpe', prixCentimes: 200);
     final depotEv = depotAsso.evenements(assoId);
     final evtId = await depotEv.creerEvenement(
@@ -51,6 +50,8 @@ void main() {
       menuId: menuId,
       modes: ['especes'],
     );
+    await donnerStock(depotEv, evtId, 'Tarte', 5);
+    await donnerStock(depotEv, evtId, 'Croque', 10);
     final gym = await gymnaseUnique(depotEv, evtId);
     final produits = await depotEv.suivreProduits(evtId).first;
     final tarte = produits.firstWhere((p) => p.nom == 'Tarte').id;

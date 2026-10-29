@@ -86,7 +86,6 @@ void main() {
     await menus.ajouterProduit(menuId,
         nom: 'Tarte',
         prixCentimes: 250,
-        stock: 50,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
     final evtId = await depotEv.creerEvenement(
@@ -103,6 +102,7 @@ void main() {
     final croque = produits.firstWhere((p) => p.nom == 'Croque').id;
     final cafe = produits.firstWhere((p) => p.nom == 'Café').id;
     final tarte = produits.firstWhere((p) => p.nom == 'Tarte').id;
+    await donnerStock(depotEv, evtId, 'Tarte', 50);
     // La tarte est en stock bas à A (3 sur un total de 50).
     await db
         .collection('associations')
@@ -255,7 +255,6 @@ void main() {
     await menus.ajouterProduit(menuId,
         nom: 'Tarte',
         prixCentimes: 250,
-        stock: 4,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
     final evtId = await depotEv.creerEvenement(
@@ -272,6 +271,7 @@ void main() {
     final croque = produits.firstWhere((p) => p.nom == 'Croque').id;
     final cafe = produits.firstWhere((p) => p.nom == 'Café').id;
     final tarte = produits.firstWhere((p) => p.nom == 'Tarte').id;
+    await donnerStock(depotEv, evtId, 'Tarte', 4);
 
     Future<Map<String, dynamic>?> stock(String g, String p) async => (await db
             .collection('associations')

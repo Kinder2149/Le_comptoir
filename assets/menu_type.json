@@ -5,11 +5,11 @@
   {"nom": "Café", "prixCentimes": 100, "icone": "cafe", "type": "litre", "verresParLitre": 8, "conso": 2},
   {"nom": "Thé", "prixCentimes": 100, "icone": "the", "conso": 1},
   {"nom": "Soda", "prixCentimes": 150, "icone": "soda", "type": "litre", "verresParLitre": 5, "conso": 1},
-  {"nom": "Tarte", "prixCentimes": 200, "icone": "tarte", "type": "part", "conso": 1},
-  {"nom": "Flan", "prixCentimes": 200, "icone": "gateau_sucre", "type": "part", "conso": 1},
+  {"nom": "Tarte", "prixCentimes": 200, "icone": "tarte", "type": "part", "provenance": "apporte", "conso": 1},
+  {"nom": "Flan", "prixCentimes": 200, "icone": "gateau_sucre", "type": "part", "provenance": "apporte", "conso": 1},
   {"nom": "Barre chocolatée", "prixCentimes": 100, "icone": "barre", "conso": 1},
   {"nom": "Fruit", "prixCentimes": 100, "icone": "fruit", "conso": 1},
-  {"nom": "Salade", "prixCentimes": 400, "icone": "salade", "type": "part"},
+  {"nom": "Salade", "prixCentimes": 400, "icone": "salade", "type": "part", "provenance": "apporte"},
   {"nom": "Crêpe", "prixCentimes": 250, "icone": "crepe"},
   {"nom": "Bonbons (offerts)", "prixCentimes": 0}
 ]

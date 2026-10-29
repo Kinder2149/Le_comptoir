@@ -36,6 +36,15 @@ const libellesUnites = {
 
 const maxIngredients = 20;
 
+/// Provenance d'un produit (décision 45) : acheté par l'association (défaut,
+/// produit sans le champ) ou apporté par les bénévoles (hors courses sauf ajout).
+const provenancesProduit = ['achete', 'apporte'];
+
+const libellesProvenances = {
+  'achete': 'Acheté par l\'association',
+  'apporte': 'Apporté par les bénévoles',
+};
+
 /// Un ingrédient d'une recette : quantité pour UNE unité du produit (fraction permise).
 class Ingredient {
   const Ingredient(this.nom, this.quantite, this.unite);
@@ -81,11 +90,15 @@ class FicheProduit {
     this.conso,
     this.ingredients = const [],
     this.verresParLitre,
+    this.provenance = 'achete',
   });
 
   static const unite = FicheProduit();
 
   final String type;
+
+  /// 'achete' ou 'apporte' (voir [provenancesProduit]).
+  final String provenance;
 
   /// Consommation par personne et par jour (facultative).
   final double? conso;
@@ -95,7 +108,11 @@ class FicheProduit {
   /// Lit les champs d'un document ; un document sans type est « unité ».
   factory FicheProduit.depuis(Map<String, dynamic> d) {
     final type = d['type'] as String?;
+    final provenance = d['provenance'] as String?;
     return FicheProduit(
+      provenance: provenance != null && provenancesProduit.contains(provenance)
+          ? provenance
+          : 'achete',
       type: type != null && typesProduit.contains(type) ? type : 'unite',
       conso: (d['conso'] as num?)?.toDouble(),
       ingredients: [
@@ -111,6 +128,7 @@ class FicheProduit {
   /// qui ne concernent plus le type sont effacés.
   Map<String, dynamic> versMap({bool supprimerLeReste = false}) => {
         'type': type,
+        'provenance': provenance,
         if (conso != null)
           'conso': conso
         else if (supprimerLeReste)
@@ -128,6 +146,9 @@ class FicheProduit {
   /// Message d'erreur en français si la fiche est incohérente, sinon null.
   /// Les règles d'accès refusent les mêmes cas.
   String? erreur() {
+    if (!provenancesProduit.contains(provenance)) {
+      return 'Provenance inconnue.';
+    }
     if (conso != null && (conso! < 0 || conso! > 1000)) {
       return 'Consommation invalide (0 à 1000 par personne et par jour).';
     }
@@ -196,21 +217,21 @@ String resumeFiche(FicheProduit f) {
       'Au litre : ${nombrePourSaisie(f.verresParLitre ?? 0)} verres par litre'
     else if (f.type == 'part')
       'À la part',
+    if (f.provenance == 'apporte') 'Apporté par les bénévoles',
     if (f.conso != null)
       'Consommation : ${nombrePourSaisie(f.conso!)} par personne et par jour',
   ];
   return lignes.isEmpty ? '' : '\n${lignes.join('\n')}';
 }
 
-/// Produit d'un menu. [stock] null = pas de suivi du stock.
+/// Produit d'un menu : le menu est un catalogue, il ne porte aucun stock (décision 45).
 class ProduitMenu {
-  const ProduitMenu(this.id, this.nom, this.prixCentimes, this.stock,
+  const ProduitMenu(this.id, this.nom, this.prixCentimes,
       {this.icone, this.photo, this.fiche = FicheProduit.unite});
 
   final String id;
   final String nom;
   final int prixCentimes;
-  final int? stock;
   final FicheProduit fiche;
 
   /// Icône modèle (clé de [cleIcones]) et photo (vignette), facultatives.
@@ -236,6 +257,10 @@ FicheProduit _ficheModele(Map e) {
     final type = e['type'];
     if (type != null && !typesProduit.contains(type)) {
       throw FormatException('Type inconnu dans le modèle : $e');
+    }
+    final provenance = e['provenance'];
+    if (provenance != null && !provenancesProduit.contains(provenance)) {
+      throw FormatException('Provenance inconnue dans le modèle : $e');
     }
     final fiche = FicheProduit.depuis(Map<String, dynamic>.from(e));
     for (final i in fiche.ingredients) {
@@ -313,7 +338,6 @@ class DepotMenus {
               d.id,
               d.data()['nom'] as String,
               d.data()['prixCentimes'] as int,
-              d.data()['stock'] as int?,
               icone: d.data()['icone'] as String?,
               photo: (d.data()['photo'] as Blob?)?.bytes,
               fiche: FicheProduit.depuis(d.data()),
@@ -361,14 +385,15 @@ class DepotMenus {
     return ref.id;
   }
 
-  /// Copie un menu existant : mêmes produits (types, recettes, images, stocks).
+  /// Copie un menu existant : mêmes produits (types, recettes, provenances,
+  /// images). Un ancien stock saisi dans le menu n'est pas copié (décision 45).
   Future<String> copierMenu(String menuId, String nom) async {
     final ref = _menus.doc();
     final lot = _db.batch();
     lot.set(ref, {'nom': nom.trim(), 'creeLe': FieldValue.serverTimestamp()});
     for (final d in (await _produits(menuId).get()).docs) {
       lot.set(ref.collection('produits').doc(), {
-        ...d.data(),
+        ...d.data()..remove('stock'),
         'creeLe': FieldValue.serverTimestamp(),
       });
     }
@@ -380,7 +405,6 @@ class DepotMenus {
     String menuId, {
     required String nom,
     required int prixCentimes,
-    int? stock,
     String? icone,
     Uint8List? photo,
     FicheProduit fiche = FicheProduit.unite,
@@ -388,7 +412,6 @@ class DepotMenus {
       _produits(menuId).doc().set({
         'nom': nom.trim(),
         'prixCentimes': prixCentimes,
-        'stock': ?stock,
         'icone': ?icone,
         ...fiche.versMap(),
         if (photo != null) 'photo': Blob(photo),
@@ -400,7 +423,6 @@ class DepotMenus {
     String produitId, {
     required String nom,
     required int prixCentimes,
-    int? stock,
     String? icone,
     Uint8List? photo,
     FicheProduit fiche = FicheProduit.unite,
@@ -409,7 +431,8 @@ class DepotMenus {
         'nom': nom.trim(),
         'prixCentimes': prixCentimes,
         ...fiche.versMap(supprimerLeReste: true),
-        'stock': stock ?? FieldValue.delete(),
+        // Un ancien stock saisi dans le menu disparaît à l'enregistrement.
+        'stock': FieldValue.delete(),
         'icone': icone ?? FieldValue.delete(),
         'photo': photo == null ? FieldValue.delete() : Blob(photo),
       });

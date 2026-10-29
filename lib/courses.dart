@@ -169,7 +169,9 @@ class ListeCourses {
 }
 
 /// La liste de départ : pour chaque gymnase qui a des personnes, chaque produit
-/// qui a une consommation, avec la quantité prévue (modifiable ensuite).
+/// acheté par l'association qui a une consommation, avec la quantité prévue
+/// (modifiable ensuite). Un produit « apporté » par les bénévoles n'est pas
+/// pré-coché (décision 45) ; la gestion peut le cocher à la main.
 ListeCourses listeParDefaut({
   required List<ProduitEvenement> produits,
   required List<Gymnase> gymnases,
@@ -179,6 +181,7 @@ ListeCourses listeParDefaut({
   for (final g in gymnases) {
     if (g.personnes <= 0) continue;
     for (final p in produits) {
+      if (p.fiche.provenance == 'apporte') continue;
       final conso = p.fiche.conso;
       if (conso == null || conso <= 0) continue;
       lignes.add(LigneCourse(

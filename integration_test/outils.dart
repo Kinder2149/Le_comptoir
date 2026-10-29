@@ -25,6 +25,17 @@ Future<void> attendre(WidgetTester tester, Finder cible) async {
   throw TestFailure('Jamais apparu : $cible');
 }
 
+/// Donne [quantite] en stock au produit [nomProduit] dans CHAQUE gymnase de
+/// l'événement (le menu n'a plus de stock : il se règle par gymnase).
+Future<void> donnerStock(DepotEvenements depot, String evenementId,
+    String nomProduit, int quantite) async {
+  final produits = await depot.suivreProduits(evenementId).first;
+  final produitId = produits.firstWhere((p) => p.nom == nomProduit).id;
+  for (final g in await depot.suivreGymnases(evenementId).first) {
+    await depot.definirStock(evenementId, g.id, produitId, quantite);
+  }
+}
+
 /// Identifiant du gymnase unique d'un événement (le gymnase « Principal »
 /// créé avec lui).
 Future<String> gymnaseUnique(DepotEvenements depot, String evenementId) async =>

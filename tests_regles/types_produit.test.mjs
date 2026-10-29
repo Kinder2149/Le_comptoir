@@ -204,3 +204,46 @@ test('le modèle : 13 produits d\'un menu, puis d\'un événement avec 3 gymnase
     ...champs.map((c, i) => produitEvenement(id, 'e1', `p${i}`, { champs: c, stock: 20 })),
   ]), 200);
 });
+
+// Chantier Menu, événement et courses, étape B1 : provenance d'un produit (décision 45).
+const provenance = (v) => ({ provenance: texte(v) });
+
+test('provenance : acheté ou apporté acceptés, absente acceptée (ancien produit)', async () => {
+  const { chef, gestionnaire, id } = await avecMenu();
+  assert.equal(await lot(chef, [produitMenu(id, 'a', provenance('achete'))]), 200);
+  assert.equal(await lot(gestionnaire, [produitMenu(id, 'b', { ...type('part'), ...provenance('apporte') })]), 200);
+  assert.equal(await lot(chef, [produitMenu(id, 'c')]), 200); // sans provenance : « acheté »
+});
+
+test('provenance : valeur inconnue ou mauvais type refusés', async () => {
+  const { chef, id } = await avecMenu();
+  for (const faux of ['Apporte', 'benevoles', '', 'apporté']) {
+    assert.equal(await lot(chef, [produitMenu(id, 'x', provenance(faux))]), 403, faux);
+  }
+  assert.equal(await lot(chef, [produitMenu(id, 'x', { provenance: nombre(1) })]), 403);
+});
+
+test('provenance : copiée dans l\'événement, valeur inconnue refusée, non modifiable ensuite', async () => {
+  const { chef, id } = await avecMenu();
+  assert.equal(await lot(chef, [ecrire(`associations/${id}/evenements/e1`, evenement())]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p1', { champs: { ...type('part'), ...provenance('apporte') } })]), 200);
+  assert.equal(await lot(chef, [produitEvenement(id, 'e1', 'p2', { champs: provenance('inconnue') })]), 403);
+  const chemin = `associations/${id}/evenements/e1/produits/p1`;
+  assert.equal(await lot(chef, [{
+    update: { name: `${RACINE}/${chemin}`, fields: provenance('achete') },
+    updateMask: { fieldPaths: ['provenance'] },
+    currentDocument: { exists: true },
+  }]), 403);
+});
+
+test('un ancien produit de menu avec stock reste enregistrable sans stock', async () => {
+  const { chef, id } = await avecMenu();
+  assert.equal(await lot(chef, [produit({ id, menu: 'm1', p: 'old', prix: 100, stock: 12 })]), 200);
+  const chemin = `associations/${id}/menus/m1/produits/old`;
+  // L'application efface le stock du menu à l'enregistrement du produit.
+  assert.equal(await lot(chef, [{
+    update: { name: `${RACINE}/${chemin}`, fields: { ...provenance('apporte') } },
+    updateMask: { fieldPaths: ['provenance'] },
+    currentDocument: { exists: true },
+  }]), 200);
+});

@@ -44,12 +44,11 @@ void main() {
         .data()!['assoId'] as String;
     final menus = DepotAssociations(db).menus(assoId);
 
-    // --- Un menu source, avec recette, ratio, stock et photo.
+    // --- Un menu source, avec recette, ratio, provenance et photo.
     final source = await menus.creerMenu('Menu source');
     await menus.ajouterProduit(source,
         nom: 'Croque',
         prixCentimes: 300,
-        stock: 12,
         icone: 'croque',
         photo: _png,
         fiche: const FicheProduit(type: 'compose', conso: 2, ingredients: [
@@ -59,7 +58,8 @@ void main() {
     await menus.ajouterProduit(source,
         nom: 'Café',
         prixCentimes: 100,
-        fiche: const FicheProduit(type: 'litre', verresParLitre: 8));
+        fiche: const FicheProduit(
+            type: 'litre', verresParLitre: 8, provenance: 'apporte'));
 
     // --- Nouveau menu : copie du menu source.
     await attendre(tester, find.byKey(const Key('menus')));
@@ -80,16 +80,18 @@ void main() {
     expect(produits.length, 2);
     final croque = produits['Croque']!;
     expect(croque.prixCentimes, 300);
-    expect(croque.stock, 12);
+    // La copie ne reprend aucun stock (le menu n'en a plus) mais garde la provenance.
+    expect(croque.fiche.provenance, 'achete');
     expect(croque.photo, isNotNull);
     expect(croque.icone, 'croque');
     expect(croque.fiche.type, 'compose');
     expect(croque.fiche.conso, 2);
     expect(croque.fiche.ingredients.length, 2);
     expect(produits['Café']!.fiche.verresParLitre, 8);
+    expect(produits['Café']!.fiche.provenance, 'apporte');
     // Les deux menus sont indépendants : modifier la copie ne change pas la source.
     await menus.modifierProduit(copie.id, croque.id,
-        nom: 'Croque', prixCentimes: 350, stock: 12, icone: 'croque', photo: _png, fiche: croque.fiche);
+        nom: 'Croque', prixCentimes: 350, icone: 'croque', photo: _png, fiche: croque.fiche);
     final sourceApres = await menus.suivreProduits(source).first;
     expect(sourceApres.firstWhere((p) => p.nom == 'Croque').prixCentimes, 300);
 
@@ -109,6 +111,7 @@ void main() {
     expect(c.fiche.conso, 2);
     expect(c.fiche.ingredients.map((i) => i.nom), ['Pain de mie', 'Jambon blanc', 'Gruyère râpé']);
     expect(produits['Café']!.fiche.verresParLitre, 8);
+    expect(produits['Café']!.fiche.provenance, 'apporte');
     expect(produits['Tartiflette']!.fiche.type, 'part');
     expect(produits['Bonbons (offerts)']!.prixCentimes, 0);
     expect(produits['Tarte']!.icone, 'tarte');

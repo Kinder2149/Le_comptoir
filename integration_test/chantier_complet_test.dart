@@ -140,6 +140,10 @@ void main() {
     expect((await stock(gB, croque))!['quantite'], 120);
     expect((await stock(gA, cafe))!['quantite'], 160);
     expect((await stock(gB, soda))!['quantite'], 60);
+    // La tarte est « apportée par les bénévoles » (décision 45) : hors courses,
+    // son stock de 80 est posé à la main par la gestion.
+    expect(await stock(gA, tarte), isNull);
+    await depotEv.definirStock(evtId, gA, tarte, 80);
     final tA = (await stock(gA, tarte))!;
     expect((tA['quantite'], tA['reference']), (80, 80));
     expect(await stock(gA, crepe), isNull); // la crêpe n'a ni consommation ni suivi

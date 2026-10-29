@@ -61,7 +61,7 @@ void main() {
         (await db.collection('users').doc(chefUid).get()).data()!['assoId'] as String;
     final menus = depotAsso.menus(assoId);
     final menuId = await menus.creerMenu('Menu');
-    await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150, stock: 10);
+    await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     await menus.ajouterProduit(menuId, nom: 'Soda', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
     final evt = await depotEv.creerEvenement(
@@ -70,6 +70,7 @@ void main() {
       menuId: menuId,
       modes: ['especes'],
     );
+    await donnerStock(depotEv, evt, 'Café', 10);
     final gym = await gymnaseUnique(depotEv, evt);
     final cafeId = (await depotEv.suivreProduits(evt).first).firstWhere((p) => p.nom == 'Café').id;
 

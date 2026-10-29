@@ -31,7 +31,7 @@ Future<Uint8List?> selecteurPhotoReel(SourcePhoto source) async {
   return fichier?.readAsBytes();
 }
 
-/// Contenu d'un menu : produits, prix, stock facultatif.
+/// Contenu d'un menu : produits, prix, provenance (le menu n'a pas de stock).
 class EcranMenu extends StatelessWidget {
   const EcranMenu({
     super.key,
@@ -83,7 +83,6 @@ class EcranMenu extends StatelessWidget {
       await depot.ajouterProduit(menuId,
           nom: r.nom,
           prixCentimes: r.prixCentimes,
-          stock: r.stock,
           icone: r.icone,
           photo: r.photo,
           fiche: r.fiche);
@@ -91,7 +90,6 @@ class EcranMenu extends StatelessWidget {
       await depot.modifierProduit(menuId, p.id,
           nom: r.nom,
           prixCentimes: r.prixCentimes,
-          stock: r.stock,
           icone: r.icone,
           photo: r.photo,
           fiche: r.fiche);
@@ -156,7 +154,9 @@ class EcranMenu extends StatelessWidget {
                             (p.fiche.type == 'unite'
                                 ? ''
                                 : ' · ${libellesTypes[p.fiche.type]}') +
-                            (p.stock == null ? '' : ' · Stock : ${p.stock}'),
+                            (p.fiche.provenance == 'apporte'
+                                ? ' · Apporté par les bénévoles'
+                                : ''),
                       ),
                       onTap: () => _editerProduit(context, p),
                     ),
@@ -185,7 +185,7 @@ Future<ProduitSaisi?> demanderProduit(
 }
 
 class ProduitSaisi {
-  const ProduitSaisi(this.nom, this.prixCentimes, this.stock,
+  const ProduitSaisi(this.nom, this.prixCentimes,
       {this.supprimer = false,
       this.icone,
       this.photo,
@@ -194,7 +194,6 @@ class ProduitSaisi {
   final FicheProduit fiche;
   final String nom;
   final int prixCentimes;
-  final int? stock;
   final bool supprimer;
   final String? icone;
   final Uint8List? photo;
@@ -248,9 +247,7 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
       text: widget.produit == null
           ? ''
           : prixPourSaisie(widget.produit!.prixCentimes));
-  late final _quantite =
-      TextEditingController(text: '${widget.produit?.stock ?? ''}');
-  late bool _suivi = widget.produit?.stock != null;
+  late String _provenance = widget.produit?.fiche.provenance ?? 'achete';
   late String? _icone = widget.produit?.icone;
   late Uint8List? _photo = widget.produit?.photo;
   String? _erreur;
@@ -259,7 +256,6 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
   void dispose() {
     _nom.dispose();
     _prix.dispose();
-    _quantite.dispose();
     _conso.dispose();
     _verres.dispose();
     for (final l in _lignes) {
@@ -271,10 +267,10 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
   void _valider() {
     final nom = _nom.text.trim();
     final prix = parserPrix(_prix.text);
-    final stock = _suivi ? int.tryParse(_quantite.text.trim()) : null;
     final conso = parserNombre(_conso.text);
     final fiche = FicheProduit(
       type: _type,
+      provenance: _provenance,
       // Une consommation illisible devient -1 : refusée par la vérification.
       conso: _conso.text.trim().isEmpty ? null : (conso ?? -1),
       ingredients: _type == 'compose'
@@ -291,15 +287,12 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
       setState(() => _erreur = 'Le nom est obligatoire (40 caractères max).');
     } else if (prix == null) {
       setState(() => _erreur = 'Prix invalide (exemple : 2,50).');
-    } else if (_suivi && (stock == null || stock < 0 || stock > 100000)) {
-      setState(() => _erreur = 'Quantité en stock invalide.');
     } else if (erreurFiche != null) {
       setState(() => _erreur = erreurFiche);
     } else {
       Navigator.pop(
           context,
-          ProduitSaisi(nom, prix, stock,
-              icone: _icone, photo: _photo, fiche: fiche));
+          ProduitSaisi(nom, prix, icone: _icone, photo: _photo, fiche: fiche));
     }
   }
 
@@ -343,6 +336,21 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             onPressed: () => setState(() => _lignes.add(_LigneIngredient())),
           ),
         ],
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          key: const Key('provenance_produit'),
+          isExpanded: true,
+          initialValue: _provenance,
+          decoration: const InputDecoration(labelText: 'Provenance'),
+          items: [
+            for (final v in provenancesProduit)
+              DropdownMenuItem(
+                  key: Key('provenance_$v'),
+                  value: v,
+                  child: Text(libellesProvenances[v]!)),
+          ],
+          onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
+        ),
         const SizedBox(height: 8),
         TextField(
           key: const Key('conso_produit'),
@@ -435,20 +443,6 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
               }),
               onErreur: (e) => setState(() => _erreur = e),
             ),
-            SwitchListTile(
-              key: const Key('suivi_stock'),
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Suivre le stock'),
-              value: _suivi,
-              onChanged: (v) => setState(() => _suivi = v),
-            ),
-            if (_suivi)
-              TextField(
-                key: const Key('quantite_stock'),
-                controller: _quantite,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Quantité en stock'),
-              ),
             if (_erreur != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -466,7 +460,7 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             key: const Key('supprimer_produit'),
             style: TypeAction.danger.texte,
             onPressed: () => Navigator.pop(
-                context, const ProduitSaisi('', 0, null, supprimer: true)),
+                context, const ProduitSaisi('', 0, supprimer: true)),
             child: const Text('Supprimer'),
           ),
         TextButton(

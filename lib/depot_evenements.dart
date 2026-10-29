@@ -323,13 +323,6 @@ class DepotEvenements {
         ...p.fiche.versMap(),
         'creeLe': FieldValue.serverTimestamp(),
       });
-      // Chaque gymnase part du stock du menu.
-      if (p.stock != null) {
-        for (final g in refsGymnases) {
-          lot.set(g.collection('stocks').doc(produit.id),
-              {'quantite': p.stock, 'reference': p.stock});
-        }
-      }
     }
     await lot.commit();
     return ref.id;
