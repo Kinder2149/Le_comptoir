@@ -363,7 +363,7 @@ class DepotEvenements {
         1;
     final ref = evenement.collection('gymnases').doc();
     final lot = _db.batch();
-    lot.update(evenement, {'nbGymnases': actuel + 1});
+    lot.update(evenement, {'nbGymnases': actuel + 1, 'dernierGymnase': ref.id});
     lot.set(ref, {
       'nom': nom.trim(),
       'creeLe': FieldValue.serverTimestamp(),

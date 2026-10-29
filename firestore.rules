@@ -29,7 +29,8 @@ rules_version = '2';
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
 //                                                 le stock que dans ses gymnases ; le responsable gère tout.
-//                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases : clôturer
+//                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases (il ne monte qu'avec la
+//                                                 naissance du gymnase `dernierGymnase`) : clôturer
 //                                                 l'événement exige d'être rattaché à TOUS (ou d'être responsable).
 //       caisses/{uid__g}                          une caisse par (membre, gymnase) ; membreUid, gymnaseId, prenom,
 //                                                 statut, ouverteLe, + à la clôture : récapitulatif
@@ -289,13 +290,18 @@ service cloud.firestore {
           && request.resource.data.nbJours >= 1
           && request.resource.data.nbJours <= 30;
 
-        // Un gymnase de plus : le compteur monte de 1 (dans le lot qui crée le gymnase).
+        // Un gymnase de plus : le compteur monte de 1 ET le gymnase `dernierGymnase` naît
+        // dans le même lot (le compteur ne se monte jamais seul : il décide qui est
+        // « rattaché à tous les gymnases »).
         allow update: if estGestion(a)
           && resource.data.statut == 'en_cours'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases', 'dernierGymnase'])
           && request.resource.data.nbGymnases is int
           && request.resource.data.nbGymnases == resource.data.get('nbGymnases', 1) + 1
-          && request.resource.data.nbGymnases <= 8;
+          && request.resource.data.nbGymnases <= 8
+          && request.resource.data.dernierGymnase is string
+          && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase))
+          && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase));
 
         // Clôture : l'événement devient figé. Forcée = des caisses étaient encore
         // ouvertes ; le nombre est conservé pour signaler les ventes manquantes.

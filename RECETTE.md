@@ -146,6 +146,9 @@ association d'essai (par ex. « Essai Club ») ; je la supprimerai ensuite.
 - [ ] Les chiffres du fichier sont ceux de l'écran (total, produits, modes, jours, caisses).
 - [ ] Même export depuis la vue d'un gymnase : seulement ses chiffres.
 
+**21. Après le test, la consommation réelle (nouveau)**
+- [ ] Console Firebase → Firestore → onglet Utilisation : noter les lectures et écritures du jour de votre test, pour les comparer à la projection de la section 10 de `PLAN_STOCK_COURSES.md` (quota gratuit : 50 000 lectures et 20 000 écritures par jour).
+
 ## Ce que vous devez savoir (limites connues)
 - **Code d'accès** : seul le responsable peut le changer (décision 1). Un gestionnaire le pourrait-il aussi ? Question restée ouverte.
 - **Retirer un membre** n'empêche pas son retour avec l'ancien code : changez aussi le code. Le QR code contient ce code : il est aussi sensible que lui.

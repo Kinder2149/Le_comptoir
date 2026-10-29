@@ -298,10 +298,40 @@ mi-journée ; chaque caisse est ouverte 2 fois ; ventes réparties à parts éga
 | idem, avec un seul appareil de gestion | 5 520 + 5 860 | 2 976 + 14 000 | ≈ 28 400 | 57 % |
 | idem, avant optimisation (deux appareils) | 11 040 + 28 480 | 2 976 + 26 000 | ≈ 68 500 | 137 % (dépassement) |
 
-Conclusion : sous le quota pour le cas visé (3 gymnases) ; tenable jusqu'à 8 gymnases, mais près du plafond avec deux
-appareils de gestion qui laissent le suivi ouvert toute la journée. Levier si besoin : fermer l'écran de suivi quand on ne
-le regarde pas (les lectures en direct s'arrêtent). Les écritures (environ 11 000 par jour pour 3 gymnases et 6 caisses,
-quota 20 000) n'ont pas changé.
+**Correction après la vérification indépendante (29/10/2026)** : le test écrit les trois baisses de stock d'une vente en
+rafale, et les écoutes en regroupent une partie ; en situation réelle, la gestion lit jusqu'à 4 documents par vente (1 vente +
+3 baisses de stock) au lieu de 2,93 mesurés. Les lectures faites par les règles d'accès elles-mêmes (relecture du membre, de
+l'événement, de la caisse : environ 5 par vente) sont aussi facturées et ne sont pas comptées par `lib/mesure.dart`.
+Projection corrigée (ordre de grandeur) :
+
+| Cas | Total / jour | Part du quota (50 000) |
+|---|---|---|
+| 3 gymnases, 6 caisses, 1 000 ventes, 2 appareils de gestion | ≈ 26 700 | 53 % |
+| 8 gymnases, 16 caisses, 2 000 ventes, 1 appareil de gestion | ≈ 40 500 | 81 % |
+| 8 gymnases, 16 caisses, 2 000 ventes, 2 appareils de gestion | ≈ 54 000 | 108 % (dépassement) |
+
+Conclusion : confortable pour le cas visé (3 gymnases). À 8 gymnases, un seul appareil de gestion doit laisser le suivi
+ouvert, et fermer l'écran quand on ne le regarde pas (les lectures en direct s'arrêtent) ; sinon le quota gratuit est
+dépassé. **À confirmer pendant la recette** : après un vrai événement, lire les lectures réelles dans la console Firebase
+(Firestore, onglet Utilisation) et les comparer à ce tableau. Les écritures (environ 11 000 par jour pour 3 gymnases et 6
+caisses, quota 20 000) n'ont pas changé.
+
+### Vérification indépendante (29/10/2026)
+Une IA qui n'a pas écrit le code a refait toutes les suites (analyse, 210 tests de logique et d'écrans, 166 tests de règles,
+26 parcours Android) et vérifié les 11 critères du texte de la section 11 : **tous réussis, aucun défaut bloquant**. Rapport et
+captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et traités :
+- Stock : un bénévole à sa caisse peut techniquement (en contournant l'application) corriger la quantité d'un produit de son
+  gymnase, car la règle de la vente et de l'annulation ne distingue pas une vente d'une correction. **Limite acceptée par
+  Kinder le 29/10/2026** (décision 44) : le bénévole est un membre de confiance, l'application ne lui offre pas cette action, et
+  la durcir compliquerait la vente sans réseau. Seul « ajouter des parts » est borné par le serveur.
+- Compteur de gymnases : un gestionnaire pouvait le monter sans créer de gymnase, ce qui retirait à tous les gestionnaires
+  l'accès aux courses et à la clôture. **Corrigé** : le compteur ne monte qu'avec la naissance du gymnase (`dernierGymnase`),
+  vérifié dans les règles et par des tests (règles à redéployer).
+- Mesure des lectures : projection corrigée ci-dessus.
+- Restent connus et sans gravité : contenu des listes de courses non borné en taille (limite de 1 Mo par document, gestion
+  seule) ; signal « vide » accepté sur un produit qui a une quantité (effet visuel seulement) ; deux validations de courses au
+  même instant sur deux appareils (rare, gestion seule). Non vérifiables sans téléphone : ouverture du CSV dans Excel et
+  feuille de partage Android (recette, point 20).
 
 ## 11. Texte de vérification pour une autre IA (étapes 1 à 7 et parcours complet)
 À donner tel quel à une IA qui n'a pas écrit le code (décision : l'IA qui code rédige, une autre vérifie).

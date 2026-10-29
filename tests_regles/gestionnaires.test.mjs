@@ -252,15 +252,19 @@ test('ajouter un gymnase exige de monter le compteur de l’événement de 1, da
   assert.equal(await lot(chef, [ajoutGymnase(id, 'e1', 'g2', {}, 1)]), 403); // ne monte pas
   assert.equal(await lot(gus, [ajoutGymnase(id, 'e1', 'g2', { nom: 'Annexe' }, 2)]), 200);
   assert.equal(await lot(chef, [ajoutGymnase(id, 'e1', 'g3', { nom: 'Nord' }, 3)]), 200);
-  // Le compteur seul ne se monte pas à la main, ni par un bénévole.
-  const monter = (u, n) => lot(u, [{
-    update: { name: `${RACINE}/${c.evt}`, fields: { nbGymnases: entier(n) } },
-    updateMask: { fieldPaths: ['nbGymnases'] },
+  // Le compteur ne se monte jamais seul, ni par un bénévole, ni par la gestion : il décide
+  // qui est « rattaché à tous les gymnases » (clôture, courses).
+  const monter = (u, n, extra = {}) => lot(u, [{
+    update: { name: `${RACINE}/${c.evt}`, fields: { nbGymnases: entier(n), ...extra } },
+    updateMask: { fieldPaths: ['nbGymnases', ...Object.keys(extra)] },
     currentDocument: { exists: true },
   }]);
   assert.equal(await monter(lea, 4), 403);
-  assert.equal(await monter(chef, 4), 200);
-  assert.equal(await monter(chef, 6), 403); // pas de +2
+  assert.equal(await monter(chef, 4), 403); // seul : refusé
+  assert.equal(await monter(gus, 4), 403);
+  assert.equal(await monter(chef, 4, { dernierGymnase: { stringValue: 'inexistant' } }), 403); // aucun gymnase ne naît
+  assert.equal(await monter(chef, 4, { dernierGymnase: { stringValue: 'g2' } }), 403); // un gymnase qui existe déjà
+  assert.equal(await monter(chef, 6, { dernierGymnase: { stringValue: 'g9' } }), 403); // pas de +2
 });
 
 test('au plus 8 gymnases par événement', async () => {

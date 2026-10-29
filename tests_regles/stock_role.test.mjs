@@ -67,8 +67,8 @@ test('ajout de parts : refusé pour un intrus et dans un gymnase où l’on n’
   // Un second gymnase : une caisse ouverte dans g1 ne permet rien dans g2.
   assert.equal(await lot(chef, [
     { ...gymnase(id, 'e1', 'g2', { nom: 'Annexe' }),
-      __avec: [{ update: { name: `${RACINE}/${c.evt}`, fields: { nbGymnases: entier(2) } },
-        updateMask: { fieldPaths: ['nbGymnases'] }, currentDocument: { exists: true } }] },
+      __avec: [{ update: { name: `${RACINE}/${c.evt}`, fields: { nbGymnases: entier(2), dernierGymnase: { stringValue: 'g2' } } },
+        updateMask: { fieldPaths: ['nbGymnases', 'dernierGymnase'] }, currentDocument: { exists: true } }] },
   ]), 200);
   assert.equal(await lot(chef, [ecrire(c.stock('p5', 'g2'), { quantite: 3, reference: 3 })]), 200);
   assert.equal(await lot(gestionnaire, [majStock(c.stock('p5', 'g2'), { quantite: 4, reference: 4 })]), 403);

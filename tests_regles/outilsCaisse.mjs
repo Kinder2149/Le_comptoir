@@ -46,8 +46,11 @@ export const gymnase = (id, e = 'e1', g = GYM, extra = {}) =>
 export const ajoutGymnase = (id, e, g, extra = {}, n = 2) => ({
   ...gymnase(id, e, g, extra),
   __avec: [{
-    update: { name: `${RACINE}/associations/${id}/evenements/${e}`, fields: { nbGymnases: entier(n) } },
-    updateMask: { fieldPaths: ['nbGymnases'] },
+    update: {
+      name: `${RACINE}/associations/${id}/evenements/${e}`,
+      fields: { nbGymnases: entier(n), dernierGymnase: { stringValue: g } },
+    },
+    updateMask: { fieldPaths: ['nbGymnases', 'dernierGymnase'] },
     currentDocument: { exists: true },
   }],
 });

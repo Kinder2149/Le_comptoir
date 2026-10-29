@@ -1,5 +1,11 @@
 # CHANGELOG — Le Comptoir
 
+## 29/10/2026 — Vérification indépendante du chantier « Stock et courses »
+- Une IA qui n'a pas écrit le code a refait toutes les suites et vérifié les 11 critères : tous réussis, aucun défaut bloquant. Rapport et captures dans `audit_front/captures_stock_courses/verif_ia/`.
+- Règles d'accès : le compteur de gymnases d'un événement ne monte plus qu'avec la naissance du gymnase (nouveau champ `dernierGymnase` posé dans le même lot) ; avant, un gestionnaire pouvait le monter seul et retirer à tous les gestionnaires l'accès aux courses et à la clôture. **Pas encore déployées sur le vrai projet** (attente de l'accord de Kinder).
+- Décision 44 : limite acceptée par Kinder sur le stock (un bénévole peut techniquement, en contournant l'application, corriger la quantité d'un produit de son gymnase).
+- Projection des lectures corrigée à la hausse (section 10 du plan) : 3 gymnases ≈ 53 % du quota ; 8 gymnases ≈ 81 % avec un seul appareil de gestion, dépassement avec deux. À confirmer dans la console Firebase après un vrai événement.
+
 ## 28/10/2026 (nuit, fin) — Chantier « Stock et courses », étape 8 : recette
 - Parcours automatique complet de bout en bout (menu du modèle, 2 gymnases, courses pré-remplies et validées, ventes, stock bas puis rupture, « vide », bilan avec coût et résultat, CSV relu), chiffres calculés à la main.
 - Lectures Firestore mesurées (compteur `lib/mesure.dart`, inactif en production) et réduites : les stocks sont écoutés une seule fois par événement au lieu de 2 à 3. Par vente en direct : gestion 7,12 → 2,93 lectures, caisse 6,50 → 3,50. Projection : 3 gymnases ≈ 39 % du quota de 50 000 par jour ; 8 gymnases ≈ 79 % avec deux appareils de gestion (avant : 137 %). Détail en section 10 de `PLAN_STOCK_COURSES.md`.
