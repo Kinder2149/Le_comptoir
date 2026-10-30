@@ -280,26 +280,28 @@ Ordre : B1 → B2 → B3 → B4 → B5 → B6 (B3 avant B4 : les courses ont bes
 | Demande du PDF | Sort |
 |---|---|
 | Vente bloquée en rupture | **Écarté** (décision 35 : couleur, jamais de blocage) |
-| États colorés : disponible vert, bas orange, rupture rouge, inconnu gris | **Retenu en partie** : rupture colorée (étape 4), stock bas signalé (4). « Inconnu gris » (produit sans suivi) à décider à l'étape 4 |
-| Tableau de bord des stocks par gymnase/événement, filtres catégorie | **Reporté** : le suivi en direct montre déjà le stock restant ; filtres à rediscuter après l'étape 4 |
-| Entrées, pertes/consommations internes, corrections | **Retenu en partie** : entrées et réglages (étape 3, courses 6) ; pertes et consommations internes **reportées** |
+| États colorés : disponible vert, bas orange, rupture rouge, inconnu gris | **Retenu en partie** : rupture colorée (étape 4), stock bas signalé (4). « Inconnu gris » (produit sans suivi) **mis de côté** (tri du 30/10/2026 : un produit sans suivi n'a simplement pas d'alerte) |
+| Tableau de bord des stocks par gymnase/événement, filtres catégorie | **Reporté** : le suivi en direct montre déjà le stock restant ; filtres par catégorie **mis de côté** (tri du 30/10/2026 : pas de catégorie de produit, 27 produits restent lisibles) |
+| Entrées, pertes/consommations internes, corrections | **Retenu en partie** : entrées et réglages (étape 3, courses 6) ; pertes et consommations internes **mises de côté** (tri du 30/10/2026 : baisser le stock à la main suffit) |
 | Inventaire de fin de journée (saisie directe, sans écart affiché) | **Couvert** par le réglage du stock par la gestion (étape 3) ; pas d'écran dédié |
-| Réapprovisionnements partiels pendant la journée | **À trancher** à l'étape 6 |
+| Réapprovisionnements partiels pendant la journée | **Retenu, version simple (tri du 30/10/2026, décision 52)** : valider les courses plusieurs fois ; chaque validation ajoute au stock et au coût ; mission C1 |
 | Unités et conversions (tranches, grammes) | **Retenu** : liste d'unités à l'étape 1, conversions g/kg et cl/L aux étapes 5-6 |
 | Transferts entre gymnases | **Écarté** (à la main : -10 puis +10) |
 | Lots à prix différents, coût moyen pondéré | **Écarté** (coût total des courses seulement) |
 | Prévisions personnes × jours × coefficients, coefficients visibles et modifiables | **Retenu** en pré-remplissage modifiable (décision 42, étape 5) ; pas de stock cible |
-| Déduire stocks et réceptions pour éviter les doubles commandes | **Retenu** : la liste part des quantités saisies et de « ce qu'il reste » ; pas de déduction automatique des courses déjà validées (à trancher étape 5) |
-| Liste de courses : cases à cocher, statuts (à acheter, partiel, reçu, annulé), ajout manuel | **Retenu en partie** : préparation puis validation (étapes 5 et 6) ; statuts détaillés et cases à cocher **à trancher** |
-| Impression ou export de la liste de courses | **Reporté** |
+| Déduire stocks et réceptions pour éviter les doubles commandes | **Retenu** : la liste part des quantités saisies et de « ce qu'il reste » ; pas de déduction automatique des courses déjà validées (à trancher étape 5) ; **tri du 30/10/2026** : traité par les validations successives de la mission C1 (décision 52) |
+| Liste de courses : cases à cocher, statuts (à acheter, partiel, reçu, annulé), ajout manuel | **Retenu en partie** : préparation puis validation (étapes 5 et 6) ; cases à cocher faites ; **tri du 30/10/2026** : statuts détaillés par ligne (à acheter, partiel, reçu, annulé) **mis de côté**, remplacés par les validations successives (mission C1, décision 52) |
+| Impression ou export de la liste de courses | **Retenu (tri du 30/10/2026, décision 52)** : partage de la liste en texte ou CSV par la feuille de partage existante ; mission C1 |
 | Recettes, décrémentation des ingrédients à la vente, portions réalisables | **Retenu en partie** : recettes (étape 1) ; les ingrédients n'ont pas de stock (décision 38), donc pas de décrémentation ; « portions réalisables » = calcul inverse à la validation |
 | Prix de vente, coût matière, marge et taux de marge | **Écarté** (coût total des courses déduit au bilan) |
 | Cartes physiques prépayées | **Écarté** pour l'instant |
 | Paiement carte envoyé au terminal | **Reporté en dernier** : Monetico (section 7 du contexte) |
 | Gâteaux et préparations bénévoles (sucré/salé, parts, prix) | **Retenu** : types « part » (étapes 1 et 3) |
-| Bilan par produit, catégorie, moyen de paiement, gymnase, événement | **Déjà fait** ; catégorie de produit **non décidée** |
+| Bilan par produit, catégorie, moyen de paiement, gymnase, événement | **Déjà fait** ; bilan par catégorie, valeur du stock restant, coûts et marges par produit **mis de côté** (tri du 30/10/2026 : il faudrait un prix d'achat par élément) |
 | Export CSV/Excel du bilan | **Retenu** : CSV (étape 7) |
-| Cohérence multi-appareils, droits, coupures réseau, sauvegardes | **Déjà fait** ; lectures en direct à mesurer (étape 8) ; sauvegardes **non traitées** |
+| Cohérence multi-appareils, droits, coupures réseau, sauvegardes | **Déjà fait** ; lectures en direct à mesurer (étape 8) ; sauvegardes **mises de côté** (tri du 30/10/2026 : l'export CSV du bilan en tient lieu ; à reprendre si le club veut l'historique de plusieurs saisons) |
+
+**Tri du cahier des charges (30/10/2026, validé par Kinder, décision 52)** : le PDF transmis par un bénévole est le même que celui du 27/10 ; il a été repris point par point après B5. *Gardé tel quel* : stock par gymnase, états rupture et stock bas, prévisions, courses générées avec cases et lignes libres, recettes et ingrédient limitant, unités, gâteaux apportés, bilan et export CSV, multi-appareils, droits, coupure réseau. *Adapté* : vente jamais bloquée (couleur seulement), transferts à la main, inventaire = réglage du stock, marge = coût total et résultat, ingrédients calculés à l'achat, sucré/salé = produits distincts. *Retenu, mission C1* : validations successives des courses, partage de la liste de courses. *Mis de côté* : pertes, « inconnu » gris, valeur du stock et marges, catégories, sauvegardes, cartes prépayées. *Parqué* : Monetico. **À faire plus tard : rendre compte au bénévole des choix faits par rapport à son PDF** (reprendre ce tri en langage simple).
 
 ## 7. Risques et points d'attention
 - Les règles d'accès Firestore sont la partie la plus délicate : chaque étape qui touche aux règles ajoute ses tests
