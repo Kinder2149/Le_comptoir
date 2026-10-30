@@ -89,14 +89,90 @@ class ValidationCourses {
   final DateTime? valideeLe;
 }
 
+/// Ce que les séries de courses déjà validées ont apporté (mission C1) : une liste
+/// validée est figée, puis la gestion ouvre une nouvelle série ; le coût et les
+/// ajouts de stock des séries précédentes sont gardés ici, jamais rejoués.
+class CumulCourses {
+  const CumulCourses({
+    this.series = 0,
+    this.coutCentimes = 0,
+    this.ajouts = const {},
+  });
+
+  /// Nombre de séries déjà validées avant la série en cours.
+  final int series;
+  final int coutCentimes;
+
+  /// Ajouts de stock par produit (tous gymnases), séries précédentes cumulées.
+  final Map<String, int> ajouts;
+
+  /// Le cumul une fois la série [v] validée.
+  CumulCourses avecValidation(ValidationCourses v) {
+    final somme = {...ajouts};
+    for (final r in v.rendements) {
+      somme[r.produitId] = (somme[r.produitId] ?? 0) + r.quantite;
+    }
+    return CumulCourses(
+      series: series + 1,
+      coutCentimes: coutCentimes + v.coutCentimes,
+      ajouts: somme,
+    );
+  }
+
+  factory CumulCourses.depuis(Map<String, dynamic> d) => CumulCourses(
+        series: (d['cumulSeries'] as num?)?.toInt() ?? 0,
+        coutCentimes: (d['cumulCout'] as num?)?.toInt() ?? 0,
+        ajouts: {
+          for (final a in (d['cumulAjouts'] as List?) ?? const [])
+            a['produitId'] as String: (a['quantite'] as num).toInt(),
+        },
+      );
+
+  /// Rien n'est écrit tant qu'aucune série n'est validée (documents d'avant C1).
+  Map<String, dynamic> versMap() => series == 0
+      ? const {}
+      : {
+          'cumulSeries': series,
+          'cumulCout': coutCentimes,
+          'cumulAjouts': [
+            for (final e in ajouts.entries)
+              {'produitId': e.key, 'quantite': e.value},
+          ],
+        };
+}
+
 /// La liste de courses d'un événement : en préparation, puis validée (figée).
+/// Après une validation, une nouvelle série repart d'une liste vide ([precedent]).
 class ListeCourses {
   const ListeCourses({
     this.lignes = const [],
     this.libres = const [],
     this.restes = const {},
     this.validation,
+    this.precedent = const CumulCourses(),
   });
+
+  /// Séries précédentes déjà validées.
+  final CumulCourses precedent;
+
+  /// Séries validées, la série en cours comprise si elle l'est.
+  int get seriesValidees => precedent.series + (validee ? 1 : 0);
+
+  /// Coût de toutes les séries validées.
+  int get coutTotalCentimes =>
+      precedent.coutCentimes + (validation?.coutCentimes ?? 0);
+
+  /// Ajouts de stock de toutes les séries validées, par produit.
+  Map<String, int> get ajoutsTotaux => validation == null
+      ? precedent.ajouts
+      : precedent.avecValidation(validation!).ajouts;
+
+  /// La liste vide d'une nouvelle série, une fois celle-ci validée.
+  ListeCourses nouvelleSerie() => ListeCourses(
+        precedent: validation == null
+            ? precedent
+            : precedent.avecValidation(validation!),
+      );
 
   /// Renseignée quand la liste est validée : elle ne bouge plus.
   final ValidationCourses? validation;
@@ -111,6 +187,7 @@ class ListeCourses {
   final Map<String, double> restes;
 
   factory ListeCourses.depuis(Map<String, dynamic> d) => ListeCourses(
+        precedent: CumulCourses.depuis(d),
         validation: d['statut'] != 'validee'
             ? null
             : ValidationCourses(
@@ -143,6 +220,7 @@ class ListeCourses {
 
   Map<String, dynamic> versMap() => {
         'statut': 'preparation',
+        ...precedent.versMap(),
         'lignes': [for (final l in lignes) l.versMap()],
         'libres': [for (final l in libres) l.versMap()],
         'restes': [
@@ -160,6 +238,7 @@ class ListeCourses {
         lignes: lignes ?? this.lignes,
         libres: libres ?? this.libres,
         restes: restes ?? this.restes,
+        precedent: precedent,
       );
 
   /// Quantité voulue d'un produit pour un gymnase, null si le produit n'est pas acheté.
@@ -307,6 +386,28 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
   ];
   achats.sort((a, b) => cleIngredient(a.nom).compareTo(cleIngredient(b.nom)));
   return achats;
+}
+
+/// Le texte de la liste « À acheter » à partager (mission C1) : une ligne par achat,
+/// puis les lignes libres. Reprend les quantités affichées à l'écran.
+String texteListeCourses(String titre, List<Achat> achats, List<LigneLibre> libres) {
+  final b = StringBuffer('$titre\n');
+  final aAcheter = [for (final a in achats) if (a.aAcheter > 0) a];
+  b.writeln('\nÀ acheter');
+  if (aAcheter.isEmpty) b.writeln('- rien');
+  for (final a in aAcheter) {
+    b.writeln('- ${a.nom} : ${formaterQuantite(a.aAcheter, a.uniteBase)}');
+  }
+  if (libres.isNotEmpty) {
+    b.writeln('\nAutres achats');
+    for (final l in libres) {
+      final q = l.quantite == l.quantite.roundToDouble()
+          ? l.quantite.toInt().toString()
+          : _decimal(l.quantite);
+      b.writeln('- ${l.nom} × $q');
+    }
+  }
+  return b.toString();
 }
 
 /// Rendement d'un produit : ce que les achats permettent d'ajouter au stock.

@@ -14,8 +14,10 @@ import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
+import 'ecran_restes.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'restes.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -225,11 +227,29 @@ class EcranEvenement extends StatelessWidget {
     );
     if (ok != true) return;
     try {
+      // Produits à garder pour le prochain événement (décision 48) : seulement
+      // ceux qui ont encore du stock.
+      var gardes = const <Reste>[];
+      var ecartes = const <String>[];
+      final candidats = candidatsRestes(
+        gymnases: await depot.suivreGymnases(ev.id).first,
+        produits: await depot.suivreProduits(ev.id).first,
+        stocks: await depot.suivreStocksParGymnase(ev.id).first,
+      );
+      if (candidats.isNotEmpty) {
+        if (!context.mounted) return;
+        final choix = await demanderRestes(context, candidats);
+        if (choix == null) return;
+        gardes = choix.gardes;
+        ecartes = choix.ecartes;
+      }
       await depot.cloturerEvenement(
         ev.id,
         parUid: uid,
         parPrenom: prenom,
         nbCaissesOuvertes: ouvertes.length,
+        restes: gardes,
+        ecartes: ecartes,
       );
     } catch (_) {
       if (context.mounted) {

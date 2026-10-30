@@ -540,11 +540,16 @@ class _LigneStock extends StatelessWidget {
                   onChanged: onVide,
                 ),
               ],
-              const Text('Suivre le stock'),
-              Switch(
-                key: Key('suivi_${g}_${p.id}'),
-                value: suivi,
-                onChanged: onSuivre,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Suivre le stock'),
+                  Switch(
+                    key: Key('suivi_${g}_${p.id}'),
+                    value: suivi,
+                    onChanged: onSuivre,
+                  ),
+                ],
               ),
             ],
           ),

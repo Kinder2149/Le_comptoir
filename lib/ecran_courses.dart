@@ -9,16 +9,25 @@ import 'ecran_caisse.dart' show couleurEtat;
 import 'ecran_validation_courses.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'partage.dart';
 import 'ticket.dart';
 
 /// Courses d'un événement, en préparation : réglages (jours, personnes), quantités
 /// de produits finaux par gymnase (pré-remplies, modifiables), liste « À acheter »
 /// calculée, « ce qu'il reste » et lignes libres. Tout s'enregistre tout seul.
 class EcranCourses extends StatefulWidget {
-  const EcranCourses({super.key, required this.depot, required this.evenementId});
+  const EcranCourses({
+    super.key,
+    required this.depot,
+    required this.evenementId,
+    this.partager = partagerFichierTexte,
+  });
 
   final DepotEvenements depot;
   final String evenementId;
+
+  /// Remet la liste à partager à la feuille de partage (remplaçable dans les tests).
+  final Partageur partager;
 
   @override
   State<EcranCourses> createState() => _EtatCourses();
@@ -166,6 +175,34 @@ class _EtatCourses extends State<EcranCourses> {
     }
   }
 
+  /// Partage la liste « À acheter » et les lignes libres, en texte.
+  Future<void> _partagerListe() async {
+    final texte = texteListeCourses(
+        'Liste de courses', calculerAchats(_produits, _liste), _liste.libres);
+    try {
+      await widget.partager('liste-de-courses.txt', texte);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Le partage n'a pas pu s'ouvrir. Réessayez.")));
+    }
+  }
+
+  /// Après une validation : la liste repart vide, le cumul garde coût et ajouts.
+  Future<void> _nouvelleSerie() async {
+    try {
+      await widget.depot.nouvelleSerieCourses(widget.evenementId, _liste);
+      if (!mounted) return;
+      setState(() => _charge = false);
+      await _charger();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              "La nouvelle série n'a pas pu s'ouvrir. Vérifiez la connexion et réessayez.")));
+    }
+  }
+
   void _modifierListe(ListeCourses l) {
     _liste = l;
     _listeModifiee = true;
@@ -295,6 +332,8 @@ class _EtatCourses extends State<EcranCourses> {
       padding: const EdgeInsets.all(16),
       children: [
         if (validee != null) _bandeauValidee(context, validee),
+        if (validee == null && _liste.precedent.series > 0)
+          _bandeauSeries(context),
         // Une liste validée ne bouge plus : on la relit seulement.
         AbsorbPointer(
           absorbing: validee != null,
@@ -306,24 +345,66 @@ class _EtatCourses extends State<EcranCourses> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          key: const Key('partager_liste'),
+          onPressed: _partagerListe,
+          icon: const Icon(Icons.ios_share),
+          label: const Text('Partager la liste'),
+        ),
         if (validee == null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           FilledButton(
             key: const Key('valider_courses'),
             onPressed: _liste.lignes.isEmpty ? null : _valider,
             child: const Text('Valider les courses'),
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          FilledButton(
+            key: const Key('nouvelle_serie'),
+            onPressed: _nouvelleSerie,
+            child: const Text('Nouvelle série de courses'),
           ),
         ],
       ],
     );
   }
 
+  /// Les séries déjà validées pendant que la suivante se prépare : coût cumulé
+  /// et ce que le stock a déjà reçu.
+  Widget _bandeauSeries(BuildContext context) {
+    final p = _liste.precedent;
+    final noms = {for (final x in _produits) x.id: x.nom};
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              p.series == 1
+                  ? '1 série déjà validée'
+                  : '${p.series} séries déjà validées',
+              key: const Key('series_validees'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('Coût cumulé : ${coutAffiche(p.coutCentimes)}',
+                key: const Key('cout_cumule')),
+            const Text('Déjà ajouté au stock :'),
+            for (final e in p.ajouts.entries)
+              Text('${noms[e.key] ?? '?'} +${e.value}', key: Key('ajout_${e.key}')),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _bandeauValidee(BuildContext context, ValidationCourses v) {
     final noms = {for (final p in _produits) p.id: p.nom};
-    final parProduit = <String, int>{};
-    for (final r in v.rendements) {
-      parProduit[r.produitId] = (parProduit[r.produitId] ?? 0) + r.quantite;
-    }
+    // Toutes les séries validées : celles d'avant et celle-ci (mission C1).
+    final parProduit = _liste.ajoutsTotaux;
     return Card(
       color: Theme.of(context).colorScheme.secondaryContainer,
       child: Padding(
@@ -338,7 +419,11 @@ class _EtatCourses extends State<EcranCourses> {
               key: const Key('courses_validee'),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('Coût : ${coutAffiche(v.coutCentimes)}', key: const Key('cout_valide')),
+            Text(
+                _liste.seriesValidees > 1
+                    ? 'Coût cumulé (${_liste.seriesValidees} séries) : ${coutAffiche(_liste.coutTotalCentimes)}'
+                    : 'Coût : ${coutAffiche(v.coutCentimes)}',
+                key: const Key('cout_valide')),
             const Text('Ajouté au stock :'),
             for (final e in parProduit.entries)
               Text('${noms[e.key] ?? '?'} +${e.value}', key: Key('ajout_${e.key}')),
@@ -521,7 +606,7 @@ class _EtatCourses extends State<EcranCourses> {
           ),
         ),
         SizedBox(
-          width: 96,
+          width: 128,
           child: quantite == null
               ? const SizedBox.shrink()
               : TextFormField(
@@ -531,7 +616,7 @@ class _EtatCourses extends State<EcranCourses> {
                   textAlign: TextAlign.end,
                   decoration: InputDecoration(
                     isDense: true,
-                    suffixText: p.fiche.type == 'litre' ? 'verres' : null,
+                    suffixText: p.fiche.type == 'litre' ? ' verres' : null,
                   ),
                   onChanged: (t) => _surQuantite(g, p, t),
                 ),

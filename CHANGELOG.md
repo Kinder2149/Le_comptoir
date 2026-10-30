@@ -1,5 +1,12 @@
 # CHANGELOG — Le Comptoir
 
+## 30/10/2026 — Mission C1 : courses en plusieurs séries et partage de la liste (branche `claude/c1-courses-partielles`)
+- Après une validation, « Nouvelle série de courses » ouvre une liste vide pour les achats suivants. Chaque validation ajoute au stock et au coût une seule fois ; un bandeau rappelle les séries déjà validées, le coût cumulé et ce que le stock a déjà reçu. Le bilan compte le coût de toutes les séries, même quand la suivante se prépare.
+- Bouton « Partager la liste » : la liste « À acheter » et les lignes libres, en texte, par la feuille de partage d'Android.
+- Règles d'accès : cumul (`cumulSeries`, `cumulCout`, `cumulAjouts`) borné et immuable en préparation ; seule une liste validée repart, vide, avec le cumul exact. Déployées sur le vrai projet le 30/10/2026 (accord de Kinder).
+- Tests : 247 de logique et d'écrans, 186 de règles, `courses_test` Android (2 parcours). Série complète des parcours non relancée.
+- Étape B6 : texte de vérification pour une autre IA rédigé (section 12 de `PLAN_STOCK_COURSES.md`) ; la vérification reste à faire.
+
 ## 29/10/2026 — Vérification indépendante du chantier « Stock et courses »
 - Une IA qui n'a pas écrit le code a refait toutes les suites et vérifié les 11 critères : tous réussis, aucun défaut bloquant. Rapport et captures dans `audit_front/captures_stock_courses/verif_ia/`.
 - Règles d'accès : le compteur de gymnases d'un événement ne monte plus qu'avec la naissance du gymnase (nouveau champ `dernierGymnase` posé dans le même lot) ; avant, un gestionnaire pouvait le monter seul et retirer à tous les gestionnaires l'accès aux courses et à la clôture. Déployées sur le vrai projet le 29/10/2026 (accord de Kinder).

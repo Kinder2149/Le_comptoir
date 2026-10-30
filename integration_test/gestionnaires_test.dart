@@ -195,8 +195,6 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_gymnases')));
     await attendre(tester, find.byKey(Key('rattachement_$gusUid')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(Key('rattacher_${gusUid}_$gA')));
-    await toucher(tester, find.byKey(Key('rattacher_${zedUid}_$gB')));
     Future<Set<String>> rattaches(String uid) async {
       final doc = await db
           .collection('associations')
@@ -210,9 +208,21 @@ void main() {
       return {for (final g in liste) g as String};
     }
 
-    for (var i = 0; i < 100 && (await rattaches(zedUid)).isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
+    // L'écran recharge ses cartes pendant qu'on touche : un appui peut tomber à côté.
+    // Comme un utilisateur, on recommence tant que le rattachement n'est pas enregistré.
+    Future<void> rattacher(String uid, String gymnase) async {
+      for (var essai = 0; essai < 4; essai++) {
+        await tester.pump(const Duration(seconds: 1));
+        await toucher(tester, find.byKey(Key('rattacher_${uid}_$gymnase')));
+        for (var i = 0; i < 30; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          if ((await rattaches(uid)).contains(gymnase)) return;
+        }
+      }
     }
+
+    await rattacher(gusUid, gA);
+    await rattacher(zedUid, gB);
     expect(await rattaches(gusUid), {gA});
     expect(await rattaches(zedUid), {gB});
 

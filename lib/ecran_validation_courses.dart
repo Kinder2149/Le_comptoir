@@ -189,6 +189,7 @@ class _EtatValidation extends State<EcranValidationCourses> {
           const SizedBox(height: 8),
           const Text(
               'Une fois validée, la liste ne peut plus être modifiée ni rejouée. '
+              'Pour d’autres achats, ouvrez ensuite une nouvelle série de courses. '
               'Une erreur se corrige à la main dans « Gymnases et stocks ».'),
         ],
       ),

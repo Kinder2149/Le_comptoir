@@ -386,6 +386,34 @@ void main() {
     expect(texte(tester, 'cout_valide'), 'Coût : 412,50 €');
     expect(texte(tester, 'ajout_$croque'), 'Croque +270');
     expect(find.byKey(const Key('valider_courses')), findsNothing);
+    expect(find.byKey(const Key('partager_liste')), findsOneWidget); // mission C1
+
+    // --- Mission C1 : nouvelle série, le stock n'est pas compté deux fois.
+    await toucher(tester, find.byKey(const Key('nouvelle_serie')));
+    await attendre(tester, find.byKey(const Key('series_validees')));
+    expect(texte(tester, 'series_validees'), '1 série déjà validée');
+    expect(texte(tester, 'cout_cumule'), 'Coût cumulé : 412,50 €');
+    expect(texte(tester, 'ajout_$croque'), 'Croque +270');
+    expect(find.byKey(const Key('courses_validee')), findsNothing);
+    expect(find.byKey(const Key('valider_courses')), findsOneWidget);
+    expect((await stock(gA, croque))!['quantite'], 150); // inchangé
+    // Série 2 : 40 croques de plus au gymnase A, payés 80,00 €.
+    await toucher(tester, find.byKey(Key('coche_${gA}_$croque')));
+    await saisir(tester, 'qte_${gA}_$croque', '40');
+    await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
+    await toucher(tester, find.byKey(const Key('valider_courses')));
+    await attendre(tester, find.byKey(const Key('confirmer_validation')));
+    expect(texte(tester, 'rendement_$croque'), 'Croque : +40');
+    await saisir(tester, 'cout_courses', '80');
+    await toucher(tester, find.byKey(const Key('confirmer_validation')));
+    await attendre(tester, find.byKey(const Key('courses_validee')));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect((await stock(gA, croque))!['quantite'], 190); // 150 + 40, une seule fois
+    expect((await stock(gB, croque))!['quantite'], 120); // inchangé
+    expect(texte(tester, 'cout_valide'), 'Coût cumulé (2 séries) : 492,50 €');
+    expect(texte(tester, 'ajout_$croque'), 'Croque +310');
     final doc = (await db
             .collection('associations')
             .doc(assoId)
@@ -396,7 +424,9 @@ void main() {
             .get(serveur))
         .data()!;
     expect(doc['statut'], 'validee');
-    expect(doc['coutCentimes'], 41250);
+    expect(doc['coutCentimes'], 8000); // la série en cours
+    expect(doc['cumulCout'], 41250); // les séries d'avant
+    expect(doc['cumulSeries'], 1);
     expect(doc['valideeLe'], isNotNull);
 
     // --- Le bilan affiche le coût (aucune vente : le résultat est négatif).
@@ -405,8 +435,8 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await toucher(tester, find.byKey(const Key('voir_bilan')));
     await attendre(tester, find.byKey(const Key('bilan_cout')));
-    expect(texte(tester, 'bilan_cout'), 'Coût des courses : 412,50 €');
-    expect(texte(tester, 'bilan_resultat'), 'Résultat : -412,50 €');
+    expect(texte(tester, 'bilan_cout'), 'Coût des courses : 492,50 €');
+    expect(texte(tester, 'bilan_resultat'), 'Résultat : -492,50 €');
     expect(find.byKey(const Key('exporter_csv')), findsOneWidget);
     // En vue d'un gymnase : la mention, pas de coût.
     await toucher(tester, find.byKey(Key('vue_$gA')));

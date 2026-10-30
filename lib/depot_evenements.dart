@@ -10,6 +10,7 @@ import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'mesure.dart';
+import 'restes.dart';
 import 'ticket.dart';
 
 /// Résultat de la vérification d'un QR code de gymnase.
@@ -34,6 +35,31 @@ class DepotEvenements {
 
   CollectionReference<Map<String, dynamic>> get _evenements =>
       _db.collection('associations').doc(_assoId).collection('evenements');
+
+  /// Restes gardés à la clôture d'un événement pour le suivant (décision 48).
+  CollectionReference<Map<String, dynamic>> get _restes =>
+      _db.collection('associations').doc(_assoId).collection('restes');
+
+  /// Les restes en attente d'un événement qui leur correspond. Illisibles (hors
+  /// réseau, droits) : aucun, l'événement se crée sans reprise.
+  Future<List<Reste>> _lireRestes() async {
+    try {
+      final s = await _restes.get();
+      return [
+        for (final d in s.docs)
+          if (d.data()['nomGymnase'] is String &&
+              d.data()['nomProduit'] is String &&
+              d.data()['quantite'] is int)
+            Reste(
+              nomGymnase: d.data()['nomGymnase'] as String,
+              nomProduit: d.data()['nomProduit'] as String,
+              quantite: d.data()['quantite'] as int,
+            ),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
 
   Evenement _depuis(DocumentSnapshot<Map<String, dynamic>> d) {
     final data = d.data()!;
@@ -282,13 +308,16 @@ class DepotEvenements {
   /// Crée l'événement en copiant les produits du menu à cet instant : modifier
   /// le menu plus tard ne change pas un événement déjà lancé. Les gymnases
   /// ([gymnases], « Principal » par défaut) sont créés avec lui ; le stock du
-  /// menu devient le stock de départ de chacun.
+  /// menu devient le stock de départ de chacun. Les restes gardés à la clôture d'un
+  /// événement précédent sont repris dans le gymnase et pour le produit de même nom
+  /// (puis effacés) ; [surReprises] reçoit ce qui a été repris.
   Future<String> creerEvenement({
     required String nom,
     required String date,
     required String menuId,
     required List<String> modes,
     List<String> gymnases = const [nomGymnaseParDefaut],
+    void Function(List<Reprise> reprises)? surReprises,
   }) async {
     final menu = await _menus.suivreMenu(menuId).first;
     final produits = await _menus.suivreProduits(menuId).first;
@@ -313,8 +342,10 @@ class DepotEvenements {
         'creeLe': FieldValue.serverTimestamp(),
       });
     }
+    final produitsCrees = <String, String>{};
     for (final p in produits) {
       final produit = ref.collection('produits').doc();
+      produitsCrees[produit.id] = p.nom;
       lot.set(produit, {
         'nom': p.nom,
         'prixCentimes': p.prixCentimes,
@@ -324,7 +355,23 @@ class DepotEvenements {
         'creeLe': FieldValue.serverTimestamp(),
       });
     }
+    final reprises = repriseDesRestes(
+      restes: await _lireRestes(),
+      gymnases: {
+        for (var i = 0; i < gymnases.length; i++)
+          refsGymnases[i].id: gymnases[i].trim(),
+      },
+      produits: produitsCrees,
+    );
+    for (final r in reprises) {
+      lot.set(
+        ref.collection('gymnases').doc(r.gymnaseId).collection('stocks').doc(r.produitId),
+        {'quantite': r.reste.quantite, 'reference': r.reste.quantite},
+      );
+      lot.delete(_restes.doc(r.reste.id));
+    }
     await lot.commit();
+    surReprises?.call(reprises);
     return ref.id;
   }
 
@@ -445,6 +492,19 @@ class DepotEvenements {
     await lot.commit();
   }
 
+  /// Ouvre une nouvelle série de courses après une validation (mission C1) : la liste
+  /// repart vide, le coût et les ajouts de stock déjà validés sont gardés dans le
+  /// cumul. Rien n'est rejoué : le stock a déjà reçu les séries précédentes. Les
+  /// règles n'acceptent le passage que depuis une liste validée.
+  Future<void> nouvelleSerieCourses(
+      String evenementId, ListeCourses validee) {
+    assert(validee.validee);
+    return _evenements.doc(evenementId).collection('courses').doc('liste').set({
+      ...validee.nouvelleSerie().versMap(),
+      'majLe': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> renommerGymnase(
           String evenementId, String gymnaseId, String nom) =>
       _gymnase(evenementId, gymnaseId).update({'nom': nom.trim()});
@@ -559,15 +619,31 @@ class DepotEvenements {
   /// Clôture l'événement (gestionnaire identifié). [nbCaissesOuvertes] > 0 =
   /// clôture forcée : le fait, son auteur et le nombre de caisses non
   /// clôturées sont conservés pour signaler les ventes éventuellement
-  /// manquantes dans le bilan. Nécessite le réseau.
+  /// manquantes dans le bilan. Nécessite le réseau. [restes] : les produits gardés
+  /// pour le prochain événement (écrits avec la clôture, tout ou rien) ; [ecartes] :
+  /// identifiants de restes d'un report plus ancien à retirer.
   Future<void> cloturerEvenement(
     String id, {
     required String parUid,
     required String parPrenom,
     required int nbCaissesOuvertes,
+    List<Reste> restes = const [],
+    List<String> ecartes = const [],
   }) =>
       // Transaction : échoue tout de suite sans réseau au lieu d'attendre.
       _db.runTransaction((t) async {
+        for (final r in restes) {
+          t.set(_restes.doc(r.id), {
+            'nomGymnase': r.nomGymnase,
+            'nomProduit': r.nomProduit,
+            'quantite': r.quantite,
+            'evenementId': id,
+            'majLe': Timestamp.now(),
+          });
+        }
+        for (final e in ecartes) {
+          t.delete(_restes.doc(e));
+        }
         t.update(_evenements.doc(id), {
           'statut': 'cloture',
           'clotureLe': Timestamp.now(),

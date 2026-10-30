@@ -14,6 +14,9 @@ rules_version = '2';
 //     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
 //     menus/{m}                                   nom, creeLe                       (gestion seulement)
 //       produits/{p}                              nom, prixCentimes, stock? (ancien, toléré), icone?, photo?, type?, provenance?, conso?, ingredients?, verresParLitre?, creeLe
+//     restes/{r}                                  nomGymnase, nomProduit, quantite, evenementId, majLe : stock gardé à la clôture
+//                                                 d'un événement pour le suivant (écrit avec la clôture, lu et effacé par la gestion
+//                                                 à la création de l'événement suivant ; identifiant = gymnase__produit, sans accents)
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
@@ -24,6 +27,7 @@ rules_version = '2';
 //       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
 //                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
+//                                                 + cumul des séries déjà validées (C1) : cumulSeries, cumulCout, cumulAjouts[] {produitId, quantite} ; une liste validée repart vide en « preparation » avec le cumul augmenté de sa série
 //                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
@@ -190,9 +194,24 @@ service cloud.firestore {
         && (fiche.get('type', 'unite') == 'part' || fiche.get('provenance', 'achete') == 'apporte');
     }
     // Liste de courses en préparation : champs et tailles bornés.
+    // Cumul des séries de courses déjà validées (mission C1) : absent tant qu'aucune
+    // série n'est validée, sinon les trois champs ensemble.
+    function cumulValide(d) {
+      return !d.keys().hasAny(['cumulSeries', 'cumulCout', 'cumulAjouts'])
+        || (d.keys().hasAll(['cumulSeries', 'cumulCout', 'cumulAjouts'])
+            && d.cumulSeries is int && d.cumulSeries >= 1 && d.cumulSeries <= 50
+            && d.cumulCout is int && d.cumulCout >= 0 && d.cumulCout <= 1000000000
+            && d.cumulAjouts is list && d.cumulAjouts.size() <= 100);
+    }
+    function cumulIdentique(d, r) {
+      return d.get('cumulSeries', 0) == r.get('cumulSeries', 0)
+        && d.get('cumulCout', 0) == r.get('cumulCout', 0)
+        && d.get('cumulAjouts', []) == r.get('cumulAjouts', []);
+    }
     function listePreparationValide(d) {
-      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'cumulSeries', 'cumulCout', 'cumulAjouts'])
         && d.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+        && cumulValide(d)
         && d.statut == 'preparation'
         && d.lignes is list
         && d.lignes.size() <= 400
@@ -253,6 +272,29 @@ service cloud.firestore {
           allow create, update: if estGestion(a)
             && produitValide(request.resource.data);
         }
+      }
+
+      // Restes gardés pour le prochain événement (décision 48). Écrits dans le MÊME lot
+      // que la clôture (événement encore en cours avant, clôturé après) par celui qui a le
+      // droit de clôturer ; lus et effacés par la gestion (reprise à la création de
+      // l'événement suivant, ou suppression de l'association).
+      match /restes/{r} {
+        allow read, delete: if estGestion(a);
+        allow create, update: if aGoogle()
+          && estGestion(a)
+          && r.matches('^[a-z0-9_-]{1,200}$')
+          && request.resource.data.keys().hasOnly(['nomGymnase', 'nomProduit', 'quantite', 'evenementId', 'majLe'])
+          && request.resource.data.keys().hasAll(['nomGymnase', 'nomProduit', 'quantite', 'evenementId', 'majLe'])
+          && texte(request.resource.data.nomGymnase, 40)
+          && texte(request.resource.data.nomProduit, 40)
+          && request.resource.data.quantite is int
+          && request.resource.data.quantite >= 1
+          && request.resource.data.quantite <= 100000
+          && request.resource.data.majLe is timestamp
+          && texte(request.resource.data.evenementId, 40)
+          && gereTout(a, request.resource.data.evenementId)
+          && get(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'en_cours'
+          && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'cloture';
       }
 
       match /evenements/{e} {
@@ -461,17 +503,20 @@ service cloud.firestore {
           allow create: if gereTout(a, e)
             && c == 'liste'
             && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-            && listePreparationValide(request.resource.data);
+            && listePreparationValide(request.resource.data)
+            && !request.resource.data.keys().hasAny(['cumulSeries']);
           allow update: if gereTout(a, e)
             && c == 'liste'
             && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-            && resource.data.statut == 'preparation'
+            && ((resource.data.statut == 'preparation'
+            && cumulIdentique(request.resource.data, resource.data)
             && (listePreparationValide(request.resource.data)
                 // Validation : la liste devient « validee » avec les achats, les rendements
                 // et le coût, et ne bouge plus ensuite (les ajouts de stock partent dans le
                 // même lot). Une liste déjà validée ne se rejoue pas.
-                || (request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                || (request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe', 'cumulSeries', 'cumulCout', 'cumulAjouts'])
                     && request.resource.data.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                    && cumulValide(request.resource.data)
                     && request.resource.data.statut == 'validee'
                     && request.resource.data.lignes is list
                     && request.resource.data.lignes.size() <= 400
@@ -487,7 +532,16 @@ service cloud.firestore {
                     && request.resource.data.coutCentimes >= 0
                     && request.resource.data.coutCentimes <= 100000000
                     && request.resource.data.majLe is timestamp
-                    && request.resource.data.valideeLe is timestamp));
+                    && request.resource.data.valideeLe is timestamp)))
+            // Nouvelle série (mission C1) : seule une liste validée repart, vide ; le coût
+            // et le nombre de séries déjà validées s'ajoutent au cumul, rien d'autre ne bouge.
+            || (resource.data.statut == 'validee'
+                && listePreparationValide(request.resource.data)
+                && request.resource.data.lignes.size() == 0
+                && request.resource.data.libres.size() == 0
+                && request.resource.data.restes.size() == 0
+                && request.resource.data.cumulSeries == resource.data.get('cumulSeries', 0) + 1
+                && request.resource.data.cumulCout == resource.data.get('cumulCout', 0) + resource.data.coutCentimes));
         }
 
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par

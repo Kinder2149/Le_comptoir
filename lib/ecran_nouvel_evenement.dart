@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'depot_evenements.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
+import 'restes.dart';
 import 'gymnase.dart';
 import 'theme.dart';
 
@@ -89,13 +90,26 @@ class _EtatNouvelEvenement extends State<EcranNouvelEvenement> {
     ];
     try {
       if (widget.existant == null) {
+        var reprises = const <Reprise>[];
         await widget.depot.creerEvenement(
           nom: _nom.text,
           date: dateIso(_date),
           menuId: _menuId!,
           modes: modes,
           gymnases: [for (final c in _gymnases) c.text.trim()],
+          surReprises: (r) => reprises = r,
         );
+        // Les restes gardés à la clôture du précédent sont déjà dans les stocks.
+        if (reprises.isNotEmpty && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              reprises.length == 1
+                  ? "1 stock repris de l'événement précédent."
+                  : "${reprises.length} stocks repris de l'événement précédent.",
+              key: const Key('restes_repris'),
+            ),
+          ));
+        }
       } else {
         await widget.depot.modifierEvenement(
           widget.existant!.id,

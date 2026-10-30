@@ -210,6 +210,7 @@ void main() {
     expect(find.text("Clôturer l'événement"), findsOneWidget);
     await toucher(tester, find.byKey(const Key('cloturer_evenement')));
     await toucher(tester, find.byKey(const Key('confirmer_cloture_evenement')));
+    await neRienGarderSiDemande(tester);
     await attendre(tester, find.byKey(const Key('cloture_info')));
     expect(texte(tester, 'cloture_info'), startsWith('Clôturé par Chef le '));
     expect(find.byKey(const Key('cloture_forcee')), findsNothing);
@@ -239,6 +240,7 @@ void main() {
     expect(find.text('Forcer la clôture'), findsOneWidget);
     await toucher(tester, find.byKey(const Key('cloturer_evenement')));
     await toucher(tester, find.byKey(const Key('confirmer_cloture_evenement')));
+    await neRienGarderSiDemande(tester);
     await attendre(tester, find.byKey(const Key('cloture_forcee')));
     expect(texte(tester, 'cloture_forcee'),
         'Clôture forcée : 1 caisse non clôturée. Des ventes peuvent manquer.');

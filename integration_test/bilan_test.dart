@@ -213,6 +213,7 @@ void main() {
     await finTransition(tester);
     await toucher(tester, find.byKey(const Key('cloturer_evenement')));
     await toucher(tester, find.byKey(const Key('confirmer_cloture_evenement')));
+    await neRienGarderSiDemande(tester);
     await attendre(tester, find.byKey(const Key('cloture_forcee')));
     await toucher(tester, find.byKey(const Key('voir_bilan')));
     await attendre(tester, find.byKey(const Key('bilan_total')));
