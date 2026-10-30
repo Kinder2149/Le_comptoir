@@ -14,6 +14,9 @@ rules_version = '2';
 //     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
 //     menus/{m}                                   nom, creeLe                       (gestion seulement)
 //       produits/{p}                              nom, prixCentimes, stock? (ancien, toléré), icone?, photo?, type?, provenance?, conso?, ingredients?, verresParLitre?, creeLe
+//     restes/{r}                                  nomGymnase, nomProduit, quantite, evenementId, majLe : stock gardé à la clôture
+//                                                 d'un événement pour le suivant (écrit avec la clôture, lu et effacé par la gestion
+//                                                 à la création de l'événement suivant ; identifiant = gymnase__produit, sans accents)
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
@@ -253,6 +256,29 @@ service cloud.firestore {
           allow create, update: if estGestion(a)
             && produitValide(request.resource.data);
         }
+      }
+
+      // Restes gardés pour le prochain événement (décision 48). Écrits dans le MÊME lot
+      // que la clôture (événement encore en cours avant, clôturé après) par celui qui a le
+      // droit de clôturer ; lus et effacés par la gestion (reprise à la création de
+      // l'événement suivant, ou suppression de l'association).
+      match /restes/{r} {
+        allow read, delete: if estGestion(a);
+        allow create, update: if aGoogle()
+          && estGestion(a)
+          && r.matches('^[a-z0-9_-]{1,200}$')
+          && request.resource.data.keys().hasOnly(['nomGymnase', 'nomProduit', 'quantite', 'evenementId', 'majLe'])
+          && request.resource.data.keys().hasAll(['nomGymnase', 'nomProduit', 'quantite', 'evenementId', 'majLe'])
+          && texte(request.resource.data.nomGymnase, 40)
+          && texte(request.resource.data.nomProduit, 40)
+          && request.resource.data.quantite is int
+          && request.resource.data.quantite >= 1
+          && request.resource.data.quantite <= 100000
+          && request.resource.data.majLe is timestamp
+          && texte(request.resource.data.evenementId, 40)
+          && gereTout(a, request.resource.data.evenementId)
+          && get(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'en_cours'
+          && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'cloture';
       }
 
       match /evenements/{e} {

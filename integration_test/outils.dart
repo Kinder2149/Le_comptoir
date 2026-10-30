@@ -225,3 +225,20 @@ Future<int> restOuvrirCaisse(String base, String uid, String gymnaseId,
   client.close();
   return rep.statusCode;
 }
+
+/// Après « Clôturer » : si la feuille « Garder pour le prochain événement » s'ouvre
+/// (du stock existe), on ne garde rien ; sinon la clôture est déjà faite.
+Future<void> neRienGarderSiDemande(WidgetTester tester) async {
+  for (var i = 0; i < 50; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byKey(const Key('ne_rien_garder')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('ne_rien_garder')));
+      await tester.pump(const Duration(milliseconds: 400));
+      return;
+    }
+    if (find.byKey(const Key('cloture_info')).evaluate().isNotEmpty ||
+        find.byKey(const Key('cloture_forcee')).evaluate().isNotEmpty) {
+      return;
+    }
+  }
+}
