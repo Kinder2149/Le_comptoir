@@ -58,14 +58,16 @@ void main() {
     test('le fichier fourni est valide et complet', () {
       final modele =
           lireMenuType(File('assets/menu_type.json').readAsStringSync());
-      expect(modele.length, 13);
-      expect(modele.map((p) => p.nom).toSet().length, 13); // noms distincts
+      expect(modele.length, 27);
+      expect(modele.map((p) => p.nom).toSet().length, 27); // noms distincts
       expect(
           modele.map((p) => p.nom),
           containsAll([
-            'Croque-monsieur', 'Croque chèvre', 'Tartiflette', 'Café', 'Thé',
-            'Soda', 'Tarte', 'Flan', 'Barre chocolatée', 'Fruit', 'Salade',
-            'Crêpe', 'Bonbons (offerts)',
+            'Croque-monsieur', 'Croque végé', 'Croque tartiflette', 'Café', 'Thé',
+            'Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes',
+            'Bière', 'Mars', 'Twix', 'Snickers', 'Fruit', 'Tarte', 'Flan',
+            'Gâteau salé (quiche)', 'Salade', 'Crêpes (3 petites)', 'Sucette',
+            'Chocolat chaud', 'Bonbons (offerts)',
           ]));
       // Un prix raisonnable ; une icône valide quand il y en a une ; une fiche cohérente.
       for (final p in modele) {
@@ -84,21 +86,35 @@ void main() {
       };
       final croque = m['Croque-monsieur']!.fiche;
       expect(croque.type, 'compose');
-      expect(croque.conso, 2);
-      expect(croque.ingredients.length, 3);
+      expect(m['Croque-monsieur']!.prixCentimes, 100);
+      expect(croque.conso, 0.65);
+      expect(croque.ingredients.length, 4);
       expect(croque.ingredients[0], const Ingredient('Pain de mie', 2, 'tranche'));
-      expect(croque.ingredients[2], const Ingredient('Gruyère râpé', 7, 'g'));
-      expect(m['Croque chèvre']!.fiche.ingredients.map((i) => i.nom),
-          ['Pain de mie', 'Bûche de chèvre']);
+      expect(croque.ingredients[1], const Ingredient('Jambon blanc', 0.45, 'tranche'));
+      expect(croque.ingredients[2], const Ingredient('Gruyère râpé', 16, 'g'));
+      expect(croque.ingredients[3], const Ingredient('Beurre', 5, 'g'));
+      expect(m['Croque végé']!.fiche.ingredients.map((i) => i.nom),
+          ['Pain de mie', 'Bûche de chèvre', 'Tomate', 'Beurre']);
+      // La tartiflette est une variante de croque, plus un plat à part.
+      expect(m['Croque tartiflette']!.fiche.type, 'compose');
+      expect(m['Croque tartiflette']!.fiche.ingredients.map((i) => i.nom),
+          contains('Fromage à tartiflette'));
+      expect(m.containsKey('Tartiflette'), isFalse);
       expect(m['Café']!.fiche.type, 'litre');
-      expect(m['Café']!.fiche.verresParLitre, 8);
-      expect(m['Café']!.fiche.conso, 2);
-      expect(m['Soda']!.fiche.verresParLitre, 5);
-      expect(m['Tartiflette']!.fiche.type, 'part');
+      expect(m['Café']!.fiche.verresParLitre, 4);
+      expect(m['Café']!.fiche.conso, 1.3);
+      expect(m['Café']!.prixCentimes, 50);
+      // Boissons froides : 4 verres de 25 cl par litre ; la bière à 2 €.
+      for (final n in ['Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes']) {
+        expect(m[n]!.fiche.verresParLitre, 4, reason: n);
+        expect(m[n]!.prixCentimes, 100, reason: n);
+      }
+      expect(m['Bière']!.prixCentimes, 200);
       expect(m['Tarte']!.icone, 'tarte');
       expect(m['Flan']!.icone, 'gateau_sucre');
-      // Pas de matériel d'organisation ni de gâteau salé dans le modèle.
-      expect(m.keys.any((n) => n.contains('Sopalin') || n.contains('salée')), isFalse);
+      expect(m['Gâteau salé (quiche)']!.icone, 'gateau_sale');
+      // Pas de matériel d'organisation dans le modèle.
+      expect(m.keys.any((n) => n.contains('Sopalin') || n.contains('Torchon')), isFalse);
     });
 
     test('accepte un produit sans icône', () {

@@ -179,14 +179,15 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
         && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g;
     }
-    // Ajout de parts par un bénévole : de 1 à 1000 parts, sur un produit de type « part »,
-    // et le total de référence monte de la même quantité.
+    // Ajout de stock par un bénévole : de 1 à 1000, sur un produit de type « part » ou
+    // apporté par les bénévoles, et le total de référence monte de la même quantité.
     function ajoutPartsValide(a, e, p) {
       let avant = resource.data.quantite;
       let ajout = request.resource.data.quantite - avant;
+      let fiche = get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p)).data;
       return ajout >= 1 && ajout <= 1000
         && request.resource.data.get('reference', -1) == resource.data.get('reference', avant) + ajout
-        && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p)).data.get('type', 'unite') == 'part';
+        && (fiche.get('type', 'unite') == 'part' || fiche.get('provenance', 'achete') == 'apporte');
     }
     // Liste de courses en préparation : champs et tailles bornés.
     function listePreparationValide(d) {

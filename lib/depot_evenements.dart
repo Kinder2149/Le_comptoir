@@ -465,9 +465,9 @@ class DepotEvenements {
           String produitId, int quantite) =>
       _ajouter(evenementId, gymnaseId, produitId, quantite);
 
-  /// Ajout de parts par un bénévole dont la caisse est ouverte dans ce gymnase :
+  /// Ajout de stock par un bénévole dont la caisse est ouverte dans ce gymnase :
   /// même écriture que le réapprovisionnement (les règles la limitent aux
-  /// produits de type « part »).
+  /// produits de type « part » ou apportés par les bénévoles).
   Future<void> ajouterParts(String evenementId, String gymnaseId,
           String produitId, int quantite) =>
       _ajouter(evenementId, gymnaseId, produitId, quantite);

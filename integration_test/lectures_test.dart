@@ -50,7 +50,7 @@ void main() {
     addTearDown(() => mesure.surLecture = null);
     await auth.signOut();
 
-    // --- Préparation : modèle de 13 produits, 3 gymnases, 8 produits suivis par gymnase.
+    // --- Préparation : modèle de 27 produits, 3 gymnases, 8 produits suivis par gymnase.
     await ouvrir(tester, 'responsable', fauxGoogle('chef_lectures'));
     await creerAssociationParLInterface(tester);
     final chefUid = auth.currentUser!.uid;

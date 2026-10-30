@@ -15,18 +15,20 @@ import 'outils.dart';
 
 // Chantier Stock et courses, étape 8 : le parcours complet, chiffres calculés à la main.
 //
-//   Modèle de 13 produits ; événement « Tournoi » : 2 jours, gymnase A = 40 personnes,
+//   Modèle de 27 produits ; événement « Tournoi » : 2 jours, gymnase A = 40 personnes,
 //   gymnase B = 30 personnes (80 et 60 « personnes-jours »).
-//   Consommations du modèle : croque 2, café 2 (8 verres/L), soda 1 (5 verres/L), thé 1,
-//   tarte 1, flan 1, barre 1, fruit 1.
-//   Croque : A 160 + B 120 = 280  -> pain de mie 2×280 = 560 tranches, jambon 0,333×280 =
-//            93,24 -> 94 tranches, gruyère 7×280 = 1 960 g = 1,96 kg.
-//   Café   : 160 + 120 = 280 verres / 8 = 35 L.     Soda : 80 + 60 = 140 verres / 5 = 28 L.
-//   Tarte  : A 80, B 60.
-//   Coût des courses : 150,00 €. Le stock gagne exactement les quantités prévues.
-//   Ventes (caisse de Léa, gymnase A) : 2 croques + 1 café = 7,00 € (en caisse) ; 76 tartes
-//   = 152,00 € ; 5 tartes = 10,00 €  => 169,00 € en 3 ventes ; tarte A : 80 - 76 = 4 (stock bas :
-//   4 × 10 = 40 <= 80), puis 4 - 5 = -1 (épuisé). Résultat : 169,00 - 150,00 = 19,00 €.
+//   Consommations du modèle : croque standard 0,65, végé 0,45, tartiflette 0,6, café 1,3
+//   (4 verres/L), Coca 0,32 (4 verres/L), tarte 1 (apportée).
+//   Croques (arrondis au-dessus par gymnase) : A 52 + 36 + 48 = 136, B 39 + 27 + 36 = 102 = 238
+//            -> pain de mie 2×238 = 476 tranches ; jambon 0,45×(100+75) = 78,75 -> 79 ;
+//            gruyère 16 g×91 = 1,456 kg ; beurre 5 g×238 = 1,19 kg ; chèvre 25 g×63 = 1 575 g.
+//   Café   : 104 + 78 = 182 verres / 4 = 45,5 L.     Coca : 26 + 20 = 46 verres / 4 = 11,5 L.
+//   Tarte  : apportée, hors courses ; stock de 80 posé à la main au gymnase A.
+//   Coût des courses : 40,00 €. Le stock gagne exactement les quantités prévues (le pain de mie,
+//   acheté pile, limite chaque croque).
+//   Ventes (caisse de Léa, gymnase A) : 2 croques + 1 café = 2,50 € (en caisse) ; 76 tartes
+//   = 76,00 € ; 5 tartes = 5,00 €  => 83,50 € en 3 ventes ; tarte A : 80 - 76 = 4 (stock bas :
+//   4 × 10 = 40 <= 80), puis 4 - 5 = -1 (épuisé). Résultat : 83,50 - 40,00 = 43,50 €.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(initialiser);
@@ -93,8 +95,8 @@ void main() {
     final gB = gymnases.firstWhere((g) => g.nom == 'Gymnase B').id;
     final produits = await depotEv.suivreProduits(evtId).first;
     String id(String nom) => produits.firstWhere((p) => p.nom == nom).id;
-    final croque = id('Croque-monsieur'), cafe = id('Café'), soda = id('Soda');
-    final tarte = id('Tarte'), crepe = id('Crêpe');
+    final croque = id('Croque-monsieur'), cafe = id('Café'), coca = id('Coca');
+    final tarte = id('Tarte'), crepe = id('Crêpes (3 petites)');
 
     Future<Map<String, dynamic>?> stock(String g, String p) async => (await db
             .collection('associations')
@@ -119,34 +121,40 @@ void main() {
     await saisir(tester, 'personnes_$gB', '30');
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
-    await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 560 tranches');
-    expect(texte(tester, 'achat_jambon blanc|tranche'), 'Jambon blanc : 94 tranches');
-    expect(texte(tester, 'achat_gruyere rape|g'), 'Gruyère râpé : 1,96 kg');
-    expect(texte(tester, 'achat_produit:$cafe'), 'Café : 35 L');
-    expect(texte(tester, 'achat_produit:$soda'), 'Soda : 28 L');
+    // 80 et 60 personnes-jours : croques 52 + 36 + 48 = 136 (A), 39 + 27 + 36 = 102 (B) = 238.
+    await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 476 tranches');
+    expect(texte(tester, 'achat_jambon blanc|tranche'), 'Jambon blanc : 79 tranches'); // (100 + 75) x 0,45
+    expect(texte(tester, 'achat_gruyere rape|g'), 'Gruyère râpé : 1,46 kg'); // 91 x 16 g
+    expect(texte(tester, 'achat_beurre|g'), 'Beurre : 1,19 kg'); // 238 x 5 g
+    expect(texte(tester, 'achat_buche de chevre|g'), 'Bûche de chèvre : 1,57 kg'); // 63 x 25 g = 1 575 g (1,575 s'affiche 1,57 : arrondi binaire)
+    expect(texte(tester, 'achat_produit:$cafe'), 'Café : 45,5 L'); // (104 + 78) verres / 4
+    expect(texte(tester, 'achat_produit:$coca'), 'Coca : 11,5 L'); // (26 + 20) verres / 4
     await attendreTexte(tester, 'etat_courses', 'Enregistré');
 
+    // Avec 27 produits la liste est longue : on descend jusqu'au bouton (liste paresseuse).
+    await tester.dragUntilVisible(find.byKey(const Key('valider_courses')),
+        find.byType(ListView), const Offset(0, -600));
     await toucher(tester, find.byKey(const Key('valider_courses')));
     await attendre(tester, find.byKey(const Key('confirmer_validation')));
     expect(texte(tester, 'rendement_$croque'),
-        'Croque-monsieur : +280 (Gymnase A +160 · Gymnase B +120)');
-    await saisir(tester, 'cout_courses', '150');
+        'Croque-monsieur : +91 (Gymnase A +52 · Gymnase B +39)');
+    await saisir(tester, 'cout_courses', '40');
     await toucher(tester, find.byKey(const Key('confirmer_validation')));
     await attendre(tester, find.byKey(const Key('courses_validee')));
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect((await stock(gA, croque))!['quantite'], 160);
-    expect((await stock(gB, croque))!['quantite'], 120);
-    expect((await stock(gA, cafe))!['quantite'], 160);
-    expect((await stock(gB, soda))!['quantite'], 60);
+    expect((await stock(gA, croque))!['quantite'], 52);
+    expect((await stock(gB, croque))!['quantite'], 39);
+    expect((await stock(gA, cafe))!['quantite'], 104);
+    expect((await stock(gB, coca))!['quantite'], 20);
     // La tarte est « apportée par les bénévoles » (décision 45) : hors courses,
     // son stock de 80 est posé à la main par la gestion.
     expect(await stock(gA, tarte), isNull);
     await depotEv.definirStock(evtId, gA, tarte, 80);
     final tA = (await stock(gA, tarte))!;
     expect((tA['quantite'], tA['reference']), (80, 80));
-    expect(await stock(gA, crepe), isNull); // la crêpe n'a ni consommation ni suivi
+    expect(await stock(gA, crepe), isNull); // les crêpes n'ont ni consommation ni suivi
 
     // ---------- 3. Léa vend dans le gymnase A.
     await auth.signOut();
@@ -164,31 +172,31 @@ void main() {
     await finTransition(tester);
     await attendreTexte(tester, 'stock_$tarte', 'Stock : 80');
 
-    // Vente en caisse : 2 croques + 1 café = 7,00 €.
+    // Vente en caisse : 2 croques + 1 café = 2,50 €.
     await toucher(tester, find.byKey(Key('produit_$croque')));
     await toucher(tester, find.byKey(Key('produit_$croque')));
     await toucher(tester, find.byKey(Key('produit_$cafe')));
-    expect(texte(tester, 'total'), 'Total : 7,00 €');
+    expect(texte(tester, 'total'), 'Total : 2,50 €');
     await toucher(tester, find.byKey(const Key('encaisser_especes')));
-    await attendreTexte(tester, 'recap_caisse', 'Mes ventes : 1 · 7,00 €');
-    await attendreTexte(tester, 'stock_$croque', 'Stock : 158');
+    await attendreTexte(tester, 'recap_caisse', 'Mes ventes : 1 · 2,50 €');
+    await attendreTexte(tester, 'stock_$croque', 'Stock : 50');
 
-    // 76 tartes d'un coup (152,00 €) : stock bas à 4.
+    // 76 tartes d'un coup (76,00 €) : stock bas à 4.
     final caisses = depotEv.caisses(evtId);
     final caisseId = idCaisse(leaUid, gA);
     caisses.enregistrerVente(
-        caisseId, [LigneVente(tarte, 'Tarte', 200, 76)], 'carte',
+        caisseId, [LigneVente(tarte, 'Tarte', 100, 76)], 'carte',
         stocks: {tarte: 80});
     await attendreTexte(tester, 'stock_$tarte', 'Stock bas : 4');
-    // 5 tartes de plus (10,00 €) : épuisé (-1), la vente passe quand même.
+    // 5 tartes de plus (5,00 €) : épuisé (-1), la vente passe quand même.
     caisses.enregistrerVente(
-        caisseId, [LigneVente(tarte, 'Tarte', 200, 5)], 'especes',
+        caisseId, [LigneVente(tarte, 'Tarte', 100, 5)], 'especes',
         stocks: {tarte: 4});
     await attendreTexte(tester, 'stock_$tarte', 'Épuisé');
-    await attendreTexte(tester, 'recap_caisse', 'Mes ventes : 3 · 169,00 €');
+    await attendreTexte(tester, 'recap_caisse', 'Mes ventes : 3 · 83,50 €');
     expect((await stock(gA, tarte))!['quantite'], -1);
 
-    // La crêpe n'a pas de quantité : Léa la signale vide.
+    // Les crêpes n'ont pas de quantité : Léa les signale vides.
     await toucher(tester, find.byKey(const Key('ouvrir_stock')));
     await toucher(tester, find.byKey(Key('vide_$crepe')));
     await toucher(tester, find.byKey(const Key('fermer_stock')));
@@ -229,18 +237,18 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(contenuDe(tester, find.byKey(const Key('bilan_total'))),
-        'Total des ventes | 169,00 € | 3 ventes');
-    expect(texte(tester, 'bilan_cout'), 'Coût des courses : 150,00 €');
-    expect(texte(tester, 'bilan_resultat'), 'Résultat : 19,00 €');
+        'Total des ventes | 83,50 € | 3 ventes');
+    expect(texte(tester, 'bilan_cout'), 'Coût des courses : 40,00 €');
+    expect(texte(tester, 'bilan_resultat'), 'Résultat : 43,50 €');
     await toucher(tester, find.byKey(const Key('exporter_csv')));
     expect(nomFichier, 'bilan-tournoi-${dateIso(DateTime.now())}.csv');
-    expect(csv, contains('Total des ventes;169,00'));
-    expect(csv, contains('Coût des courses;150,00\r\nRésultat;19,00'));
+    expect(csv, contains('Total des ventes;83,50'));
+    expect(csv, contains('Coût des courses;40,00\r\nRésultat;43,50'));
     expect(csv, contains('Vue;Commun'));
-    expect(csv, contains('Espèces;17,00')); // 7,00 + 10,00
-    expect(csv, contains('Carte;152,00'));
-    expect(csv, contains('Tarte;81;162,00;'));
-    expect(csv, contains('Croque-monsieur;2;6,00;278'));
-    expect(csv, contains('Lea;Gymnase A;Ouverte;3;0;169,00'));
+    expect(csv, contains('Espèces;7,50')); // 2,50 + 5,00
+    expect(csv, contains('Carte;76,00'));
+    expect(csv, contains('Tarte;81;81,00;'));
+    expect(csv, contains('Croque-monsieur;2;2,00;89'));
+    expect(csv, contains('Lea;Gymnase A;Ouverte;3;0;83,50'));
   });
 }

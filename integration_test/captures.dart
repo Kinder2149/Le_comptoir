@@ -124,7 +124,7 @@ void main() {
     await toucher(tester, find.byKey(const Key('ouvrir_caisse_evenement')));
     await attendre(tester, find.byKey(const Key('recap_caisse')));
     await pause(tester);
-    for (final nom in ['Croque-monsieur', 'Croque-monsieur', 'Café', 'Crêpe']) {
+    for (final nom in ['Croque-monsieur', 'Croque-monsieur', 'Café', 'Crêpes (3 petites)']) {
       await toucher(tester, find.text(nom));
     }
     await tester.drag(find.byType(GridView), const Offset(0, 600)); // remonte la grille

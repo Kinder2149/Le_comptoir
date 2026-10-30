@@ -62,17 +62,17 @@ void main() {
     await attendre(tester, find.text('Menu Tournoi'));
     await finTransition(tester);
     final menu = (await menus.suivreMenus().first).single;
-    for (var i = 0; i < 100 && (await menus.suivreProduits(menu.id).first).length < 13; i++) {
+    for (var i = 0; i < 100 && (await menus.suivreProduits(menu.id).first).length < 27; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     var produits = await menus.suivreProduits(menu.id).first;
-    expect(produits.length, 13);
+    expect(produits.length, 27);
     expect(produits.map((p) => p.nom),
-        containsAll(['Croque-monsieur', 'Thé', 'Café', 'Crêpe', 'Soda']));
-    // Tartiflette et bonbons n'ont pas d'icône ; aucun produit du modèle n'a de photo.
+        containsAll(['Croque-monsieur', 'Thé', 'Café', 'Crêpes (3 petites)', 'Coca']));
+    // La sucette et les bonbons n'ont pas d'icône ; aucun produit du modèle n'a de photo.
     expect(
         produits
-            .where((p) => p.nom != 'Tartiflette' && !p.nom.startsWith('Bonbons'))
+            .where((p) => p.nom != 'Sucette' && !p.nom.startsWith('Bonbons'))
             .every((p) => p.icone != null),
         isTrue);
     expect(produits.every((p) => p.photo == null), isTrue);
@@ -85,8 +85,8 @@ void main() {
         .doc(menu.id)
         .collection('produits')
         .get(serveur);
-    expect(serveurProduits.docs.length, 13);
-    expect(serveurProduits.docs.where((d) => d.data()['icone'] != null).length, 11);
+    expect(serveurProduits.docs.length, 27);
+    expect(serveurProduits.docs.where((d) => d.data()['icone'] != null).length, 25);
 
     // --- Dans le menu : la vignette de chaque produit est son logo (ou son icône).
     await toucher(tester, find.text('Menu Tournoi'));
@@ -131,7 +131,7 @@ void main() {
         findsOneWidget);
 
     // --- Photo trop lourde : refusée avec un message, rien n'est enregistré.
-    final soda = produits.firstWhere((p) => p.nom == 'Soda');
+    final soda = produits.firstWhere((p) => p.nom == 'Coca');
     aRenvoyer = Uint8List(40000);
     await toucher(tester, find.byKey(Key('produit_${soda.id}')));
     await attendre(tester, find.byKey(const Key('ajouter_photo')));

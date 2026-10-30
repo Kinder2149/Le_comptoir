@@ -177,26 +177,35 @@ test('copie dans l\'événement : 20 ingrédients acceptés, 21 refusés, image 
   }]), 200);
 });
 
-// Le modèle (assets/menu_type.json) : 13 produits, dont deux recettes, créés d'un seul lot.
-const modele13 = () => [
-  compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Jambon blanc', 0.333, 'tranche'), ingredient('Gruyère râpé', 7, 'g')),
-  compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Bûche de chèvre', 30, 'g')),
-  type('part'),
-  { ...type('litre'), verresParLitre: nombre(8), conso: nombre(2) },
-  { conso: nombre(1) },
-  { ...type('litre'), verresParLitre: nombre(5), conso: nombre(1) },
-  { ...type('part'), icone: texte('tarte') },
-  { ...type('part'), icone: texte('gateau_sucre') },
-  { icone: texte('barre') },
-  { icone: texte('fruit') },
-  type('part'),
-  { icone: texte('crepe') },
+// Le modèle (assets/menu_type.json) : 27 produits, dont trois recettes de croque de 4 ingrédients,
+// créés d'un seul lot.
+const provenance = (v) => ({ provenance: texte(v) });
+const litre4 = (conso) => ({ ...type('litre'), verresParLitre: nombre(4), conso: nombre(conso), icone: texte('soda') });
+const modele27 = () => [
+  { ...compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Jambon blanc', 0.45, 'tranche'), ingredient('Gruyère râpé', 16, 'g'), ingredient('Beurre', 5, 'g')), conso: nombre(0.65), icone: texte('croque') },
+  { ...compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Bûche de chèvre', 25, 'g'), ingredient('Tomate', 30, 'g'), ingredient('Beurre', 5, 'g')), conso: nombre(0.45), icone: texte('croque') },
+  { ...compose(ingredient('Pain de mie', 2, 'tranche'), ingredient('Jambon blanc', 0.45, 'tranche'), ingredient('Fromage à tartiflette', 0.053, 'unite'), ingredient('Beurre', 5, 'g')), conso: nombre(0.6), icone: texte('croque') },
+  { ...type('litre'), verresParLitre: nombre(4), conso: nombre(1.3), icone: texte('cafe') },
+  { conso: nombre(0.3), icone: texte('the') },
+  litre4(0.32), litre4(0.05), litre4(0.16), litre4(0.09), litre4(0.11), litre4(0.08),
+  { ...type('litre'), verresParLitre: nombre(4), conso: nombre(0.5), icone: texte('biere') },
+  { conso: nombre(0.05), icone: texte('barre') }, { conso: nombre(0.05), icone: texte('barre') }, { conso: nombre(0.05), icone: texte('barre') },
+  { conso: nombre(0.02), icone: texte('barre') }, { conso: nombre(0.02), icone: texte('barre') }, { conso: nombre(0.02), icone: texte('barre') },
+  { conso: nombre(0.2), icone: texte('fruit') },
+  { ...type('part'), ...provenance('apporte'), conso: nombre(1), icone: texte('tarte') },
+  { ...type('part'), ...provenance('apporte'), conso: nombre(1), icone: texte('gateau_sucre') },
+  { ...type('part'), ...provenance('apporte'), icone: texte('gateau_sale') },
+  { ...type('part'), ...provenance('apporte'), icone: texte('salade') },
+  { ...provenance('apporte'), icone: texte('crepe') },
+  { ...provenance('apporte') },
+  { ...type('litre'), verresParLitre: nombre(4), ...provenance('apporte'), icone: texte('cafe') },
   {},
 ];
 
-test('le modèle : 13 produits d\'un menu, puis d\'un événement avec 3 gymnases, en un seul lot', async () => {
+test("le modèle : 27 produits d'un menu, puis d'un événement avec 3 gymnases, en un seul lot", async () => {
   const { chef, id } = await avecMenu();
-  const champs = modele13();
+  const champs = modele27();
+  assert.equal(champs.length, 27);
   assert.equal(await lot(chef, champs.map((c, i) => produitMenu(id, `p${i}`, c))), 200);
   assert.equal(await lot(chef, [
     ecrire(`associations/${id}/evenements/e1`, evenement({ nbGymnases: 3 })),
@@ -206,7 +215,6 @@ test('le modèle : 13 produits d\'un menu, puis d\'un événement avec 3 gymnase
 });
 
 // Chantier Menu, événement et courses, étape B1 : provenance d'un produit (décision 45).
-const provenance = (v) => ({ provenance: texte(v) });
 
 test('provenance : acheté ou apporté acceptés, absente acceptée (ancien produit)', async () => {
   const { chef, gestionnaire, id } = await avecMenu();

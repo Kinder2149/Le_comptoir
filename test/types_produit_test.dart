@@ -120,7 +120,7 @@ void main() {
           jours: 1);
       expect(liste.lignes.map((l) => l.produitId), ['a']);
     });
-    test('menu type : Tarte, Flan, Salade apportés, Tartiflette achetée', () {
+    test('menu type : gâteaux, salade, crêpes, sucette, chocolat chaud apportés ; croques et boissons achetés', () {
       final modele =
           lireMenuType(File('assets/menu_type.json').readAsStringSync());
       String prov(String nom) =>
@@ -128,7 +128,12 @@ void main() {
       expect(prov('Tarte'), 'apporte');
       expect(prov('Flan'), 'apporte');
       expect(prov('Salade'), 'apporte');
-      expect(prov('Tartiflette'), 'achete');
+      for (final n in ['Gâteau salé (quiche)', 'Crêpes (3 petites)', 'Sucette', 'Chocolat chaud']) {
+        expect(prov(n), 'apporte', reason: n);
+      }
+      for (final n in ['Croque-monsieur', 'Croque tartiflette', 'Café', 'Coca', 'Bière']) {
+        expect(prov(n), 'achete', reason: n);
+      }
     });
     test('menu type : provenance inconnue refusée', () {
       expect(

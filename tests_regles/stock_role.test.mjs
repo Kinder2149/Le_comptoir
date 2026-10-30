@@ -167,3 +167,23 @@ test('dans un lot, une baisse refusée annule aussi la vente', async () => {
   assert.equal(await lot(lea, [vente(v), baisserStock(c.stock('p1'), -100001)]), 403);
   assert.equal(await lire(lea, v), 404); // la vente n'a pas été écrite
 });
+
+// ---------- recalage du modèle : un bénévole ajoute aussi aux produits « apportés » ----------
+const apporte = { provenance: { stringValue: 'apporte' } };
+
+test('ajout de stock par un bénévole : produit apporté (unité, litre) accepté, produit acheté refusé', async () => {
+  const { chef, lea, id, c } = await avecParts();
+  assert.equal(await lot(chef, [
+    produitEvenement(id, 'e1', 'p7', { champs: apporte }), // crêpes : unité, apportées
+    produitEvenement(id, 'e1', 'p8', { champs: { ...apporte, type: { stringValue: 'litre' }, verresParLitre: { doubleValue: 4 } } }), // chocolat chaud
+    produitEvenement(id, 'e1', 'p9'), // unité, achetée
+  ]), 200);
+  assert.equal(await lot(chef, [ecrire(c.stock('p7'), { quantite: 0, reference: 0 }), ecrire(c.stock('p8'), { quantite: 0, reference: 0 }), ecrire(c.stock('p9'), { quantite: 10, reference: 10 })]), 200);
+  assert.equal(await lot(lea, [majStock(c.stock('p7'), { quantite: 3, reference: 3 })]), 200);
+  assert.equal(await lot(lea, [majStock(c.stock('p8'), { quantite: 8, reference: 8 })]), 200);
+  // Les mêmes bornes : référence qui ne suit pas, trop d'un coup.
+  assert.equal(await lot(lea, [majStock(c.stock('p7'), { quantite: 9, reference: 4 })]), 403);
+  assert.equal(await lot(lea, [majStock(c.stock('p7'), { quantite: 1004, reference: 1004 })]), 403);
+  // Un produit acheté (Coca, croque…) reste hors de portée de l'ajout.
+  assert.equal(await lot(lea, [majStock(c.stock('p9'), { quantite: 15, reference: 15 })]), 403);
+});

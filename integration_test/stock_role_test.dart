@@ -43,6 +43,10 @@ void main() {
         fiche: const FicheProduit(type: 'part'));
     await menus.ajouterProduit(menuId, nom: 'Croque', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Crêpe', prixCentimes: 200);
+    await menus.ajouterProduit(menuId,
+        nom: 'Sucette',
+        prixCentimes: 50,
+        fiche: const FicheProduit(provenance: 'apporte'));
     final depotEv = depotAsso.evenements(assoId);
     final evtId = await depotEv.creerEvenement(
       nom: 'Tournoi',
@@ -52,11 +56,13 @@ void main() {
     );
     await donnerStock(depotEv, evtId, 'Tarte', 5);
     await donnerStock(depotEv, evtId, 'Croque', 10);
+    await donnerStock(depotEv, evtId, 'Sucette', 0);
     final gym = await gymnaseUnique(depotEv, evtId);
     final produits = await depotEv.suivreProduits(evtId).first;
     final tarte = produits.firstWhere((p) => p.nom == 'Tarte').id;
     final croque = produits.firstWhere((p) => p.nom == 'Croque').id;
     final crepe = produits.firstWhere((p) => p.nom == 'Crêpe').id;
+    final sucette = produits.firstWhere((p) => p.nom == 'Sucette').id;
 
     Future<Map<String, dynamic>?> stock(String p) async => (await db
             .collection('associations')
@@ -102,6 +108,8 @@ void main() {
     await toucher(tester, find.byKey(const Key('ouvrir_stock')));
     await attendre(tester, find.byKey(Key('ajout_parts_$tarte')));
     expect(find.byKey(Key('ajout_parts_$croque')), findsNothing);
+    // Un produit apporté (sucette, unité) peut aussi recevoir du stock.
+    expect(find.byKey(Key('ajout_parts_$sucette')), findsOneWidget);
     expect(find.byKey(Key('vide_$crepe')), findsOneWidget);
     expect(find.byKey(Key('vide_$croque')), findsNothing);
 
@@ -112,6 +120,10 @@ void main() {
     await tester.enterText(find.byKey(const Key('saisie_parts')), '6');
     await toucher(tester, find.byKey(const Key('valider_parts')));
     await attendre(tester, find.text('Stock : 11'));
+    await toucher(tester, find.byKey(Key('ajout_parts_$sucette')));
+    await tester.enterText(find.byKey(const Key('saisie_parts')), '4');
+    await toucher(tester, find.byKey(const Key('valider_parts')));
+    await attendre(tester, find.text('Stock : 4'));
 
     await toucher(tester, find.byKey(Key('vide_$crepe')));
     for (var i = 0; i < 50; i++) {
@@ -123,6 +135,8 @@ void main() {
     final apres = (await stock(tarte))!;
     expect(apres['quantite'], 11);
     expect(apres['reference'], 11);
+    expect((await stock(sucette))!['quantite'], 4);
+    expect((await stock(sucette))!['reference'], 4);
     expect((await stock(croque))!['quantite'], 35);
     expect((await depotEv.suivreVides(evtId, gym).first), {crepe});
 

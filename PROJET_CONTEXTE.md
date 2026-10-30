@@ -1,5 +1,25 @@
 # PROJET_CONTEXTE — Le Comptoir
 
+## STATUT — fait foi pour les statuts (lu par DevBoard)
+
+```
+STATUT DU PROJET : En développement
+MISSION : Plan initial (étapes 1 à 14) — En attente de ma capture
+MISSION : Publication Play Store — En implémentation
+MISSION : Stock et courses (étapes 1 à 8) — En attente de ma capture
+MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) — En implémentation
+  Étape : B1 Menu = catalogue sans stock — ? — critère : aucun stock dans un menu, provenance acheté / apporté par produit
+  Étape : B2 Ratios et consommation par catégorie — ? — critère : 1 gâteau = n parts, ratio à zéro refusé
+  Étape : B3 Gymnases et stock côté événement — Close — critère : stock propre à l'événement, vendu et reste exacts après 3 ventes
+  Étape : B4 Courses depuis Gymnases et stock — Close — critère : demi-journée, jour complet ou plus, estimation modifiable
+  Étape : B5 Clôture et report de stock — Planifiée — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
+  Étape : B6 Clôture de mission — Planifiée — critère : verdict réussi/échoué par critère rendu par une autre IA
+IDÉES PARQUÉES :
+  - Paiement carte avec Monetico (exploration, rien de figé)
+  - Front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions
+```
+*(Bloc ajouté le 2026-10-30, validé par Kinder. Étapes B3 et B4 : testées par Claude le 29/10, reste la capture de Kinder.)*
+
 ## 1. Vision
 Application mobile de caisse pour les buvettes associatives lors
 d'événements sportifs (souvent sur un week-end). Encaisser vite (icônes
@@ -242,6 +262,7 @@ les buvettes de la saison.
 47. Courses (29/10/2026, précise les décisions 33 et 38) : le module Courses reste distinct ; on y accède depuis « Gymnases et stock », qui lui fournit consommé et reste des produits finaux. Les INGRÉDIENTS restent sans stock (décision 38 inchangée) : signal « vide » et saisie facultative « ce qu'il reste » seulement.
 48. Fin d'événement et report de stock (29/10/2026, remplace la limite « pas de reprise » de la décision 40) : à la clôture, la gestion choisit les produits conservables (ex. soda, café), donne la quantité restante de chacun, l'application la fait confirmer ou modifier. Ces restes sont repris dans le stock de l'événement suivant. Chantier traité en dernier.
 49. Cohérence visuelle (29/10/2026) : l'onglet « Gymnases et stock » et le module Courses suivent l'identité visuelle de la décision 31, comme le reste de l'application.
+50. Recalage du modèle sur l'Excel de l'an passé (30/10/2026, Kinder : « on recale par rapport à ce qu'on a », pas de ventes réelles disponibles, seulement achats 2024-2025 et tarifs 2024) : modèle de 27 produits (3 croques à 1 € dont la tartiflette en variante, boissons à 4 verres de 25 cl par litre, bière, barres, fruit, 7 produits apportés : tarte, flan, gâteau salé (quiche), salade, 3 petites crêpes, sucette, chocolat chaud). Consommations déduites des achats 2025 pour environ 300 personnes-jours (croques 1,7 au total, café 1,3 estimation Excel). Un bénévole ajoute du stock à tout produit de type « part » OU « apporté » (précise la décision 34). Prix à confirmer avec l'affiche de la buvette.
 
 ## 7. Points ouverts
 - Défauts relevés au test de Kinder (29/10/2026) : module Courses introuvable à l'écran ; menu et événement confondus ; onglet « Gymnases et stock » non conforme au thème (décision 49). Plan validé le 29/10/2026 : chantier B1 à B6 dans PLAN_STOCK_COURSES.md, section 5 bis (prochaine : phase 5, cadrage de B1, après initialisation de graphify).

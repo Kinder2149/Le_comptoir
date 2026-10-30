@@ -103,16 +103,17 @@ void main() {
     await toucher(tester, find.byKey(const Key('valider_nom')));
     await attendre(tester, find.text('Menu du modèle'));
     final modele = (await menus.suivreMenus().first).firstWhere((m) => m.nom == 'Menu du modèle');
-    await attendreProduits(tester, menus, modele.id, 13);
+    await attendreProduits(tester, menus, modele.id, 27);
     produits = {for (final p in await menus.suivreProduits(modele.id).first) p.nom: p};
-    expect(produits.length, 13);
+    expect(produits.length, 27);
     final c = produits['Croque-monsieur']!;
     expect(c.fiche.type, 'compose');
-    expect(c.fiche.conso, 2);
-    expect(c.fiche.ingredients.map((i) => i.nom), ['Pain de mie', 'Jambon blanc', 'Gruyère râpé']);
-    expect(produits['Café']!.fiche.verresParLitre, 8);
-    expect(produits['Café']!.fiche.provenance, 'apporte');
-    expect(produits['Tartiflette']!.fiche.type, 'part');
+    expect(c.fiche.conso, 0.65);
+    expect(c.fiche.ingredients.map((i) => i.nom), ['Pain de mie', 'Jambon blanc', 'Gruyère râpé', 'Beurre']);
+    expect(produits['Café']!.fiche.verresParLitre, 4);
+    expect(produits['Café']!.fiche.provenance, 'achete');
+    expect(produits['Croque tartiflette']!.fiche.type, 'compose');
+    expect(produits['Gâteau salé (quiche)']!.fiche.provenance, 'apporte');
     expect(produits['Bonbons (offerts)']!.prixCentimes, 0);
     expect(produits['Tarte']!.icone, 'tarte');
     // Le modèle d'origine n'a pas bougé : le menu copié du modèle est indépendant.
@@ -121,6 +122,6 @@ void main() {
     final autre = await menus.suivreProduits(copie.id).first;
     expect(autre.any((p) => p.prixCentimes == 999), isFalse);
     final json = await rootBundle.loadString('assets/menu_type.json');
-    expect(lireMenuType(json).firstWhere((p) => p.nom == 'Croque-monsieur').prixCentimes, 300);
+    expect(lireMenuType(json).firstWhere((p) => p.nom == 'Croque-monsieur').prixCentimes, 100);
   });
 }

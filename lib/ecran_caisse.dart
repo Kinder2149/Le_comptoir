@@ -688,8 +688,8 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
   }
 }
 
-/// Ce qu'un bénévole peut faire du stock de son gymnase : ajouter des parts
-/// (produits de type « part » suivis) et signaler un produit sans quantité
+/// Ce qu'un bénévole peut faire du stock de son gymnase : ajouter du stock
+/// (produits « part » ou apportés par les bénévoles, suivis) et signaler un produit sans quantité
 /// comme vide. Rien d'autre.
 class _DialogueStockBenevole extends StatelessWidget {
   const _DialogueStockBenevole({
@@ -709,7 +709,10 @@ class _DialogueStockBenevole extends StatelessWidget {
   Future<void> _ajouter(BuildContext context, ProduitEvenement p) async {
     final n = await showDialog<int>(
       context: context,
-      builder: (_) => _DialogueParts(titre: 'Ajouter des parts : ${p.nom}'),
+      builder: (_) => _DialogueParts(
+          titre: p.fiche.type == 'part'
+              ? 'Ajouter des parts : ${p.nom}'
+              : 'Ajouter au stock : ${p.nom}'),
     );
     if (n == null) return;
     // Sans réseau, l'écriture attend l'envoi : on n'attend pas sa fin.
@@ -722,7 +725,9 @@ class _DialogueStockBenevole extends StatelessWidget {
   Widget build(BuildContext context) {
     final parts = [
       for (final p in produits)
-        if (p.fiche.type == 'part' && p.stock != null) p,
+        if ((p.fiche.type == 'part' || p.fiche.provenance == 'apporte') &&
+            p.stock != null)
+          p,
     ];
     final sansQuantite = [
       for (final p in produits)
@@ -745,7 +750,7 @@ class _DialogueStockBenevole extends StatelessWidget {
                     key: Key('stock_benevole_vide'),
                   ),
                 if (parts.isNotEmpty)
-                  Text('Ajouter des parts',
+                  Text('Ajouter au stock (parts, pièces)',
                       style: Theme.of(context).textTheme.titleSmall),
                 for (final p in parts)
                   ListTile(
@@ -755,7 +760,7 @@ class _DialogueStockBenevole extends StatelessWidget {
                     trailing: IconButton(
                       key: Key('ajout_parts_${p.id}'),
                       icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'Ajouter des parts',
+                      tooltip: 'Ajouter au stock',
                       onPressed: () => _ajouter(context, p),
                     ),
                   ),
@@ -828,7 +833,7 @@ class _EtatDialogueParts extends State<_DialogueParts> {
         autofocus: true,
         keyboardType: TextInputType.number,
         decoration:
-            InputDecoration(labelText: 'Parts ajoutées', errorText: _erreur),
+            InputDecoration(labelText: 'Quantité ajoutée', errorText: _erreur),
         onSubmitted: (_) => _valider(),
       ),
       actions: [
