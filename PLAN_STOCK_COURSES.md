@@ -268,6 +268,8 @@ Ordre : B1 → B2 → B3 → B4 → B5 → B6 (B3 avant B4 : les courses ont bes
 **B5 — CADRAGE FIGÉ (30/10/2026, accord de Kinder)** : (1) à la clôture, feuille « Garder pour le prochain événement ? » : produits suivis avec du stock, gymnase par gymnase, rien de coché ; quantité préremplie et corrigeable (litres pour un produit au litre, stockée en verres) ; (2) restes rangés dans l'association (`restes/{gymnase}__{produit}`, noms sans accents), écrits avec la clôture, un nouveau report remplace l'ancien, un produit décoché retire l'ancien report ; (3) à la création de l'événement suivant : reprise par NOM de gymnase et de produit, total de référence posé, reste effacé, message « n stocks repris » ; (4) non repris : produit non coché, gymnase ou produit au nom inconnu (le reste attend) ; (5) droits : comme la clôture ; (6) règles : collection `restes`, écrite seulement dans le lot de clôture. Ne fait pas : ingrédients, choix manuel du gymnase.
 - **Critères** : (1) clôture avec 6 L de soda (Gymnase 1) et 2 L de café (Gymnase 2) cochés : deux restes de 24 et 8 verres ; (2) événement suivant aux mêmes noms de gymnases : Gymnase 1 démarre avec 24 verres de soda, Gymnase 2 avec 8 de café ; (3) produit non coché non repris ; (4) un troisième événement ne reprend rien ; (5) gestionnaire non rattaché à tous les gymnases : refusé ; (6) sans réseau la clôture échoue comme avant, rien n'est enregistré.
 
+**Suivi C1** (30/10/2026, branche `claude/c1-courses-partielles`, décision 52) : implémentée et testée par Claude. Après une validation, le bouton « Nouvelle série de courses » repart d'une liste vide ; le coût et les ajouts de stock déjà validés sont gardés dans un cumul (`cumulSeries`, `cumulCout`, `cumulAjouts` sur le même document `courses/liste`) ; le bilan compte toutes les séries ; bouton « Partager la liste » (texte `liste-de-courses.txt` par la feuille de partage existante, aucune dépendance). Analyse sans erreur, 247 tests de logique et d'écrans, 186 tests de règles, parcours Android `courses_test` (2 parcours) réussis ; la série complète des 27 parcours n'a pas été relancée. Critère : 40 croques validés puis 40 de plus -> stock +80 au total, coût cumulé ; vérifié par le parcours (150 + 40 = 190 au gymnase A, coût cumulé 492,50 € en 2 séries). Non couvert par un test d'écran : l'ouverture réelle de la feuille de partage et le contenu partagé de bout en bout (le texte lui-même est vérifié par un test de logique). Règles à déployer : OUI (accord de Kinder requis). Reste : capture de Kinder.
+
 **Suivi B5** : implémentée et testée par Claude le 30/10/2026, branche `claude/b5-report-stock`. Analyse sans erreur, 243 tests de logique et d'écrans, 183 tests de règles (dont 216 restes écrits avec la clôture en un seul lot), série complète des 27 parcours Android réussis (`restes_test` : critères 1 à 4 ; `clotures_test` et `bilan_test` adaptés à la nouvelle feuille). Règles (collection `restes`) déployées sur le vrai projet le 30/10/2026 (accord de Kinder) ; APK de recette reconstruit avec B5 (1.1.0+2, `recette/le-comptoir-recette.apk`). Non couvert par un test d'écran : le message « n stocks repris » à la création par l'écran (la reprise l'est par le dépôt), et le critère 6 (sans réseau) par le seul comportement de la transaction. Défaut déjà présent avant B5 corrigé dans `gestionnaires_test` : un appui sur la case de rattachement pouvait tomber à côté pendant le rechargement de l'écran, le test recommence maintenant l'appui. Reste : capture de Kinder.
 
 **Suivi B3** : implémentée et testée par Claude le 29/10/2026 (commit B3). Analyse sans erreur, 226 tests de logique et d’écrans, parcours Android `gymnases_test` (étendu : titre, « Vendu : 0 », « Suivre tous les produits »), `menus_test` (bandeau), `stock_role_test`, `rupture_test`, `chantier_complet_test` et `lectures_test` réussis ; série complète des parcours non relancée. Le critère « 3 ventes -> Vendu : 3 » n'est pas vérifié par un test d'écran (le calcul `TableauDeBord.vendus` l'est par les tests du suivi). Aucune règle à déployer. Reste : capture de Kinder.
@@ -424,5 +426,32 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 >
 > **Pièges connus** : un lot Firestore est limité à 500 écritures et une requête de règles à 1000 expressions ; les fichiers
 > `lib/*.dart` sont en CRLF ; ne pas lancer deux émulateurs Firestore en même temps (port 8080).
+>
+> **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.
+
+## 12. Texte de vérification pour une autre IA : chantier B1 à B5 (étape B6, rédigé le 30/10/2026)
+À donner tel quel à une IA qui n'a pas écrit le code. Son verdict ferme l'implémentation ; la capture finale de Kinder ferme la mission.
+
+> Tu vérifies l'application Flutter « Le Comptoir » (dossier `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`, branche
+> `claude/b5-report-stock`), chantier « Menu, événement et courses » (étapes B1 à B5, section 5 bis de `PLAN_STOCK_COURSES.md`,
+> décisions 45 à 51 de `PROJET_CONTEXTE.md`). Tu ne corriges rien : tu rends un verdict réussi/échoué par critère, avec une
+> capture. Lancement : voir la section 11 (émulateurs Firebase, émulateur Android `LC2`, `tests_regles/lancer.ps1`,
+> `flutter analyze`, `flutter test`, `tests_regles/lancer_integration.ps1`). Attendus au 30/10/2026 : analyse sans erreur,
+> 243 tests de logique et d'écrans, 183 tests de règles, 27 parcours Android.
+>
+> **Critères (chaque ligne = un verdict)** :
+> 1. B1 : un menu ne contient aucun stock ; chaque produit porte sa provenance (acheté par l'association / apporté par les
+>    bénévoles) ; un produit apporté n'apparaît pas dans les courses sauf ajout à la main.
+> 2. B2 : ratios de conversion par catégorie (1 gâteau = n parts, 1 litre = n verres, 1 croque = n composants) ; un ratio à
+>    zéro est refusé.
+> 3. B3 : le stock appartient à l'événement, par gymnase (onglet « Gymnases et stock ») ; après 3 ventes, « Vendu » et « Reste »
+>    sont exacts ; modifier le menu ensuite ne change pas un événement lancé.
+> 4. B4 : depuis « Gymnases et stock », les courses connaissent le consommé et le reste ; durée à couvrir au choix (demi-journée,
+>    jour complet ou plus) ; estimation modifiable ; rien ne s'achète sans validation.
+> 5. B5 : à la clôture, la feuille propose les produits qui ont du stock, rien de coché d'avance ; 6 L de soda et 2 L de café
+>    gardés sont repris au stock de l'événement suivant (gymnase et produit de même nom) ; un report ne sert qu'une fois ;
+>    la clôture et les restes s'écrivent ensemble (tout ou rien).
+> 6. Cohérence visuelle (décision 49) : l'onglet « Gymnases et stock » et les courses suivent le thème (anthracite, lin, pigments).
+> 7. Non-régression : les critères 1 à 8 de la section 11 passent toujours.
 >
 > **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.

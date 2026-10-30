@@ -9,7 +9,11 @@ typedef Partageur = Future<void> Function(String nomFichier, String contenu);
 Future<void> partagerFichierTexte(String nomFichier, String contenu) async {
   final octets = utf8.encode(contenu);
   await Share.shareXFiles(
-    [XFile.fromData(octets, mimeType: 'text/csv', name: nomFichier)],
+    [
+      XFile.fromData(octets,
+          mimeType: nomFichier.endsWith('.csv') ? 'text/csv' : 'text/plain',
+          name: nomFichier)
+    ],
     fileNameOverrides: [nomFichier],
     subject: nomFichier,
   );

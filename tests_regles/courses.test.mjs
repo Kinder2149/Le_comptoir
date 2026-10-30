@@ -182,3 +182,72 @@ test('durée : demi-journée et jours acceptés, hors 0,5 à 30 refusés', async
   assert.equal(await lot(gestionnaire, [miseNombre(c.evt, 'nbJours', 0.5)]), 200);
   assert.equal(await lot(lea, [miseNombre(c.evt, 'nbJours', 0.5)]), 403);
 });
+
+// ---------- mission C1 : séries de courses ----------
+const vide = { arrayValue: { values: [] } };
+const cumul = (series, cout, extra = {}) => ({
+  cumulSeries: entier(series),
+  cumulCout: entier(cout),
+  cumulAjouts: vide,
+  ...extra,
+});
+const nouvelleSerie = (chemin, series, cout, extra = {}) => ({
+  update: {
+    name: `${RACINE}/${chemin}`,
+    fields: liste({ lignes: vide, libres: vide, restes: vide, ...cumul(series, cout), ...extra }),
+  },
+});
+const validerLaListe = async (chef, c) => {
+  const l = `${c.evt}/courses/liste`;
+  await lot(chef, [ecrireListe(l)]);
+  assert.equal(await lot(chef, [ecrireValidee(l)]), 200); // coût 412,50 €
+  return l;
+};
+
+test('nouvelle série : seule une liste validée repart, vide, avec le cumul exact', async () => {
+  const { chef, gestionnaire, lea, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  await lot(chef, [ecrireListe(l)]);
+  // En préparation : pas de nouvelle série.
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 41250)]), 403);
+  assert.equal(await lot(chef, [ecrireValidee(l)]), 200);
+  // Un bénévole ne l'ouvre pas ; la liste doit repartir vide ; le cumul doit être exact.
+  assert.equal(await lot(lea, [nouvelleSerie(l, 1, 41250)]), 403);
+  assert.equal(await lot(chef, [ecrireListe(l)]), 403);
+  assert.equal(await lot(chef, [ecrireListe(l, cumul(1, 41250))]), 403); // lignes non vides
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 0)]), 403); // coût effacé
+  assert.equal(await lot(chef, [nouvelleSerie(l, 2, 41250)]), 403); // séries comptées en trop
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 99999)]), 403); // coût gonflé
+  assert.equal(await lot(gestionnaire, [nouvelleSerie(l, 1, 41250)]), 200);
+  assert.equal(await lire(chef, l), 200);
+});
+
+test('nouvelle série : le cumul ne bouge pas en préparation, et la série suivante s’y ajoute', async () => {
+  const { chef, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  await validerLaListe(chef, c);
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 41250)]), 200);
+  // Les modifications de la série en cours gardent le cumul tel quel.
+  assert.equal(await lot(chef, [ecrireListe(l, cumul(1, 41250))]), 200);
+  assert.equal(await lot(chef, [ecrireListe(l)]), 403); // cumul effacé
+  assert.equal(await lot(chef, [ecrireListe(l, cumul(1, 10))]), 403); // cumul réduit
+  assert.equal(await lot(chef, [ecrireListe(l, cumul(5, 41250))]), 403); // cumul gonflé
+  // Valider la série 2 (coût 412,50 €) puis ouvrir la 3e : cumul 825,00 €, 2 séries.
+  assert.equal(await lot(chef, [ecrireValidee(l, cumul(1, 41250))]), 200);
+  assert.equal(await lot(chef, [ecrireValidee(l, cumul(1, 41250))]), 403); // ne se rejoue pas
+  assert.equal(await lot(chef, [nouvelleSerie(l, 2, 82500)]), 200);
+  assert.equal(await lot(chef, [ecrireValidee(l, cumul(2, 82500, { coutCentimes: entier(41250) }))]), 200);
+});
+
+test('nouvelle série : cumul borné, événement clôturé refusé, création sans cumul', async () => {
+  const { chef, c } = await evenementEnCours();
+  const l = `${c.evt}/courses/liste`;
+  // À la création, aucun cumul n'est accepté.
+  assert.equal(await lot(chef, [ecrireListe(l, cumul(3, 5000))]), 403);
+  await validerLaListe(chef, c);
+  const trop = { arrayValue: { values: Array.from({ length: 101 }, () => ({ mapValue: { fields: {} } })) } };
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 41250, { cumulAjouts: trop })]), 403);
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 41250, { cumulCout: { stringValue: 'x' } })]), 403);
+  await lot(admin, [modifier(c.evt, { statut: 'cloture' })]);
+  assert.equal(await lot(chef, [nouvelleSerie(l, 1, 41250)]), 403);
+});

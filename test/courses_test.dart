@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/courses.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/evenement.dart';
+import 'package:le_comptoir/export_bilan.dart';
 import 'package:le_comptoir/gymnase.dart';
 import 'package:le_comptoir/ticket.dart';
 
@@ -37,6 +38,7 @@ Achat achat(List<Achat> l, String nom) => l.firstWhere((a) => a.nom == nom);
 
 void main() {
   testsB4();
+  testsC1();
   group('quantités prévues', () {
     test('personnes × jours × consommation, arrondi au-dessus', () {
       expect(quantitePrevue(personnes: 80, jours: 2, conso: 2), 320);
@@ -349,6 +351,89 @@ void testsB4() {
     test('sans stock, comme avant (compatibilité)', () {
       final l = listeParDefaut(produits: produits, gymnases: gymnases, jours: 2);
       expect(l.quantite('a', 'croque'), 320);
+    });
+  });
+}
+
+// Mission C1 : plusieurs séries de courses. Critère de Kinder : 40 croques le matin
+// (50,00 €), 40 de plus l'après-midi (30,00 €) -> le stock gagne 80, coût cumulé 80,00 €.
+void testsC1() {
+  group('séries de courses (C1)', () {
+    ValidationCourses serie(int quantite, int cout) => ValidationCourses(
+          achetes: const {},
+          rendements: [Rendement('a', 'croque', quantite)],
+          coutCentimes: cout,
+        );
+
+    test('deux validations successives : ajouts et coût s’additionnent', () {
+      final matin = ListeCourses(
+        lignes: const [LigneCourse('a', 'croque', 40)],
+        validation: serie(40, 5000),
+      );
+      expect(matin.seriesValidees, 1);
+      expect(matin.coutTotalCentimes, 5000);
+      expect(matin.ajoutsTotaux, {'croque': 40});
+
+      // Nouvelle série : liste vide, le cumul garde la première validation.
+      final apresMidi = matin.nouvelleSerie();
+      expect(apresMidi.validee, isFalse);
+      expect(apresMidi.lignes, isEmpty);
+      expect(apresMidi.libres, isEmpty);
+      expect(apresMidi.restes, isEmpty);
+      expect(apresMidi.precedent.series, 1);
+      expect(apresMidi.seriesValidees, 1);
+      expect(apresMidi.coutTotalCentimes, 5000);
+
+      // Validation de la deuxième série.
+      final soir = ListeCourses(
+        lignes: const [LigneCourse('a', 'croque', 40)],
+        validation: serie(40, 3000),
+        precedent: apresMidi.precedent,
+      );
+      expect(soir.seriesValidees, 2);
+      expect(soir.coutTotalCentimes, 8000);
+      expect(soir.ajoutsTotaux, {'croque': 80});
+    });
+
+    test('le cumul s’écrit et se relit sans rien perdre ni rien ajouter', () {
+      final serie1 = ListeCourses(validation: serie(40, 5000));
+      final suivante = serie1.nouvelleSerie();
+      final ecrit = suivante.versMap();
+      expect(ecrit['statut'], 'preparation');
+      expect(ecrit['cumulSeries'], 1);
+      expect(ecrit['cumulCout'], 5000);
+      final relu = ListeCourses.depuis(ecrit);
+      expect(relu.precedent.series, 1);
+      expect(relu.precedent.coutCentimes, 5000);
+      expect(relu.precedent.ajouts, {'croque': 40});
+      // Une liste d'avant C1 n'écrit aucun champ de cumul.
+      expect(const ListeCourses().versMap().containsKey('cumulSeries'), isFalse);
+      // Modifier la série en cours garde le cumul.
+      expect(relu.avec(restes: const {'x': 1}).precedent.series, 1);
+    });
+
+    test('le bilan compte toutes les séries, même quand la suivante se prépare', () {
+      final apres = ListeCourses(validation: serie(40, 5000)).nouvelleSerie();
+      final cout = CoutBilan.depuis(apres, 20000) as CoutConnu;
+      expect(cout.coutCentimes, 5000);
+      expect(cout.resultatCentimes, 15000);
+      expect(CoutBilan.depuis(const ListeCourses(), 20000), isA<CoursesNonValidees>());
+      expect(CoutBilan.depuis(null, 20000), isA<CoursesNonValidees>());
+    });
+
+    test('la liste à partager : achats arrondis, puis lignes libres', () {
+      const liste = ListeCourses(
+        lignes: [LigneCourse('a', 'croque', 40)],
+        libres: [LigneLibre('Liquide vaisselle', 2)],
+      );
+      // 40 croques : 80 tranches de pain, 40/3 -> 14 tranches de jambon, 280 g de gruyère.
+      expect(
+        texteListeCourses('Liste de courses', calculerAchats(produits, liste), liste.libres),
+        'Liste de courses\n\nÀ acheter\n- Gruyère râpé : 280 g\n'
+        '- Jambon blanc : 14 tranches\n- Pain de mie : 80 tranches\n'
+        '\nAutres achats\n- Liquide vaisselle × 2\n',
+      );
+      expect(texteListeCourses('T', const [], const []), 'T\n\nÀ acheter\n- rien\n');
     });
   });
 }

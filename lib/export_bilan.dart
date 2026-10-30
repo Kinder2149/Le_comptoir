@@ -11,12 +11,15 @@ import 'ticket.dart';
 sealed class CoutBilan {
   const CoutBilan();
 
-  /// Vue commune, courses validées : coût et résultat (ventes moins coût).
+  /// Vue commune, courses validées : coût et résultat (ventes moins coût). Le coût
+  /// est celui de toutes les séries validées (mission C1), même si une nouvelle
+  /// série est en préparation.
   factory CoutBilan.depuis(ListeCourses? courses, int ventesCentimes) {
-    final v = courses?.validation;
-    return v == null
-        ? const CoursesNonValidees()
-        : CoutConnu(v.coutCentimes, ventesCentimes - v.coutCentimes);
+    if (courses == null || courses.seriesValidees == 0) {
+      return const CoursesNonValidees();
+    }
+    final cout = courses.coutTotalCentimes;
+    return CoutConnu(cout, ventesCentimes - cout);
   }
 }
 

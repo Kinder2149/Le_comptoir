@@ -492,6 +492,19 @@ class DepotEvenements {
     await lot.commit();
   }
 
+  /// Ouvre une nouvelle série de courses après une validation (mission C1) : la liste
+  /// repart vide, le coût et les ajouts de stock déjà validés sont gardés dans le
+  /// cumul. Rien n'est rejoué : le stock a déjà reçu les séries précédentes. Les
+  /// règles n'acceptent le passage que depuis une liste validée.
+  Future<void> nouvelleSerieCourses(
+      String evenementId, ListeCourses validee) {
+    assert(validee.validee);
+    return _evenements.doc(evenementId).collection('courses').doc('liste').set({
+      ...validee.nouvelleSerie().versMap(),
+      'majLe': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> renommerGymnase(
           String evenementId, String gymnaseId, String nom) =>
       _gymnase(evenementId, gymnaseId).update({'nom': nom.trim()});
