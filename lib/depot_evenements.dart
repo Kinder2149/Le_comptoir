@@ -49,7 +49,7 @@ class DepotEvenements {
       forcee: data['forcee'] == true,
       nbCaissesOuvertes: (data['nbCaissesOuvertes'] as int?) ?? 0,
       nbGymnases: (data['nbGymnases'] as int?) ?? 1,
-      nbJours: (data['nbJours'] as int?) ?? 2,
+      nbJours: (data['nbJours'] as num?)?.toDouble() ?? 2.0,
     );
   }
 
@@ -369,7 +369,7 @@ class DepotEvenements {
   }
 
   /// Réglages des courses : durée de l'événement et personnes attendues par gymnase.
-  Future<void> definirJours(String evenementId, int jours) =>
+  Future<void> definirJours(String evenementId, double jours) =>
       _evenements.doc(evenementId).update({'nbJours': jours});
 
   Future<void> definirPersonnes(

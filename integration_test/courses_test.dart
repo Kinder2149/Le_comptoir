@@ -56,6 +56,18 @@ void main() {
       .controller!
       .text;
 
+  /// Attend que le champ [cle] affiche [attendu] (le recalcul est asynchrone).
+  Future<void> attendreChamp(WidgetTester tester, String cle, String attendu) async {
+    for (var i = 0; i < 100; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      final f = find.byKey(Key(cle));
+      if (f.evaluate().isNotEmpty && valeurChamp(tester, cle) == attendu) return;
+    }
+    final f = find.byKey(Key(cle));
+    throw TestFailure('« $cle » : attendu « $attendu », obtenu '
+        '« ${f.evaluate().isEmpty ? '(absent)' : valeurChamp(tester, cle)} »');
+  }
+
   testWidgets('courses : pré-remplissage, achats, reste, lignes libres, reprise',
       (tester) async {
     final db = FirebaseFirestore.instance;
@@ -115,22 +127,22 @@ void main() {
         .doc(tarte)
         .update({'quantite': 3});
 
-    Future<void> ouvrirCourses() async {
-      await attendre(tester, find.text('Tournoi'));
-      await toucher(tester, find.text('Tournoi'));
-      await attendre(tester, find.byKey(const Key('voir_courses')));
-      await tester.pump(const Duration(seconds: 1));
-      await toucher(tester, find.byKey(const Key('voir_courses')));
-      await attendre(tester, find.byKey(const Key('etat_courses')));
-    }
-
     // Un écran très haut : toute la liste est construite, rien à défiler.
     tester.view.physicalSize = const Size(1080, 8000);
     tester.view.devicePixelRatio = 2.5;
     addTearDown(tester.view.reset);
     await tester.pump(const Duration(seconds: 1));
 
-    await ouvrirCourses();
+    // B4 : première ouverture par « Gymnases et stocks » > « Préparer les courses ».
+    await attendre(tester, find.text('Tournoi'));
+    await toucher(tester, find.text('Tournoi'));
+    await attendre(tester, find.byKey(const Key('voir_gymnases')));
+    await tester.pump(const Duration(seconds: 1));
+    await toucher(tester, find.byKey(const Key('voir_gymnases')));
+    await attendre(tester, find.byKey(const Key('preparer_courses')));
+    await tester.pump(const Duration(seconds: 1));
+    await toucher(tester, find.byKey(const Key('preparer_courses')));
+    await attendre(tester, find.byKey(const Key('etat_courses')));
 
     // --- Rien n'est réglé : aide, pas de produit pré-rempli.
     expect(find.byKey(const Key('aide_personnes')), findsOneWidget);
@@ -148,6 +160,28 @@ void main() {
     expect(find.byKey(Key('qte_${gA}_$tarte')), findsNothing);
     expect(find.byKey(Key('suggere_${gA}_$tarte')), findsOneWidget);
     expect(find.byKey(Key('suggere_${gB}_$tarte')), findsNothing);
+
+    // --- B4 : demi-journée, jour complet, stock déduit, puis retour à 2 jours.
+    await toucher(tester, find.byKey(const Key('duree_demi')));
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await attendreChamp(tester, 'qte_${gA}_$croque', '80');
+    await toucher(tester, find.byKey(const Key('duree_jour')));
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await attendreChamp(tester, 'qte_${gA}_$croque', '160');
+    await depotEv.definirStock(evtId, gA, croque, 100);
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await attendreChamp(tester, 'qte_${gA}_$croque', '60'); // 160 - 100 en stock
+    await attendreTexte(tester, 'info_${gA}_$croque', 'En stock : 100 · Vendu : 0');
+    await depotEv.definirStock(evtId, gA, croque, 200);
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    for (var i = 0; i < 50 && find.byKey(Key('qte_${gA}_$croque')).evaluate().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byKey(Key('qte_${gA}_$croque')), findsNothing); // le stock couvre le besoin
+    await depotEv.arreterSuivi(evtId, gA, croque);
+    await toucher(tester, find.byKey(const Key('duree_plus')));
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await attendreChamp(tester, 'qte_${gA}_$croque', '320');
 
     // --- Achats : 560 croques et 560 verres de café.
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 1 120 tranches');
@@ -209,7 +243,9 @@ void main() {
     expect(gym['personnes'], 80);
 
     // --- On quitte puis on rouvre : tout est retrouvé.
-    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // courses
+    await tester.pump(const Duration(seconds: 1));
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // gymnases et stocks
     await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(seconds: 1));
     await toucher(tester, find.byKey(const Key('voir_courses')));

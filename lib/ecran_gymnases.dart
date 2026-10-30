@@ -4,6 +4,7 @@ import 'depot_associations.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
 import 'ecran_caisse.dart' show VignetteProduit, couleurEtat, fondEtat;
+import 'ecran_courses.dart';
 import 'ecran_qr.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -91,6 +92,32 @@ class EcranGymnases extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
+                    // Les courses se préparent d'ici : le stock et le vendu sont sous les yeux.
+                    if (portee.toutVoir)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FilledButton.icon(
+                          key: const Key('preparer_courses'),
+                          style: TypeAction.gerer.plein,
+                          icon: const Icon(Icons.shopping_cart_outlined),
+                          label: const Text('Préparer les courses'),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => EcranCourses(
+                                  depot: depot, evenementId: evenementId),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'Les courses sont réservées au responsable ou au '
+                          'gestionnaire rattaché à tous les gymnases.',
+                          key: Key('courses_reservees'),
+                        ),
+                      ),
                     for (final g in gymnases)
                       _CarteGymnase(
                         key: Key('gymnase_${g.id}'),

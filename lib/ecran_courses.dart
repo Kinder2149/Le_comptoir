@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'courses.dart';
+import 'depot_caisses.dart';
 import 'depot_evenements.dart';
 import 'ecran_caisse.dart' show couleurEtat;
 import 'ecran_validation_courses.dart';
@@ -30,8 +31,16 @@ class _EtatCourses extends State<EcranCourses> {
   List<ProduitEvenement> _produits = const [];
   List<Gymnase> _gymnases = const [];
   Map<String, List<String>> _suggeres = const {};
-  int _jours = joursParDefaut;
+  double _jours = joursParDefaut;
   final Map<String, int> _personnes = {};
+
+  /// Stock actuel (gymnase -> produit -> quantité), relu à chaque « Recalculer ».
+  Map<String, Map<String, int>> _stocks = const {};
+
+  /// Le « vendu » de chaque gymnase, écouté une seule fois pour tout l'écran
+  /// (réécouter à chaque recalcul relancerait la lecture des ventes).
+  final Map<String, StreamSubscription<TableauDeBord>> _abonnementsVendus = {};
+  final Map<String, TableauDeBord> _tableaux = {};
   ListeCourses _liste = const ListeCourses();
 
   Timer? _minuteur;
@@ -56,6 +65,9 @@ class _EtatCourses extends State<EcranCourses> {
       _minuteur!.cancel();
       _enregistrer();
     }
+    for (final a in _abonnementsVendus.values) {
+      a.cancel();
+    }
     super.dispose();
   }
 
@@ -66,18 +78,32 @@ class _EtatCourses extends State<EcranCourses> {
       final produits = await widget.depot.suivreProduits(id).first;
       final gymnases = await widget.depot.suivreGymnases(id).first;
       final etats = await widget.depot.suivreEtats(id).first;
+      final stocks = await widget.depot.suivreStocksParGymnase(id).first;
       final enregistree = await widget.depot.suivreListeCourses(id).first;
       if (!mounted) return;
       setState(() {
         _produits = produits;
         _gymnases = gymnases;
+        _stocks = stocks;
+        for (final g in gymnases) {
+          _abonnementsVendus[g.id] ??= widget.depot
+              .caisses(id)
+              .suivreTableauDeBord(gymnaseIds: {g.id})
+              .listen((t) {
+            if (mounted) setState(() => _tableaux[g.id] = t);
+          });
+        }
         _suggeres = produitsSuggeres(etats, gymnases);
         _jours = evenement?.nbJours ?? joursParDefaut;
         for (final g in gymnases) {
           _personnes[g.id] = g.personnes;
         }
         _liste = enregistree ??
-            listeParDefaut(produits: produits, gymnases: gymnases, jours: _jours);
+            listeParDefaut(
+                produits: produits,
+                gymnases: gymnases,
+                jours: _jours,
+                stocks: stocks);
         _charge = true;
       });
     } catch (e) {
@@ -148,9 +174,18 @@ class _EtatCourses extends State<EcranCourses> {
 
   void _surJours(String texte) {
     final n = int.tryParse(texte.trim());
-    if (n == null || n < 1 || n > joursMax) return;
-    _jours = n;
+    if (n == null || n < 2 || n > joursMax) return;
+    _jours = n.toDouble();
     _joursModifies = true;
+    _planifier();
+  }
+
+  /// Demi-journée (0,5), jour complet (1) ou plus (au moins 2 jours).
+  void _choisirDuree(double jours) {
+    setState(() {
+      _jours = jours;
+      _joursModifies = true;
+    });
     _planifier();
   }
 
@@ -162,11 +197,20 @@ class _EtatCourses extends State<EcranCourses> {
     _planifier();
   }
 
-  void _recalculer() {
+  Future<void> _recalculer() async {
+    // Le stock est relu : l'estimation tient compte de ce qu'il reste maintenant.
+    try {
+      final stocks = await widget.depot.suivreStocksParGymnase(widget.evenementId).first;
+      if (!mounted) return;
+      _stocks = stocks;
+    } catch (_) {
+      if (!mounted) return;
+    }
     final base = listeParDefaut(
       produits: _produits,
       gymnases: [for (final g in _gymnases) Gymnase(g.id, g.nom, _personnes[g.id] ?? 0)],
       jours: _jours,
+      stocks: _stocks,
     );
     setState(() {
       _version++;
@@ -178,8 +222,11 @@ class _EtatCourses extends State<EcranCourses> {
     int? quantite;
     if (oui) {
       final conso = p.fiche.conso ?? 0;
-      quantite = quantitePrevue(
-          personnes: _personnes[g.id] ?? 0, jours: _jours, conso: conso);
+      quantite = quantiteAPrevoir(
+          personnes: _personnes[g.id] ?? 0,
+          jours: _jours,
+          conso: conso,
+          stock: _stocks[g.id]?[p.id]);
     }
     setState(() {
       _version++;
@@ -323,13 +370,35 @@ class _EtatCourses extends State<EcranCourses> {
         const SizedBox(height: 12),
         Text('Réglages', style: titre),
         const SizedBox(height: 8),
-        TextFormField(
-          key: const Key('jours_courses'),
-          initialValue: '$_jours',
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Nombre de jours (1 à 30)'),
-          onChanged: _surJours,
+        Text('Durée à couvrir', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 4),
+        SegmentedButton<String>(
+          key: const Key('duree_courses'),
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+                value: 'demi', label: Text('Demi-journée', key: Key('duree_demi'))),
+            ButtonSegment(
+                value: 'jour', label: Text('Jour complet', key: Key('duree_jour'))),
+            ButtonSegment(value: 'plus', label: Text('Plus', key: Key('duree_plus'))),
+          ],
+          selected: {
+            _jours == demiJournee ? 'demi' : (_jours == 1 ? 'jour' : 'plus')
+          },
+          onSelectionChanged: (s) => _choisirDuree(switch (s.first) {
+            'demi' => demiJournee,
+            'jour' => 1.0,
+            _ => _jours >= 2 ? _jours : 2.0,
+          }),
         ),
+        if (_jours >= 2)
+          TextFormField(
+            key: const Key('jours_courses'),
+            initialValue: '${_jours.toInt()}',
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Nombre de jours (2 à 30)'),
+            onChanged: _surJours,
+          ),
         for (final g in _gymnases)
           TextFormField(
             key: Key('personnes_${g.id}'),
@@ -370,7 +439,7 @@ class _EtatCourses extends State<EcranCourses> {
                       _gymnases.length > 1 ? 'Produits : ${g.nom}' : 'Produits',
                       style: titre),
                 ),
-                for (final p in _produits) _ligneProduit(g, p),
+                for (final p in _produits) _ligneProduit(g, p, _tableaux[g.id]),
               ],
               const Divider(),
               Text('À acheter', style: titre),
@@ -416,8 +485,13 @@ class _EtatCourses extends State<EcranCourses> {
     ];
   }
 
-  Widget _ligneProduit(Gymnase g, ProduitEvenement p) {
+  Widget _ligneProduit(Gymnase g, ProduitEvenement p, TableauDeBord? tableau) {
     final quantite = _liste.quantite(g.id, p.id);
+    final stock = _stocks[g.id]?[p.id];
+    final info = [
+      stock == null ? 'Stock non suivi' : 'En stock : $stock',
+      'Vendu : ${tableau == null ? '…' : tableau.vendus(p.id)}',
+    ].join(' · ');
     final suggere = _suggeres[p.id]?.contains(g.nom) ?? false;
     return Row(
       children: [
@@ -431,6 +505,9 @@ class _EtatCourses extends State<EcranCourses> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(p.nom),
+              Text(info,
+                  key: Key('info_${g.id}_${p.id}'),
+                  style: const TextStyle(fontSize: 12)),
               if (suggere)
                 Text(
                   'Suggéré : stock bas',

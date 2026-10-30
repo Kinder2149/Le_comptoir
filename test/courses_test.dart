@@ -36,6 +36,7 @@ const gymnases = [Gymnase('a', 'Gymnase A', 80), Gymnase('b', 'Gymnase B', 60)];
 Achat achat(List<Achat> l, String nom) => l.firstWhere((a) => a.nom == nom);
 
 void main() {
+  testsB4();
   group('quantités prévues', () {
     test('personnes × jours × consommation, arrondi au-dessus', () {
       expect(quantitePrevue(personnes: 80, jours: 2, conso: 2), 320);
@@ -305,5 +306,49 @@ void main() {
     expect(relue.libres.single.quantite, 2);
     expect(relue.restes, {'pain de mie|tranche': 100});
     expect(l.versMap()['statut'], 'preparation');
+  });
+}
+
+void testsB4() {
+  group('estimation avec durée et stock (B4)', () {
+    test('demi-journée, jour complet, plusieurs jours', () {
+      // 80 personnes, conso 2 : 160 par jour.
+      expect(quantitePrevue(personnes: 80, jours: 0.5, conso: 2), 80);
+      expect(quantitePrevue(personnes: 80, jours: 1, conso: 2), 160);
+      expect(quantitePrevue(personnes: 80, jours: 3, conso: 2), 480);
+      // La demi-journée est arrondie au-dessus (7 personnes, 0,5 jour, 0,5 : 1,75).
+      expect(quantitePrevue(personnes: 7, jours: 0.5, conso: 0.5), 2);
+    });
+
+    test('le stock actuel est déduit, jamais sous zéro', () {
+      int q({int? stock}) =>
+          quantiteAPrevoir(personnes: 80, jours: 1, conso: 2, stock: stock);
+      expect(q(), 160); // pas de suivi : tout le besoin
+      expect(q(stock: 40), 120);
+      expect(q(stock: 160), 0);
+      expect(q(stock: 200), 0);
+      expect(q(stock: -3), 160); // stock négatif (ventes en rupture) : pas de bonus
+    });
+
+    test('la liste de départ déduit le stock et saute ce qui est couvert', () {
+      final l = listeParDefaut(
+        produits: produits,
+        gymnases: gymnases,
+        jours: 1,
+        stocks: {
+          'a': {'croque': 100, 'cafe': 999},
+          'b': {'croque': 40},
+        },
+      );
+      expect(l.quantite('a', 'croque'), 60); // 160 - 100
+      expect(l.quantite('b', 'croque'), 80); // 120 - 40
+      expect(l.quantite('a', 'cafe'), isNull); // le stock couvre 160 verres
+      expect(l.quantite('b', 'cafe'), 120); // pas de stock suivi à B
+    });
+
+    test('sans stock, comme avant (compatibilité)', () {
+      final l = listeParDefaut(produits: produits, gymnases: gymnases, jours: 2);
+      expect(l.quantite('a', 'croque'), 320);
+    });
   });
 }

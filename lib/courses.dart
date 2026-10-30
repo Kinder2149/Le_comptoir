@@ -9,8 +9,10 @@ import 'ticket.dart';
 // Logique pure : aucune lecture de base ici, tout se calcule à partir des produits
 // de l'événement, des réglages (jours, personnes) et de la saisie de la gestion.
 
-/// Nombre de jours d'un événement tant que la gestion ne l'a pas réglé.
-const joursParDefaut = 2;
+/// Durée à couvrir, en jours, tant que la gestion ne l'a pas réglée : une
+/// demi-journée vaut 0,5, un jour complet 1, « plus » un entier de 2 à [joursMax].
+const joursParDefaut = 2.0;
+const demiJournee = 0.5;
 const joursMax = 30;
 const personnesMax = 1000;
 
@@ -19,8 +21,21 @@ int arrondiHaut(double x) => x <= 1e-6 ? 0 : (x - 1e-6).ceil();
 
 /// Quantité de produits finaux prévue : personnes × jours × consommation.
 int quantitePrevue(
-        {required int personnes, required int jours, required double conso}) =>
+        {required int personnes, required double jours, required double conso}) =>
     arrondiHaut(personnes * jours * conso);
+
+/// Quantité à acheter pour un produit dans un gymnase : la quantité prévue moins
+/// le stock actuel quand il est suivi, jamais en dessous de zéro (décision 46).
+int quantiteAPrevoir({
+  required int personnes,
+  required double jours,
+  required double conso,
+  int? stock,
+}) {
+  final reste = quantitePrevue(personnes: personnes, jours: jours, conso: conso) -
+      (stock != null && stock > 0 ? stock : 0);
+  return reste > 0 ? reste : 0;
+}
 
 /// Quantité de produits finaux à acheter pour un gymnase (pour un produit au
 /// litre : des verres).
@@ -175,7 +190,8 @@ class ListeCourses {
 ListeCourses listeParDefaut({
   required List<ProduitEvenement> produits,
   required List<Gymnase> gymnases,
-  required int jours,
+  required double jours,
+  Map<String, Map<String, int>> stocks = const {},
 }) {
   final lignes = <LigneCourse>[];
   for (final g in gymnases) {
@@ -184,8 +200,14 @@ ListeCourses listeParDefaut({
       if (p.fiche.provenance == 'apporte') continue;
       final conso = p.fiche.conso;
       if (conso == null || conso <= 0) continue;
-      lignes.add(LigneCourse(
-          g.id, p.id, quantitePrevue(personnes: g.personnes, jours: jours, conso: conso)));
+      final quantite = quantiteAPrevoir(
+          personnes: g.personnes,
+          jours: jours,
+          conso: conso,
+          stock: stocks[g.id]?[p.id]);
+      // Le stock couvre déjà le besoin : rien à acheter, la ligne n'est pas cochée.
+      if (quantite <= 0) continue;
+      lignes.add(LigneCourse(g.id, p.id, quantite));
     }
   }
   return ListeCourses(lignes: lignes);

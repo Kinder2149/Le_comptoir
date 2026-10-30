@@ -160,3 +160,25 @@ test('valider : 13 mises à jour de stock et la liste dans un seul lot', async (
     ecrireValidee(l),
   ]), 200);
 });
+
+// Étape B4 : la durée peut être une demi-journée (0,5), un entier ou un nombre de 0,5 à 30.
+const miseNombre = (chemin, champ, n) => ({
+  update: {
+    name: `${RACINE}/${chemin}`,
+    fields: { [champ]: Number.isInteger(n) ? entier(n) : { doubleValue: n } },
+  },
+  updateMask: { fieldPaths: [champ] },
+  currentDocument: { exists: true },
+});
+
+test('durée : demi-journée et jours acceptés, hors 0,5 à 30 refusés', async () => {
+  const { chef, gestionnaire, lea, c } = await evenementEnCours();
+  for (const n of [0.5, 1, 1.5, 30]) {
+    assert.equal(await lot(chef, [miseNombre(c.evt, 'nbJours', n)]), 200, `${n}`);
+  }
+  for (const n of [0, 0.4, -1, 30.5, 31]) {
+    assert.equal(await lot(chef, [miseNombre(c.evt, 'nbJours', n)]), 403, `${n}`);
+  }
+  assert.equal(await lot(gestionnaire, [miseNombre(c.evt, 'nbJours', 0.5)]), 200);
+  assert.equal(await lot(lea, [miseNombre(c.evt, 'nbJours', 0.5)]), 403);
+});

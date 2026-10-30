@@ -24,7 +24,7 @@ rules_version = '2';
 //       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
 //                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
-//                                                 evenements/{e}.nbJours (1 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
+//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
@@ -289,8 +289,8 @@ service cloud.firestore {
         allow update: if gereTout(a, e)
           && resource.data.statut == 'en_cours'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbJours'])
-          && request.resource.data.nbJours is int
-          && request.resource.data.nbJours >= 1
+          && request.resource.data.nbJours is number
+          && request.resource.data.nbJours >= 0.5
           && request.resource.data.nbJours <= 30;
 
         // Un gymnase de plus : le compteur monte de 1 ET le gymnase `dernierGymnase` naît
