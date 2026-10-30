@@ -429,15 +429,16 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 >
 > **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.
 
-## 12. Texte de vérification pour une autre IA : chantier B1 à B5 (étape B6, rédigé le 30/10/2026)
+## 12. Texte de vérification pour une autre IA : chantier B1 à B5 et mission C1 (étape B6, rédigé le 30/10/2026)
 À donner tel quel à une IA qui n'a pas écrit le code. Son verdict ferme l'implémentation ; la capture finale de Kinder ferme la mission.
 
 > Tu vérifies l'application Flutter « Le Comptoir » (dossier `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`, branche
-> `claude/b5-report-stock`), chantier « Menu, événement et courses » (étapes B1 à B5, section 5 bis de `PLAN_STOCK_COURSES.md`,
-> décisions 45 à 51 de `PROJET_CONTEXTE.md`). Tu ne corriges rien : tu rends un verdict réussi/échoué par critère, avec une
+> `claude/c1-courses-partielles`, qui contient aussi tout B1 à B5), chantier « Menu, événement et courses » (étapes B1 à B5,
+> section 5 bis de `PLAN_STOCK_COURSES.md`, décisions 45 à 51 de `PROJET_CONTEXTE.md`) et mission C1 (décision 52, suivi C1 de
+> la section 5 bis). Tu ne corriges rien : tu rends un verdict réussi/échoué par critère, avec une
 > capture. Lancement : voir la section 11 (émulateurs Firebase, émulateur Android `LC2`, `tests_regles/lancer.ps1`,
 > `flutter analyze`, `flutter test`, `tests_regles/lancer_integration.ps1`). Attendus au 30/10/2026 : analyse sans erreur,
-> 243 tests de logique et d'écrans, 183 tests de règles, 27 parcours Android.
+> 247 tests de logique et d'écrans, 186 tests de règles, 27 parcours Android.
 >
 > **Critères (chaque ligne = un verdict)** :
 > 1. B1 : un menu ne contient aucun stock ; chaque produit porte sa provenance (acheté par l'association / apporté par les
@@ -452,6 +453,16 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 >    gardés sont repris au stock de l'événement suivant (gymnase et produit de même nom) ; un report ne sert qu'une fois ;
 >    la clôture et les restes s'écrivent ensemble (tout ou rien).
 > 6. Cohérence visuelle (décision 49) : l'onglet « Gymnases et stock » et les courses suivent le thème (anthracite, lin, pigments).
-> 7. Non-régression : les critères 1 à 8 de la section 11 passent toujours.
+> 7. C1, plusieurs séries : après une validation, « Nouvelle série de courses » ouvre une liste vide ; un bandeau donne le nombre
+>    de séries validées, le coût cumulé et ce que le stock a déjà reçu ; une série validée n'ajoute jamais deux fois au stock
+>    (ex. : 40 croques à 50,00 € puis 40 à 30,00 € = +80 au total, coût cumulé 80,00 €) ; le bilan affiche le coût de toutes les
+>    séries ; les règles n'acceptent une nouvelle série que depuis une liste validée, vide, avec le cumul exact.
+> 8. C1, partage : le bouton « Partager la liste » ouvre la feuille de partage avec « À acheter » (quantités arrondies) puis les
+>    lignes libres ; contrôle visuel du bouton seulement (la feuille d'Android ne se capture pas dans le test).
+> 9. Non-régression : les critères 1 à 8 de la section 11 passent toujours (le critère 6 est étendu par C1 : la liste validée
+>    n'est plus définitivement figée, elle repart par une nouvelle série).
+>
+> **Captures de départ** (à ne pas croire sur parole, à refaire) : `audit_front/captures_stock_courses/verif_finale/` (16 images prises par Claude le 30/10/2026,
+> lancées par `lancer.ps1` du même dossier).
 >
 > **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.
