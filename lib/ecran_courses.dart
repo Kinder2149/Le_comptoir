@@ -606,7 +606,7 @@ class _EtatCourses extends State<EcranCourses> {
           ),
         ),
         SizedBox(
-          width: 96,
+          width: 128,
           child: quantite == null
               ? const SizedBox.shrink()
               : TextFormField(
@@ -616,7 +616,7 @@ class _EtatCourses extends State<EcranCourses> {
                   textAlign: TextAlign.end,
                   decoration: InputDecoration(
                     isDense: true,
-                    suffixText: p.fiche.type == 'litre' ? 'verres' : null,
+                    suffixText: p.fiche.type == 'litre' ? ' verres' : null,
                   ),
                   onChanged: (t) => _surQuantite(g, p, t),
                 ),
