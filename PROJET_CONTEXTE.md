@@ -14,7 +14,7 @@ MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) �
   Étape : B4 Courses depuis Gymnases et stock — Close — critère : demi-journée, jour complet ou plus, estimation modifiable
   Étape : B5 Clôture et report de stock — Planifiée — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
   Étape : B6 Clôture de mission — Planifiée — critère : verdict réussi/échoué par critère rendu par une autre IA
-MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Planifiée, à cadrer après B6 — critère : à écrire par Kinder au cadrage
+MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Planifiée, cadrage validé le 30/10/2026 — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
 IDÉES PARQUÉES :
   - Paiement carte avec Monetico (exploration, rien de figé)
   - Front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions
