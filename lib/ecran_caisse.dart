@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,29 @@ import 'evenement.dart';
 import 'gymnase.dart';
 import 'theme.dart';
 import 'ticket.dart';
+
+/// Fond d'un produit selon l'état de son stock (null = fond habituel).
+Color? fondEtat(EtatStock e) => switch (e) {
+  EtatStock.epuise || EtatStock.vide => Palette.briqueDoux,
+  EtatStock.bas => Palette.ocreDoux,
+  _ => null,
+};
+
+/// Couleur du texte d'état (null = couleur habituelle).
+Color? couleurEtat(EtatStock e) => switch (e) {
+  EtatStock.epuise || EtatStock.vide => Palette.briqueFonce,
+  EtatStock.bas => Palette.ocreFonce,
+  _ => null,
+};
+
+/// Libellé d'état, avec la quantité quand il y en a une.
+String libelleEtat(EtatStock e, int? quantite) => switch (e) {
+  EtatStock.epuise => 'Épuisé',
+  EtatStock.vide => 'Vide',
+  EtatStock.bas => 'Stock bas : $quantite',
+  EtatStock.normal => 'Stock : $quantite',
+  EtatStock.aucun => '',
+};
 
 /// Illustration de chaque icône modèle (mêmes clés que [cleIcones]).
 const iconesModeles = <String, IconData>{
@@ -25,12 +49,29 @@ const iconesModeles = <String, IconData>{
   'eau': Icons.water_drop,
   'frites': Icons.fastfood,
   'glace': Icons.icecream,
+  'tarte': Icons.pie_chart,
+};
+
+/// Logos fournis par l'association pour certaines clés (assets/logos/) : ils
+/// remplacent l'icône du système. Les autres clés gardent leur icône.
+const logosModeles = <String, String>{
+  'croque': 'assets/logos/croque.png',
+  'salade': 'assets/logos/salade.png',
+  'fruit': 'assets/logos/fruit.png',
+  'the': 'assets/logos/the.png',
+  'cafe': 'assets/logos/cafe.png',
+  'barre': 'assets/logos/barre.png',
+  'soda': 'assets/logos/soda.png',
+  'gateau_sucre': 'assets/logos/gateau_sucre.png',
+  'crepe': 'assets/logos/crepe.png',
+  'tarte': 'assets/logos/tarte.png',
 };
 
 /// Icône d'une clé ; une icône générique si la clé est absente ou inconnue.
 IconData iconeDe(String? cle) => iconesModeles[cle] ?? Icons.restaurant;
 
-/// Image d'un produit : sa photo (vignette) si elle existe, sinon son icône.
+/// Image d'un produit : sa photo (vignette) si elle existe, sinon son logo,
+/// sinon son icône.
 class VignetteProduit extends StatelessWidget {
   const VignetteProduit({super.key, this.icone, this.photo, this.taille = 40});
 
@@ -41,7 +82,7 @@ class VignetteProduit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = photo;
-    if (p == null) return Icon(iconeDe(icone), size: taille);
+    if (p == null) return _logoOuIcone();
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: Image.memory(
@@ -51,8 +92,22 @@ class VignetteProduit extends StatelessWidget {
         fit: BoxFit.cover,
         gaplessPlayback: true,
         // Photo illisible : on retombe sur l'icône plutôt que de casser l'écran.
-        errorBuilder: (_, _, _) => Icon(iconeDe(icone), size: taille),
+        errorBuilder: (_, _, _) => _logoOuIcone(),
       ),
+    );
+  }
+
+  /// Le logo (entier, non rogné) s'il existe pour cette clé, sinon l'icône.
+  Widget _logoOuIcone() {
+    final logo = logosModeles[icone];
+    if (logo == null) return Icon(iconeDe(icone), size: taille);
+    return Image.asset(
+      logo,
+      width: taille,
+      height: taille,
+      fit: BoxFit.contain,
+      cacheWidth: (taille * 3).round(),
+      errorBuilder: (_, _, _) => Icon(iconeDe(icone), size: taille),
     );
   }
 }
@@ -70,6 +125,7 @@ class EcranCaisse extends StatefulWidget {
     this.bandeau,
     this.onVoirVentes,
     this.onCloturer,
+    this.onStock,
     this.verrouillee = false,
   });
 
@@ -92,6 +148,9 @@ class EcranCaisse extends StatefulWidget {
 
   /// Ouvre l'écran de clôture de la caisse.
   final VoidCallback? onCloturer;
+
+  /// Ouvre l'écran « Stock » du bénévole (ajout de parts, produits vides).
+  final VoidCallback? onStock;
 
   /// Caisse clôturée : on regarde, on ne vend plus.
   final bool verrouillee;
@@ -130,6 +189,8 @@ class _EtatCaisse extends State<EcranCaisse> {
   });
 
   void _encaisser(String mode) {
+    // Un second appui avant le redessin ne doit pas enregistrer une vente vide.
+    if (_ticket.estVide) return;
     widget.onEncaisser?.call(_ticket, mode, _corrigeDe);
     _vider();
   }
@@ -178,6 +239,13 @@ class _EtatCaisse extends State<EcranCaisse> {
                 ],
               ),
         actions: [
+          if (widget.onStock != null && !widget.verrouillee)
+            IconButton(
+              key: const Key('ouvrir_stock'),
+              tooltip: 'Parts et produits vides',
+              icon: const Icon(Icons.inventory_2_outlined),
+              onPressed: widget.onStock,
+            ),
           if (widget.onCloturer != null)
             IconButton(
               key: const Key('ouvrir_cloture'),
@@ -206,6 +274,7 @@ class _EtatCaisse extends State<EcranCaisse> {
               children: [
                 for (final p in widget.produits)
                   Card(
+                    color: fondEtat(p.etatAffiche),
                     child: InkWell(
                       key: Key('produit_${p.id}'),
                       onTap: widget.verrouillee ? null : () => _ajouter(p),
@@ -228,15 +297,17 @@ class _EtatCaisse extends State<EcranCaisse> {
                             formaterEuros(p.prixCentimes),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          if (p.stock != null)
+                          if (p.etatAffiche != EtatStock.aucun)
                             Text(
-                              p.stock! <= 0 ? 'Épuisé' : 'Stock : ${p.stock}',
+                              libelleEtat(p.etatAffiche, p.stock),
                               key: Key('stock_${p.id}'),
                               style: TextStyle(
                                 fontSize: 11,
-                                color: p.stock! <= 0
-                                    ? Theme.of(context).colorScheme.error
-                                    : null,
+                                fontWeight:
+                                    couleurEtat(p.etatAffiche) == null
+                                        ? null
+                                        : FontWeight.bold,
+                                color: couleurEtat(p.etatAffiche),
                               ),
                             ),
                         ],
@@ -446,6 +517,12 @@ class EcranCaisseEvenement extends StatefulWidget {
 class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
   String? _erreurEnvoi;
   List<Produit> _produits = const [];
+  List<ProduitEvenement> _produitsEvenement = const [];
+
+  // Rupture, stock bas et « vide » du gymnase de cette caisse.
+  late final Stream<Map<String, Map<String, EtatStock>>> _etats = widget
+      .depotEvenements
+      .suivreEtats(widget.evenement.id, gymnases: {widget.gymnase.id});
 
   void _surErreur(Object _) {
     if (mounted) {
@@ -485,6 +562,17 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
           ),
         ),
       );
+
+  void _ouvrirStock() => showDialog<void>(
+    context: context,
+    builder: (_) => _DialogueStockBenevole(
+      depot: widget.depotEvenements,
+      evenementId: widget.evenement.id,
+      gymnaseId: widget.gymnase.id,
+      produits: _produitsEvenement,
+      onErreur: _surErreur,
+    ),
+  );
 
   void _cloturer() => Navigator.of(context).push<void>(
     MaterialPageRoute(
@@ -558,31 +646,205 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
         gymnaseId: widget.gymnase.id,
       ),
       builder: (context, p) {
-        _produits = [
-          for (final x in p.data ?? const <ProduitEvenement>[])
-            Produit(x.id, x.nom, x.prixCentimes, x.stock, x.icone, x.photo),
-        ];
-        return StreamBuilder<Caisse?>(
-          stream: widget.depotCaisses.suivreCaisse(_caisseId),
-          builder: (context, c) => StreamBuilder<List<Vente>>(
-            stream: widget.depotCaisses.suivreVentes(_caisseId),
-            builder: (context, v) {
-              final cloturee = c.data?.cloturee ?? false;
-              return EcranCaisse(
-                titre: 'Caisse de ${widget.prenom}',
-                sousTitre: widget.gymnase.nom,
-                produits: _produits,
-                modes: widget.evenement.modes,
-                onEncaisser: _encaisser,
-                onVoirVentes: () => _voirVentes(cloturee),
-                onCloturer: cloturee ? null : _cloturer,
-                verrouillee: cloturee,
-                bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
-              );
-            },
+        _produitsEvenement = p.data ?? const <ProduitEvenement>[];
+        return StreamBuilder<Map<String, Map<String, EtatStock>>>(
+          stream: _etats,
+          builder: (context, e) => _avecEtats(
+            context,
+            e.data?[widget.gymnase.id] ?? const <String, EtatStock>{},
           ),
         );
       },
+    );
+  }
+
+  Widget _avecEtats(BuildContext context, Map<String, EtatStock> etats) {
+    _produits = [
+      for (final x in _produitsEvenement)
+        Produit(x.id, x.nom, x.prixCentimes, x.stock, x.icone, x.photo,
+            etats[x.id]),
+    ];
+    return StreamBuilder<Caisse?>(
+      stream: widget.depotCaisses.suivreCaisse(_caisseId),
+      builder: (context, c) => StreamBuilder<List<Vente>>(
+        stream: widget.depotCaisses.suivreVentes(_caisseId),
+        builder: (context, v) {
+          final cloturee = c.data?.cloturee ?? false;
+          return EcranCaisse(
+            titre: 'Caisse de ${widget.prenom}',
+            sousTitre: widget.gymnase.nom,
+            produits: _produits,
+            modes: widget.evenement.modes,
+            onEncaisser: _encaisser,
+            onVoirVentes: () => _voirVentes(cloturee),
+            onCloturer: cloturee ? null : _cloturer,
+            onStock: _ouvrirStock,
+            verrouillee: cloturee,
+            bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Ce qu'un bénévole peut faire du stock de son gymnase : ajouter du stock
+/// (produits « part » ou apportés par les bénévoles, suivis) et signaler un produit sans quantité
+/// comme vide. Rien d'autre.
+class _DialogueStockBenevole extends StatelessWidget {
+  const _DialogueStockBenevole({
+    required this.depot,
+    required this.evenementId,
+    required this.gymnaseId,
+    required this.produits,
+    required this.onErreur,
+  });
+
+  final DepotEvenements depot;
+  final String evenementId;
+  final String gymnaseId;
+  final List<ProduitEvenement> produits;
+  final void Function(Object) onErreur;
+
+  Future<void> _ajouter(BuildContext context, ProduitEvenement p) async {
+    final n = await showDialog<int>(
+      context: context,
+      builder: (_) => _DialogueParts(
+          titre: p.fiche.type == 'part'
+              ? 'Ajouter des parts : ${p.nom}'
+              : 'Ajouter au stock : ${p.nom}'),
+    );
+    if (n == null) return;
+    // Sans réseau, l'écriture attend l'envoi : on n'attend pas sa fin.
+    unawaited(depot
+        .ajouterParts(evenementId, gymnaseId, p.id, n)
+        .catchError(onErreur));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = [
+      for (final p in produits)
+        if ((p.fiche.type == 'part' || p.fiche.provenance == 'apporte') &&
+            p.stock != null)
+          p,
+    ];
+    final sansQuantite = [
+      for (final p in produits)
+        if (p.stock == null) p,
+    ];
+    return AlertDialog(
+      title: const Text('Stock de mon gymnase'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: StreamBuilder<Set<String>>(
+          stream: depot.suivreVides(evenementId, gymnaseId),
+          builder: (context, sv) {
+            final vides = sv.data ?? const <String>{};
+            return ListView(
+              shrinkWrap: true,
+              children: [
+                if (parts.isEmpty && sansQuantite.isEmpty)
+                  const Text(
+                    'Rien à régler ici : les quantités sont réglées par la gestion.',
+                    key: Key('stock_benevole_vide'),
+                  ),
+                if (parts.isNotEmpty)
+                  Text('Ajouter au stock (parts, pièces)',
+                      style: Theme.of(context).textTheme.titleSmall),
+                for (final p in parts)
+                  ListTile(
+                    dense: true,
+                    title: Text(p.nom),
+                    subtitle: Text('Stock : ${p.stock}'),
+                    trailing: IconButton(
+                      key: Key('ajout_parts_${p.id}'),
+                      icon: const Icon(Icons.add_circle_outline),
+                      tooltip: 'Ajouter au stock',
+                      onPressed: () => _ajouter(context, p),
+                    ),
+                  ),
+                if (sansQuantite.isNotEmpty)
+                  Text('Produits sans quantité',
+                      style: Theme.of(context).textTheme.titleSmall),
+                for (final p in sansQuantite)
+                  SwitchListTile(
+                    key: Key('vide_${p.id}'),
+                    dense: true,
+                    title: Text(p.nom),
+                    subtitle: const Text('Vide'),
+                    value: vides.contains(p.id),
+                    onChanged: (v) => unawaited(depot
+                        .signalerVide(evenementId, gymnaseId, p.id, v)
+                        .catchError(onErreur)),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('fermer_stock'),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Fermer'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Nombre de parts à ajouter : de 1 à 1000.
+class _DialogueParts extends StatefulWidget {
+  const _DialogueParts({required this.titre});
+
+  final String titre;
+
+  @override
+  State<_DialogueParts> createState() => _EtatDialogueParts();
+}
+
+class _EtatDialogueParts extends State<_DialogueParts> {
+  final _texte = TextEditingController();
+  String? _erreur;
+
+  @override
+  void dispose() {
+    _texte.dispose();
+    super.dispose();
+  }
+
+  void _valider() {
+    final n = int.tryParse(_texte.text.trim());
+    if (n == null || n < 1 || n > 1000) {
+      setState(() => _erreur = 'Entrez un nombre entier de 1 à 1000.');
+    } else {
+      Navigator.pop(context, n);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.titre),
+      content: TextField(
+        key: const Key('saisie_parts'),
+        controller: _texte,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration:
+            InputDecoration(labelText: 'Quantité ajoutée', errorText: _erreur),
+        onSubmitted: (_) => _valider(),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Retour')),
+        FilledButton(
+            key: const Key('valider_parts'),
+            onPressed: _valider,
+            child: const Text('Ajouter')),
+      ],
     );
   }
 }

@@ -42,26 +42,79 @@ void main() {
       expect(iconeDe('cafe'), Icons.coffee);
       expect(iconeDe('crepe'), Icons.breakfast_dining);
     });
+
+    test('chaque logo correspond à une clé d\'icône et à un fichier fourni', () {
+      for (final e in logosModeles.entries) {
+        expect(cleIcones, contains(e.key));
+        expect(File(e.value).existsSync(), isTrue, reason: e.value);
+      }
+      // Le modèle fournit 10 logos ; bière, eau, frites, glace et gâteau salé gardent leur icône.
+      expect(logosModeles.length, 10);
+      expect(logosModeles.containsKey('gateau_sale'), isFalse);
+    });
   });
 
   group('menu type', () {
     test('le fichier fourni est valide et complet', () {
       final modele =
           lireMenuType(File('assets/menu_type.json').readAsStringSync());
-      expect(modele.length, 10);
-      expect(modele.map((p) => p.nom).toSet().length, 10); // noms distincts
+      expect(modele.length, 27);
+      expect(modele.map((p) => p.nom).toSet().length, 27); // noms distincts
       expect(
           modele.map((p) => p.nom),
           containsAll([
-            'Croque-monsieur', 'Salade', 'Fruit', 'Thé', 'Café',
-            'Barre chocolatée', 'Soda', 'Part de gâteau sucrée',
-            'Part de gâteau salée', 'Crêpe',
+            'Croque-monsieur', 'Croque végé', 'Croque tartiflette', 'Café', 'Thé',
+            'Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes',
+            'Bière', 'Mars', 'Twix', 'Snickers', 'Fruit', 'Tarte', 'Flan',
+            'Gâteau salé (quiche)', 'Salade', 'Crêpes (3 petites)', 'Sucette',
+            'Chocolat chaud', 'Bonbons (offerts)',
           ]));
-      // Tous les produits ont une icône valide et un prix raisonnable.
+      // Un prix raisonnable ; une icône valide quand il y en a une ; une fiche cohérente.
       for (final p in modele) {
-        expect(cleIcones, contains(p.icone), reason: p.nom);
+        if (p.icone != null) expect(cleIcones, contains(p.icone), reason: p.nom);
         expect(p.prixCentimes, inInclusiveRange(0, 100000), reason: p.nom);
+        expect(p.fiche.erreur(), isNull, reason: p.nom);
       }
+      // Les bonbons sont offerts.
+      expect(modele.firstWhere((p) => p.nom.startsWith('Bonbons')).prixCentimes, 0);
+    });
+
+    test('recettes, ratios et consommations du modèle', () {
+      final m = {
+        for (final p in lireMenuType(File('assets/menu_type.json').readAsStringSync()))
+          p.nom: p
+      };
+      final croque = m['Croque-monsieur']!.fiche;
+      expect(croque.type, 'compose');
+      expect(m['Croque-monsieur']!.prixCentimes, 100);
+      expect(croque.conso, 0.65);
+      expect(croque.ingredients.length, 4);
+      expect(croque.ingredients[0], const Ingredient('Pain de mie', 2, 'tranche'));
+      expect(croque.ingredients[1], const Ingredient('Jambon blanc', 0.45, 'tranche'));
+      expect(croque.ingredients[2], const Ingredient('Gruyère râpé', 16, 'g'));
+      expect(croque.ingredients[3], const Ingredient('Beurre', 5, 'g'));
+      expect(m['Croque végé']!.fiche.ingredients.map((i) => i.nom),
+          ['Pain de mie', 'Bûche de chèvre', 'Tomate', 'Beurre']);
+      // La tartiflette est une variante de croque, plus un plat à part.
+      expect(m['Croque tartiflette']!.fiche.type, 'compose');
+      expect(m['Croque tartiflette']!.fiche.ingredients.map((i) => i.nom),
+          contains('Fromage à tartiflette'));
+      expect(m.containsKey('Tartiflette'), isFalse);
+      expect(m['Café']!.fiche.type, 'litre');
+      expect(m['Café']!.fiche.verresParLitre, 4);
+      expect(m['Café']!.fiche.conso, 1.3);
+      expect(m['Café']!.prixCentimes, 50);
+      // Boissons froides : 4 verres de 25 cl par litre ; la bière à 2 €.
+      for (final n in ['Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes']) {
+        expect(m[n]!.fiche.verresParLitre, 4, reason: n);
+        expect(m[n]!.prixCentimes, 100, reason: n);
+      }
+      expect(m['Bière']!.prixCentimes, 200);
+      expect(m['Tarte']!.icone, 'tarte');
+      expect(m['Flan']!.icone, 'gateau_sucre');
+      expect(m['Gâteau salé (quiche)']!.icone, 'gateau_sale');
+      // Pas de matériel d'organisation dans le modèle.
+      expect(m.keys.any((n) => n.contains('Sopalin') || n.contains('Torchon')), isFalse);
     });
 
     test('accepte un produit sans icône', () {
@@ -84,6 +137,12 @@ void main() {
         '[{"nom":"A","prixCentimes":100,"icone":"licorne"}]',
         '[{"prixCentimes":100}]',
         '["texte"]',
+        '[{"nom":"A","prixCentimes":100,"type":"licorne"}]',
+        '[{"nom":"A","prixCentimes":100,"type":"compose"}]',
+        '[{"nom":"A","prixCentimes":100,"type":"compose","ingredients":[{"nom":"B","quantite":0,"unite":"g"}]}]',
+        '[{"nom":"A","prixCentimes":100,"type":"compose","ingredients":[{"nom":"B","quantite":1,"unite":"tonne"}]}]',
+        '[{"nom":"A","prixCentimes":100,"type":"litre"}]',
+        '[{"nom":"A","prixCentimes":100,"type":"litre","verresParLitre":0}]',
       ]) {
         expect(() => lireMenuType(faux), throwsFormatException, reason: faux);
       }
@@ -95,9 +154,23 @@ void main() {
         .pumpWidget(MaterialApp(home: Scaffold(body: Center(child: w))));
 
     testWidgets('sans photo : l\'icône du produit', (tester) async {
-      await afficher(tester, const VignetteProduit(icone: 'cafe'));
-      expect(find.byIcon(Icons.coffee), findsOneWidget);
+      await afficher(tester, const VignetteProduit(icone: 'biere'));
+      expect(find.byIcon(Icons.sports_bar), findsOneWidget);
       expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('sans photo : le logo, entier, à la place de l\'icône', (tester) async {
+      await afficher(tester, const VignetteProduit(icone: 'cafe', taille: 48));
+      expect(find.byIcon(Icons.coffee), findsNothing);
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.fit, BoxFit.contain);
+      expect(image.width, 48);
+    });
+
+    testWidgets('avec photo : la photo prime sur le logo', (tester) async {
+      await afficher(tester, VignetteProduit(icone: 'cafe', photo: pngMinuscule));
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.fit, BoxFit.cover); // la photo, pas le logo
     });
 
     testWidgets('icône absente : icône générique', (tester) async {
@@ -119,11 +192,11 @@ void main() {
       await afficher(
           tester,
           VignetteProduit(
-              icone: 'cafe', photo: Uint8List.fromList([1, 2, 3, 4, 5])));
+              icone: 'biere', photo: Uint8List.fromList([1, 2, 3, 4, 5])));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
       await tester.pump();
       await tester.pump();
-      expect(find.byIcon(Icons.coffee), findsOneWidget);
+      expect(find.byIcon(Icons.sports_bar), findsOneWidget);
     });
   });
 
@@ -146,11 +219,16 @@ void main() {
           find.descendant(
               of: find.byKey(const Key('produit_a')), matching: find.byType(Image)),
           findsOneWidget);
+      // « cafe » a un logo : il remplace l'icône.
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('produit_b')), matching: find.byType(Image)),
+          findsOneWidget);
       expect(
           find.descendant(
               of: find.byKey(const Key('produit_b')),
               matching: find.byIcon(Icons.coffee)),
-          findsOneWidget);
+          findsNothing);
       expect(
           find.descendant(
               of: find.byKey(const Key('produit_c')),
@@ -158,8 +236,7 @@ void main() {
           findsOneWidget);
       expect(
           find.descendant(
-              of: find.byKey(const Key('produit_soda')),
-              matching: find.byIcon(Icons.local_drink)),
+              of: find.byKey(const Key('produit_soda')), matching: find.byType(Image)),
           findsOneWidget);
     });
 

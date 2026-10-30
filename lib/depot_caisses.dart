@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'mesure.dart';
 import 'ticket.dart';
 
 /// Une ligne d'une vente : le produit tel qu'il était vendu (nom et prix figés).
@@ -565,7 +566,7 @@ class DepotCaisses {
   /// Identifiant de la caisse actuellement ouverte de ce membre sur l'événement
   /// (null = aucune), d'après son pointeur.
   Stream<String?> suivreCaisseOuverte(String uid) => _pointeur(uid)
-      .snapshots()
+      .snapshots().compte('pointeur')
       .map((d) => d.data()?['caisseId'] as String?);
 
   Caisse? _caisseDe(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -602,7 +603,7 @@ class DepotCaisses {
   }
 
   Stream<Caisse?> suivreCaisse(String caisseId) =>
-      _caisse(caisseId).snapshots().map(_caisseDe);
+      _caisse(caisseId).snapshots().compte('caisse').map(_caisseDe);
 
   void _trier(List<Caisse> liste) => liste.sort(
       (a, b) => a.prenom.toLowerCase().compareTo(b.prenom.toLowerCase()));
@@ -615,7 +616,7 @@ class DepotCaisses {
     List<Caisse> lire(QuerySnapshot<Map<String, dynamic>> s) =>
         [for (final d in s.docs) ?_caisseDe(d)];
     if (gymnaseIds == null) {
-      return _evenement.collection('caisses').snapshots().map((s) {
+      return _evenement.collection('caisses').snapshots().compte('caisses').map((s) {
         final liste = lire(s);
         _trier(liste);
         return liste;
@@ -638,7 +639,7 @@ class DepotCaisses {
           abonnements.add(_evenement
               .collection('caisses')
               .where('gymnaseId', isEqualTo: g)
-              .snapshots()
+              .snapshots().compte('caisses')
               .listen((s) {
             parGymnase[g] = lire(s);
             emettre();
@@ -762,7 +763,7 @@ class DepotCaisses {
 
   Stream<List<Vente>> suivreVentes(String caisseId) => _caisse(caisseId)
       .collection('ventes')
-      .snapshots(includeMetadataChanges: true)
+      .snapshots(includeMetadataChanges: true).compte('ventes')
       .map((s) {
         final liste = [for (final d in s.docs) _venteDe(d)];
         liste.sort((a, b) => b.creeLe.compareTo(a.creeLe));
@@ -834,27 +835,24 @@ class DepotCaisses {
     final gymnaseId = RefCaisse.lire(caisseId).gymnaseId;
     final total =
         lignes.fold<int>(0, (s, l) => s + l.prixCentimes * l.quantite);
-    _enFile(
-      _caisse(caisseId).collection('ventes').doc().set({
-        'lignes': [for (final l in lignes) l.versDonnees()],
-        'totalCentimes': total,
-        'mode': mode,
-        'creeLe': Timestamp.now(),
-        'gymnaseId': gymnaseId,
-        'corrigeDe': ?corrigeDe,
-      }),
-      onErreur,
-    );
-    // Stock : une écriture par produit suivi (augmentation relative, donc
-    // plusieurs caisses hors réseau se cumulent correctement).
+    // La vente et la baisse des stocks partent dans UN MÊME lot : l'une n'arrive
+    // jamais sans les autres, même après une coupure du réseau. Les baisses sont
+    // relatives, donc plusieurs caisses hors réseau se cumulent correctement.
+    final lot = _db.batch();
+    lot.set(_caisse(caisseId).collection('ventes').doc(), {
+      'lignes': [for (final l in lignes) l.versDonnees()],
+      'totalCentimes': total,
+      'mode': mode,
+      'creeLe': Timestamp.now(),
+      'gymnaseId': gymnaseId,
+      'corrigeDe': ?corrigeDe,
+    });
     for (final l in lignes) {
       if (stocks[l.produitId] == null) continue;
-      _enFile(
-        _stock(gymnaseId, l.produitId)
-            .update({'quantite': FieldValue.increment(-l.quantite)}),
-        onErreur,
-      );
+      lot.update(_stock(gymnaseId, l.produitId),
+          {'quantite': FieldValue.increment(-l.quantite)});
     }
+    _enFile(lot.commit(), onErreur);
   }
 
   /// Annule une vente (la sienne, ou celle d'une autre caisse pour la
@@ -870,23 +868,20 @@ class DepotCaisses {
     void Function(Object erreur)? onErreur,
   }) {
     final gymnaseId = RefCaisse.lire(caisseId).gymnaseId;
-    _enFile(
-      _caisse(caisseId).collection('ventes').doc(vente.id).update({
-        'annulee': true,
-        'annuleePar': parUid,
-        'annuleeParPrenom': parPrenom,
-        'annuleeLe': Timestamp.now(),
-      }),
-      onErreur,
-    );
+    // Marque d'annulation et retour au stock : un seul lot, comme la vente.
+    final lot = _db.batch();
+    lot.update(_caisse(caisseId).collection('ventes').doc(vente.id), {
+      'annulee': true,
+      'annuleePar': parUid,
+      'annuleeParPrenom': parPrenom,
+      'annuleeLe': Timestamp.now(),
+    });
     for (final l in vente.lignes) {
       if (stocks[l.produitId] == null) continue;
-      _enFile(
-        _stock(gymnaseId, l.produitId)
-            .update({'quantite': FieldValue.increment(l.quantite)}),
-        onErreur,
-      );
+      lot.update(_stock(gymnaseId, l.produitId),
+          {'quantite': FieldValue.increment(l.quantite)});
     }
+    _enFile(lot.commit(), onErreur);
   }
 
   void _enFile(Future<void> ecriture, [void Function(Object)? onErreur]) {

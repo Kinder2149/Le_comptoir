@@ -1,12 +1,254 @@
 [
-  { "nom": "Croque-monsieur", "prixCentimes": 300, "icone": "croque" },
-  { "nom": "Salade", "prixCentimes": 400, "icone": "salade" },
-  { "nom": "Fruit", "prixCentimes": 100, "icone": "fruit" },
-  { "nom": "Thé", "prixCentimes": 100, "icone": "the" },
-  { "nom": "Café", "prixCentimes": 100, "icone": "cafe" },
-  { "nom": "Barre chocolatée", "prixCentimes": 100, "icone": "barre" },
-  { "nom": "Soda", "prixCentimes": 150, "icone": "soda" },
-  { "nom": "Part de gâteau sucrée", "prixCentimes": 200, "icone": "gateau_sucre" },
-  { "nom": "Part de gâteau salée", "prixCentimes": 250, "icone": "gateau_sale" },
-  { "nom": "Crêpe", "prixCentimes": 250, "icone": "crepe" }
+  {
+    "nom": "Croque-monsieur",
+    "prixCentimes": 100,
+    "icone": "croque",
+    "type": "compose",
+    "conso": 0.65,
+    "ingredients": [
+      {
+        "nom": "Pain de mie",
+        "quantite": 2,
+        "unite": "tranche"
+      },
+      {
+        "nom": "Jambon blanc",
+        "quantite": 0.45,
+        "unite": "tranche"
+      },
+      {
+        "nom": "Gruyère râpé",
+        "quantite": 16,
+        "unite": "g"
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 5,
+        "unite": "g"
+      }
+    ]
+  },
+  {
+    "nom": "Croque végé",
+    "prixCentimes": 100,
+    "icone": "croque",
+    "type": "compose",
+    "conso": 0.45,
+    "ingredients": [
+      {
+        "nom": "Pain de mie",
+        "quantite": 2,
+        "unite": "tranche"
+      },
+      {
+        "nom": "Bûche de chèvre",
+        "quantite": 25,
+        "unite": "g"
+      },
+      {
+        "nom": "Tomate",
+        "quantite": 30,
+        "unite": "g"
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 5,
+        "unite": "g"
+      }
+    ]
+  },
+  {
+    "nom": "Croque tartiflette",
+    "prixCentimes": 100,
+    "icone": "croque",
+    "type": "compose",
+    "conso": 0.6,
+    "ingredients": [
+      {
+        "nom": "Pain de mie",
+        "quantite": 2,
+        "unite": "tranche"
+      },
+      {
+        "nom": "Jambon blanc",
+        "quantite": 0.45,
+        "unite": "tranche"
+      },
+      {
+        "nom": "Fromage à tartiflette",
+        "quantite": 0.053,
+        "unite": "unite"
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 5,
+        "unite": "g"
+      }
+    ]
+  },
+  {
+    "nom": "Café",
+    "prixCentimes": 50,
+    "icone": "cafe",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 1.3
+  },
+  {
+    "nom": "Thé",
+    "prixCentimes": 50,
+    "icone": "the",
+    "conso": 0.3
+  },
+  {
+    "nom": "Coca",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.32
+  },
+  {
+    "nom": "Coca Zéro",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.05
+  },
+  {
+    "nom": "Fanta",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.16
+  },
+  {
+    "nom": "Ice Tea",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.09
+  },
+  {
+    "nom": "Oasis",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.11
+  },
+  {
+    "nom": "Jus de pommes",
+    "prixCentimes": 100,
+    "icone": "soda",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.08
+  },
+  {
+    "nom": "Bière",
+    "prixCentimes": 200,
+    "icone": "biere",
+    "type": "litre",
+    "verresParLitre": 4,
+    "conso": 0.5
+  },
+  {
+    "nom": "Mars",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.05
+  },
+  {
+    "nom": "Twix",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.05
+  },
+  {
+    "nom": "Snickers",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.05
+  },
+  {
+    "nom": "Barre de céréales pomme",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.02
+  },
+  {
+    "nom": "Barre de céréales chocolat",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.02
+  },
+  {
+    "nom": "Barre de céréales fraise-framboise",
+    "prixCentimes": 100,
+    "icone": "barre",
+    "conso": 0.02
+  },
+  {
+    "nom": "Fruit",
+    "prixCentimes": 100,
+    "icone": "fruit",
+    "conso": 0.2
+  },
+  {
+    "nom": "Tarte",
+    "prixCentimes": 100,
+    "icone": "tarte",
+    "type": "part",
+    "provenance": "apporte",
+    "conso": 1
+  },
+  {
+    "nom": "Flan",
+    "prixCentimes": 100,
+    "icone": "gateau_sucre",
+    "type": "part",
+    "provenance": "apporte",
+    "conso": 1
+  },
+  {
+    "nom": "Gâteau salé (quiche)",
+    "prixCentimes": 100,
+    "icone": "gateau_sale",
+    "type": "part",
+    "provenance": "apporte"
+  },
+  {
+    "nom": "Salade",
+    "prixCentimes": 150,
+    "icone": "salade",
+    "type": "part",
+    "provenance": "apporte"
+  },
+  {
+    "nom": "Crêpes (3 petites)",
+    "prixCentimes": 100,
+    "icone": "crepe",
+    "provenance": "apporte"
+  },
+  {
+    "nom": "Sucette",
+    "prixCentimes": 50,
+    "provenance": "apporte"
+  },
+  {
+    "nom": "Chocolat chaud",
+    "prixCentimes": 100,
+    "icone": "cafe",
+    "type": "litre",
+    "verresParLitre": 4,
+    "provenance": "apporte"
+  },
+  {
+    "nom": "Bonbons (offerts)",
+    "prixCentimes": 0
+  }
 ]

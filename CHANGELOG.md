@@ -1,5 +1,108 @@
 # CHANGELOG — Le Comptoir
 
+## 29/10/2026 — Vérification indépendante du chantier « Stock et courses »
+- Une IA qui n'a pas écrit le code a refait toutes les suites et vérifié les 11 critères : tous réussis, aucun défaut bloquant. Rapport et captures dans `audit_front/captures_stock_courses/verif_ia/`.
+- Règles d'accès : le compteur de gymnases d'un événement ne monte plus qu'avec la naissance du gymnase (nouveau champ `dernierGymnase` posé dans le même lot) ; avant, un gestionnaire pouvait le monter seul et retirer à tous les gestionnaires l'accès aux courses et à la clôture. Déployées sur le vrai projet le 29/10/2026 (accord de Kinder).
+- Décision 44 : limite acceptée par Kinder sur le stock (un bénévole peut techniquement, en contournant l'application, corriger la quantité d'un produit de son gymnase).
+- Projection des lectures corrigée à la hausse (section 10 du plan) : 3 gymnases ≈ 53 % du quota ; 8 gymnases ≈ 81 % avec un seul appareil de gestion, dépassement avec deux. À confirmer dans la console Firebase après un vrai événement.
+
+## 28/10/2026 (nuit, fin) — Chantier « Stock et courses », étape 8 : recette
+- Parcours automatique complet de bout en bout (menu du modèle, 2 gymnases, courses pré-remplies et validées, ventes, stock bas puis rupture, « vide », bilan avec coût et résultat, CSV relu), chiffres calculés à la main.
+- Lectures Firestore mesurées (compteur `lib/mesure.dart`, inactif en production) et réduites : les stocks sont écoutés une seule fois par événement au lieu de 2 à 3. Par vente en direct : gestion 7,12 → 2,93 lectures, caisse 6,50 → 3,50. Projection : 3 gymnases ≈ 39 % du quota de 50 000 par jour ; 8 gymnases ≈ 79 % avec deux appareils de gestion (avant : 137 %). Détail en section 10 de `PLAN_STOCK_COURSES.md`.
+- Version 1.1.0 (numéro 2) ; APK de recette reconstruit dans `recette/` (70 Mo). Il est maintenant signé avec la clé de publication du projet (plus la clé d'essai) : l'ancienne version doit être désinstallée avant l'installation.
+- Texte de vérification pour une autre IA (section 11 de `PLAN_STOCK_COURSES.md`) ; `RECETTE.md` remis en ordre.
+- Tests : 210 de logique et d'écrans, 166 de règles, 26 parcours Android (nouveaux : `chantier_complet_test`, `lectures_test`).
+
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 7 : bilan et export CSV
+- Bilan, vue commune : « Coût des courses » et « Résultat » (ventes moins coût) quand les courses sont validées ; « Courses non validées » sinon. Vue d'un gymnase : la mention que le coût concerne tout l'événement. Le coût n'apparaît que pour le responsable et le gestionnaire de tous les gymnases.
+- Bouton « Exporter (CSV) » : un fichier `bilan-<événement>-<date>.csv` pour la vue affichée (totaux, modes, produits et stock restant, caisses, jours, heures, ventes annulées), prêt pour Excel (« ; », virgule décimale, accents lisibles), remis à la feuille de partage d'Android.
+- Montants négatifs bien affichés (« -390,50 € »).
+- Dépendance ajoutée avec l'accord de Kinder : `share_plus` 10.1.4 (partage du fichier).
+- Règles d'accès : aucune modification (rien à déployer).
+- Tests : 210 de logique et d'écrans (nouveau : `export_bilan_test`, CSV comparé ligne à ligne à des chiffres calculés à la main), 166 de règles, 24 parcours Android (le bilan avec coût s'ajoute à `courses_test`).
+
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 6 : courses, validation
+- Bouton « Valider les courses » : écran des quantités réellement achetées (pré-remplies, en kg ou L quand c'est lisible), de ce que cela ajoute au stock de chaque gymnase (« limité par … » quand un ingrédient manque) et du coût total (obligatoire, 0 si inconnu).
+- « Confirmer » ajoute tout au stock, démarre le suivi des produits qui n'en avaient pas, fait monter le total de référence, enregistre achats, rendements et coût, et fige la liste (bandeau « Courses validées le … »). Tout dans un seul lot : tout est ajouté ou rien. Une liste validée ne se rejoue pas. La validation demande le réseau.
+- Calcul inverse en logique pure (décision 38) : ingrédient limitant, ingrédients partagés répartis proportionnellement, litres vers verres, arrondi vers le bas avec répartition au plus grand reste entre gymnases.
+- Règles d'accès : la liste passe de « preparation » à « validee » (achats, rendements, coût, date), puis ne bouge plus. Déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
+- Tests : 195 de logique et d'écrans (calculs refaits à la main), 166 de règles, 24 parcours Android (validation dans `courses_test`).
+- Aucune dépendance ajoutée.
+
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 5 : courses, préparation
+- Nouveau bouton « Courses » sur l'événement (responsable, ou gestionnaire rattaché à tous les gymnases). Réglages : nombre de jours (2 par défaut) et personnes attendues par gymnase.
+- Quantités de produits finaux pré-remplies par gymnase (personnes × jours × consommation), modifiables, produits cochables ; « Suggéré : stock bas » pour les produits à réapprovisionner.
+- Liste « À acheter » calculée : ingrédients additionnés d'une recette à l'autre (g/kg et cl/L convertis, arrondi à l'unité supérieure), litres pour les produits au litre, produits à la part ou à l'unité tels quels ; champ « Il reste » par achat ; lignes libres (matériel d'organisation) qui n'entrent pas dans le stock.
+- Tout s'enregistre automatiquement (document `courses/liste`) et se retrouve en rouvrant l'écran.
+- Règles d'accès : `nbJours` (1 à 30) sur l'événement, `personnes` (0 à 1000) sur le gymnase, document `courses/liste` borné, tout réservé au responsable et au gestionnaire de tous les gymnases. Déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
+- Tests : 187 de logique et d'écrans (nouveau : `courses_test`, calculs faits à la main), 162 de règles (nouveau : `courses.test.mjs`), 23 parcours Android (nouveau : `courses_test`).
+- Aucune dépendance ajoutée.
+
+## 28/10/2026 (nuit, suite) — Chantier « Stock et courses », étape 4 : rupture et stock bas en caisse
+- Caisse : un produit épuisé passe en rouge clair (« Épuisé »), un produit à 10 % ou moins du dernier total de stock en orange clair (« Stock bas : n »), un produit sans quantité signalé « vide » en rouge clair (« Vide »). La vente n'est jamais bloquée. Visible par la gestion et par le bénévole.
+- Suivi en direct de la gestion : signal sous le produit ; en vue commune, les gymnases concernés ; en vue d'un gymnase, le signal seul.
+- La vente et les baisses de stock sont écrites dans un seul lot, ainsi que l'annulation et le retour au stock : une vente n'arrive plus sans sa baisse de stock, même après une coupure du réseau.
+- Règles d'accès : aucune modification (rien à déployer). Un test vérifie qu'un lot de 13 produits est accepté et qu'une baisse refusée annule aussi la vente.
+- Tests : 175 de logique et d'écrans (nouveau : `rupture_stock_test`), 157 de règles, 22 parcours Android (nouveau : `rupture_test`).
+- Aucune dépendance ajoutée.
+
+## 28/10/2026 (nuit) — Chantier « Stock et courses », étape 3 : stock par rôle
+- Un bénévole dont la caisse est ouverte ajoute des parts (de 1 à 1000, produits de type « part » seulement) depuis le bouton « Parts et produits vides » de sa caisse. Il ne peut rien régler d'autre.
+- Le stock porte maintenant un **total de référence** (`reference`) : posé à la création du stock, remis à la quantité par un réglage de la gestion, augmenté par un réapprovisionnement ou un ajout de parts. Les stocks plus anciens, sans référence, la prennent d'après leur quantité au premier ajout. Il servira au « stock bas » (étape 4).
+- Un produit sans quantité suivie peut être signalé « vide » (gestion ou bénévole à sa caisse) et retiré : interrupteur « Vide » dans « Gymnases et stocks » et dans l'écran du bénévole. Stocké dans `gymnases/{g}/vides/{produit}`, effacé avec l'association. L'affichage en caisse et en suivi viendra à l'étape 4.
+- Règles d'accès : trois écritures distinctes sur un stock (réglage de la gestion, vente ou annulation, ajout de parts) ; sous-collection `vides`. Déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
+- Tests : 166 de logique et d'écrans, 155 de règles (nouveau fichier `stock_role.test.mjs`, 8 tests), 21 parcours Android (nouveau : `stock_role_test`).
+- Aucune dépendance ajoutée.
+
+## 28/10/2026 (soir) — Chantier « Stock et courses », étape 2 : modèle générique et logos
+- Création d'un menu : « Partir du modèle », « Copier un menu existant » ou menu vide. « Partir du menu type » devient « Partir du modèle » ; nouvelle action de copie (types, recettes, images et stocks repris).
+- Modèle (`assets/menu_type.json`) : 13 produits (croque-monsieur et croque chèvre composés, tartiflette, café et soda au litre, thé, tarte, flan, barre, fruit, salade, crêpe, bonbons offerts) avec types, recettes, ratios et consommations de départ (estimations tirées de la liste de courses de l'an dernier, décision 43). Prix = valeurs de départ. Le gâteau salé est retiré.
+- 10 logos de Kinder dans `assets/logos/` (1,9 Mo), affichés à la place des icônes du système : photo, puis logo, puis icône. Nouvelle clé d'icône `tarte` (flan = `gateau_sucre`).
+- Règles d'accès : clé `tarte` ajoutée à la liste des icônes ; déployées sur le vrai projet le 28/10/2026 (accord de Kinder).
+- Tests : 166 de logique et d'écrans, 147 de règles (dont le modèle de 13 produits et un événement à 3 gymnases en un lot), 19 parcours Android (nouveau : `copie_menu_test`). Le parcours « recette » utilise désormais un menu de test figé (l'ancien menu type) pour que ses chiffres ne dépendent pas du modèle.
+- Aucune dépendance ajoutée.
+
+## 28/10/2026 — Chantier « Stock et courses », étape 1 : types de produit et recettes
+- Formulaire « Produit » d'un menu : type (composé, à l'unité, à la part, au litre), recette pour UN produit (jusqu'à 20 ingrédients, quantité fractionnaire, unité parmi unité, tranche, g, kg, cl, L), nombre de verres par litre, consommation par personne et par jour. Champs affichés selon le type ; un produit sans type reste « unité » (prix, stock et image intacts).
+- L'événement copie type, recette, ratio et consommation avec le produit (figés comme le prix) ; le détail de l'événement les affiche.
+- Messages clairs : composé sans ingrédient, quantité à zéro ou négative, ratio à zéro, plus de 20 ingrédients.
+- Règles d'accès : champs `type`, `conso`, `ingredients`, `verresParLitre` contrôlés (menu et copie d'événement) ; la recette est vérifiée position par position, de façon compacte, à cause de la limite de 1000 expressions par requête. Déployées sur le vrai projet Firebase le 28/10/2026, sur accord de Kinder.
+- Vérifié : analyse sans erreur, 162 tests de logique et d'écrans, 146 tests de règles (14 nouveaux), 18 parcours Android verts. Captures : `audit_front/captures_stock_courses/` (rendu de test : les libellés de boutons y apparaissent en blocs, limite de la police de test).
+- Aucune dépendance ajoutée. Reste : vérification par une autre IA, puis capture de Kinder (ferme la mission).
+
+## 27/10/2026 (fin) — Cadrage de l'étape 1 clos
+- Critère de validation de l'étape 1 écrit (délégué par Kinder) dans `PLAN_STOCK_COURSES.md`. Étape 1 prête à implémenter.
+- Tranché par Kinder : une liste de courses pour tout l'événement (quantités par gymnase) ; le bénévole ajoute seulement des
+  parts ; le flan est le gâteau sucré. Reste à confirmer à l'étape 2 : la tarte confiture et le logo du gâteau salé.
+- Aucun code modifié, aucune dépendance ajoutée.
+
+## 27/10/2026 (suite) — Plan détaillé du chantier « Stock et courses »
+- Nouveau `PLAN_STOCK_COURSES.md` (5e et dernier fichier de documentation autorisé) : modèle de données cible, les 8 étapes
+  (ce que Kinder voit, stratégie, fichiers, ce qu'on ne fait pas, points à trancher au cadrage), registre du cahier des
+  charges (retenu / écarté / reporté), risques, suivi.
+- Les 10 logos fournis par Kinder sont conservés, réduits à 512 px, dans `audit_front/logos_menu_modele/` (intégration à l'étape 2).
+- Aucun code modifié, aucune dépendance ajoutée.
+
+## 27/10/2026 — Figeage du chantier « Stock et courses »
+- Cahier des charges d'une IA de l'association comparé à l'application : l'existant couvre la caisse, le stock par gymnase,
+  le bilan et le fonctionnement hors réseau ; manquent états du stock, entrées, courses, recettes, export.
+- Décisions 33 à 41 figées dans PROJET_CONTEXTE.md : droits sur le stock par rôle, produit coloré en rupture (sans blocage),
+  quatre types de produit, modèle générique modifiable, module Courses avec calcul inverse, stock bas à 10 % du dernier total,
+  éléments écartés, export CSV, plafond de modules supprimé.
+- Revue d'équipe Hermès (Chef, Technique, Recherche) menée par Kinder sur Telegram : quotas d'écritures Spark tenables ;
+  vente et stock à écrire dans un même lot ; lectures du suivi en direct à mesurer. Technique n'a pas pu lire le projet
+  (la fiche du parc ne couvre pas le-comptoir-60ba8) : mise à jour de la fiche à faire sur le serveur.
+- Ajout (même jour) : décision 42, pré-remplissage modifiable des quantités de courses à partir des réglages de l'événement
+  (personnes par gymnase, jours) et d'une consommation par personne et par jour portée par chaque produit ; plan validé en 8 étapes.
+- Aucun code modifié, aucune dépendance ajoutée.
+
+## 18/10/2026 — Exploration : paiement carte avec Monetico
+- Cadrage en phase 2 du besoin du club : éviter la double saisie entre Le Comptoir et Monetico Tap to Pay.
+  Recherches et orientations consignées dans PROJET_CONTEXTE.md section 7 (aucune décision figée).
+- Projet remis en place sur un second poste (clone, dépendances) ; outillage Android et fichiers Firebase
+  hors git encore à installer sur ce poste.
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 06/10/2026 — Préparation de la publication Play Store
 - Clé de signature de publication dédiée ; `build.gradle.kts` la lit dans `android/key.properties` (absent = clé de débogage).
   Version 1.0.0+1 construite en bundle (`flutter build appbundle --release`) et envoyée en test interne.

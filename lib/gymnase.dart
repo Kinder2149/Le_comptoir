@@ -1,9 +1,12 @@
 /// Un gymnase : un lieu de vente d'un événement, avec son propre stock.
 class Gymnase {
-  const Gymnase(this.id, this.nom);
+  const Gymnase(this.id, this.nom, [this.personnes = 0]);
 
   final String id;
   final String nom;
+
+  /// Nombre de personnes attendues (réglage des courses) ; 0 = pas réglé.
+  final int personnes;
 }
 
 /// Nom du gymnase créé automatiquement avec un événement.

@@ -86,7 +86,7 @@ void main() {
     final depotAsso = DepotAssociations(db);
     final menuId = await depotAsso.menus(assoId).creerMenu('Menu Tournoi');
     await depotAsso.menus(assoId).ajouterProduit(menuId,
-        nom: 'Croque-monsieur', prixCentimes: 300, stock: 10);
+        nom: 'Croque-monsieur', prixCentimes: 300);
     final depotEv = depotAsso.evenements(assoId);
     final evt = await depotEv.creerEvenement(
       nom: 'Tournoi',
@@ -95,6 +95,7 @@ void main() {
       modes: ['especes'],
       gymnases: ['Gymnase A', 'Gymnase B'],
     );
+    await donnerStock(depotEv, evt, 'Croque-monsieur', 10);
     final gymnases = await depotEv.suivreGymnases(evt).first;
     final gA = gymnases.firstWhere((g) => g.nom == 'Gymnase A').id;
     final gB = gymnases.firstWhere((g) => g.nom == 'Gymnase B').id;

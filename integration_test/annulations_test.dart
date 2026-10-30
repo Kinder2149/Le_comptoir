@@ -60,7 +60,7 @@ void main() {
     final menus = depotAsso.menus(assoId);
     final menuId = await menus.creerMenu('Menu Tournoi');
     await menus.ajouterProduit(menuId,
-        nom: 'Croque-monsieur', prixCentimes: 300, stock: 5);
+        nom: 'Croque-monsieur', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
     final evtId = await depotEv.creerEvenement(
@@ -69,6 +69,7 @@ void main() {
       menuId: menuId,
       modes: ['especes', 'carte'],
     );
+    await donnerStock(depotEv, evtId, 'Croque-monsieur', 5);
     final depotCaisses = depotEv.caisses(evtId);
     final gym = await gymnaseUnique(depotEv, evtId);
     final refEvt =

@@ -6,22 +6,54 @@ import 'dart:typed_data';
 const cleIcones = <String>[
   'croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda',
   'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace',
+  'tarte',
 ];
 
 /// Photo d'un produit : vignette en octets (30 Ko max, comme dans les règles).
 const tailleMaxPhoto = 30000;
+
+/// État du stock d'un produit dans un gymnase (décisions 35 et 39). La vente
+/// n'est jamais bloquée, quel que soit l'état.
+enum EtatStock {
+  /// Ni quantité suivie, ni signal « vide » : rien à dire.
+  aucun,
+  normal,
+
+  /// Au plus 10 % du dernier total de stock enregistré.
+  bas,
+  epuise,
+
+  /// Produit sans quantité suivie, signalé « vide ».
+  vide,
+}
+
+/// [quantite] null = produit sans quantité suivie ; [reference] = dernier total
+/// enregistré (absent sur un stock ancien : pas de « stock bas »).
+EtatStock etatStock({int? quantite, int? reference, bool vide = false}) {
+  if (quantite == null) return vide ? EtatStock.vide : EtatStock.aucun;
+  if (quantite <= 0) return EtatStock.epuise;
+  if (reference != null && reference > 0 && quantite * 10 <= reference) {
+    return EtatStock.bas;
+  }
+  return EtatStock.normal;
+}
 
 /// Produit vendu à la caisse. Prix en centimes pour éviter les erreurs
 /// d'arrondi. [stock] null = pas de suivi. Deux produits de même [id] sont
 /// le même produit (le stock affiché change, pas le produit).
 class Produit {
   const Produit(this.id, this.nom, this.prixCentimes,
-      [this.stock, this.icone, this.photo]);
+      [this.stock, this.icone, this.photo, this.etat]);
 
   final String id;
   final String nom;
   final int prixCentimes;
   final int? stock;
+
+  /// État du stock dans le gymnase de la caisse ; null = déduit de [stock].
+  final EtatStock? etat;
+
+  EtatStock get etatAffiche => etat ?? etatStock(quantite: stock);
 
   /// Icône modèle (clé de [cleIcones]) et photo (vignette), facultatives.
   final String? icone;
@@ -74,9 +106,9 @@ class Ticket {
 
 /// 350 -> « 3,50 € ».
 String formaterEuros(int centimes) {
-  final euros = centimes ~/ 100;
-  final reste = (centimes % 100).toString().padLeft(2, '0');
-  return '$euros,$reste €';
+  final signe = centimes < 0 ? '-' : '';
+  final a = centimes.abs();
+  return '$signe${a ~/ 100},${(a % 100).toString().padLeft(2, '0')} €';
 }
 
 /// Le « s » du pluriel quand [n] vaut plus de 1 (en français, 0 et 1 restent au singulier).

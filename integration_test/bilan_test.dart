@@ -78,7 +78,7 @@ void main() {
     final menus = depotAsso.menus(assoId);
     final menuId = await menus.creerMenu('Menu Tournoi');
     await menus.ajouterProduit(menuId,
-        nom: 'Croque-monsieur', prixCentimes: 300, stock: 10);
+        nom: 'Croque-monsieur', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     await menus.ajouterProduit(menuId, nom: 'Salade', prixCentimes: 400);
     await menus.ajouterProduit(menuId, nom: 'Gâteau', prixCentimes: 250);
@@ -90,6 +90,7 @@ void main() {
       menuId: menuId,
       modes: ['especes', 'carte', 'cheque'],
     );
+    await donnerStock(depotEv, evt, 'Croque-monsieur', 10);
     final gym = await gymnaseUnique(depotEv, evt);
     final produits = await depotEv.suivreProduits(evt).first;
     String id(String nom) => produits.firstWhere((p) => p.nom == nom).id;

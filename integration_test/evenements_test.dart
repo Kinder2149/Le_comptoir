@@ -66,7 +66,7 @@ void main() {
     final menuId = await menus.creerMenu('Menu Tournoi');
     final menuVideId = await menus.creerMenu('Menu Vide');
     await menus.ajouterProduit(menuId,
-        nom: 'Croque-monsieur', prixCentimes: 300, stock: 20);
+        nom: 'Croque-monsieur', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     final produitCroque =
         (await menus.suivreProduits(menuId).first).firstWhere((p) => p.nom == 'Croque-monsieur');
@@ -116,13 +116,14 @@ void main() {
     expect(texte(tester, 'menu_evenement'), 'Menu : Menu Tournoi');
     expect(texte(tester, 'modes_evenement'), 'Paiements : Espèces, Carte');
     expect(texte(tester, 'date_evenement'), 'Date : $aujourdhui');
-    await attendre(tester, find.text('3,00 € · Stock : 20'));
+    await attendre(tester, find.text('3,00 €'));
     expect(find.text('Croque-monsieur'), findsOneWidget);
     expect(find.text('Café'), findsOneWidget);
     expect(find.text('1,50 €'), findsOneWidget);
 
-    // --- Un gymnase « Principal » a été créé avec l'événement ; le stock du menu
-    // est son stock de départ (et les produits eux-mêmes n'ont plus de stock).
+    // --- Un gymnase « Principal » a été créé avec l'événement ; le menu n'ayant
+    // plus de stock, ce gymnase n'a aucun stock au départ (et les produits eux-mêmes
+    // n'ont pas de stock).
     final serveur = const GetOptions(source: Source.server);
     final refEvt = FirebaseFirestore.instance
         .collection('associations')
@@ -134,18 +135,17 @@ void main() {
     expect(gymnases.docs.single.data()['nom'], 'Principal');
     final stocksGym =
         await gymnases.docs.single.reference.collection('stocks').get(serveur);
-    expect(stocksGym.docs.length, 1); // seul le croque-monsieur est suivi
-    expect(stocksGym.docs.single.data()['quantite'], 20);
+    expect(stocksGym.docs, isEmpty); // aucun produit suivi au départ
     for (final p in (await refEvt.doc(evtId).collection('produits').get(serveur)).docs) {
       expect(p.data().containsKey('stock'), isFalse);
     }
 
     // --- Le menu d'origine change : l'événement garde ses prix.
     await menus.modifierProduit(menuId, produitCroque.id,
-        nom: 'Croque-monsieur', prixCentimes: 500, stock: 20);
+        nom: 'Croque-monsieur', prixCentimes: 500);
     await laisserArriver(tester);
-    expect(find.text('3,00 € · Stock : 20'), findsOneWidget);
-    expect(find.text('5,00 € · Stock : 20'), findsNothing);
+    expect(find.text('3,00 €'), findsOneWidget);
+    expect(find.text('5,00 €'), findsNothing);
 
     // --- Modification : nom et modes (le menu n'est pas modifiable).
     await toucher(tester, find.byKey(const Key('modifier_evenement')));
@@ -173,7 +173,7 @@ void main() {
     expect(find.byKey(const Key('menus')), findsNothing);
     await toucher(tester, find.text("Tournoi d'automne"));
     await attendre(tester, find.byKey(const Key('titre_evenement')));
-    await attendre(tester, find.text('3,00 € · Stock : 20'));
+    await attendre(tester, find.text('3,00 €'));
     expect(find.text('Café'), findsOneWidget);
     expect(find.byKey(const Key('modifier_evenement')), findsNothing);
     expect(find.byKey(const Key('ancien_evenement')), findsNothing);

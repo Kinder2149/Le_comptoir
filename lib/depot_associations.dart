@@ -246,8 +246,10 @@ class DepotAssociations {
       }
       for (final g in (await e.reference.collection('gymnases').get(_serveur)).docs) {
         await _effacerCollection(g.reference.collection('stocks'));
+        await _effacerCollection(g.reference.collection('vides'));
         await g.reference.delete();
       }
+      await _effacerCollection(e.reference.collection('courses'));
       await _effacerCollection(e.reference.collection('ouvertes'));
       await _effacerCollection(e.reference.collection('rattachements'));
       await _effacerCollection(e.reference.collection('produits'));

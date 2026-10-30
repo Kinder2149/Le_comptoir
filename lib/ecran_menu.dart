@@ -31,7 +31,7 @@ Future<Uint8List?> selecteurPhotoReel(SourcePhoto source) async {
   return fichier?.readAsBytes();
 }
 
-/// Contenu d'un menu : produits, prix, stock facultatif.
+/// Contenu d'un menu : produits, prix, provenance (le menu n'a pas de stock).
 class EcranMenu extends StatelessWidget {
   const EcranMenu({
     super.key,
@@ -74,11 +74,8 @@ class EcranMenu extends StatelessWidget {
   }
 
   Future<void> _editerProduit(BuildContext context, [ProduitMenu? p]) async {
-    final r = await showDialog<_ResultatProduit>(
-      context: context,
-      builder: (c) =>
-          _DialogueProduit(produit: p, selecteurPhoto: selecteurPhoto),
-    );
+    final r = await demanderProduit(context,
+        produit: p, selecteurPhoto: selecteurPhoto);
     if (r == null) return;
     if (r.supprimer) {
       await depot.supprimerProduit(menuId, p!.id);
@@ -86,16 +83,16 @@ class EcranMenu extends StatelessWidget {
       await depot.ajouterProduit(menuId,
           nom: r.nom,
           prixCentimes: r.prixCentimes,
-          stock: r.stock,
           icone: r.icone,
-          photo: r.photo);
+          photo: r.photo,
+          fiche: r.fiche);
     } else {
       await depot.modifierProduit(menuId, p.id,
           nom: r.nom,
           prixCentimes: r.prixCentimes,
-          stock: r.stock,
           icone: r.icone,
-          photo: r.photo);
+          photo: r.photo,
+          fiche: r.fiche);
     }
   }
 
@@ -144,6 +141,13 @@ class EcranMenu extends StatelessWidget {
               }
               return ListView(
                 children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text(
+                      "Catalogue : le stock se règle dans l'événement.",
+                      key: Key('bandeau_menu'),
+                    ),
+                  ),
                   for (final p in produits)
                     ListTile(
                       key: Key('produit_${p.id}'),
@@ -154,7 +158,12 @@ class EcranMenu extends StatelessWidget {
                       title: Text(p.nom),
                       subtitle: Text(
                         formaterEuros(p.prixCentimes) +
-                            (p.stock == null ? '' : ' · Stock : ${p.stock}'),
+                            (p.fiche.type == 'unite'
+                                ? ''
+                                : ' · ${libellesTypes[p.fiche.type]}') +
+                            (p.fiche.provenance == 'apporte'
+                                ? ' · Apporté par les bénévoles'
+                                : ''),
                       ),
                       onTap: () => _editerProduit(context, p),
                     ),
@@ -168,13 +177,30 @@ class EcranMenu extends StatelessWidget {
   }
 }
 
-class _ResultatProduit {
-  const _ResultatProduit(this.nom, this.prixCentimes, this.stock,
-      {this.supprimer = false, this.icone, this.photo});
+/// Formulaire d'un produit de menu (nouveau si [produit] est null). Renvoie la
+/// saisie validée, ou null si on annule.
+Future<ProduitSaisi?> demanderProduit(
+  BuildContext context, {
+  ProduitMenu? produit,
+  SelecteurPhoto selecteurPhoto = selecteurPhotoReel,
+}) {
+  return showDialog<ProduitSaisi>(
+    context: context,
+    builder: (c) =>
+        _DialogueProduit(produit: produit, selecteurPhoto: selecteurPhoto),
+  );
+}
 
+class ProduitSaisi {
+  const ProduitSaisi(this.nom, this.prixCentimes,
+      {this.supprimer = false,
+      this.icone,
+      this.photo,
+      this.fiche = FicheProduit.unite});
+
+  final FicheProduit fiche;
   final String nom;
   final int prixCentimes;
-  final int? stock;
   final bool supprimer;
   final String? icone;
   final Uint8List? photo;
@@ -190,15 +216,47 @@ class _DialogueProduit extends StatefulWidget {
   State<_DialogueProduit> createState() => _EtatDialogueProduit();
 }
 
+/// Une ligne de la recette en cours de saisie.
+class _LigneIngredient {
+  _LigneIngredient([Ingredient? i])
+      : nom = TextEditingController(text: i?.nom ?? ''),
+        quantite = TextEditingController(
+            text: i == null ? '' : nombrePourSaisie(i.quantite)),
+        unite = i?.unite ?? 'unite';
+
+  final TextEditingController nom;
+  final TextEditingController quantite;
+  String unite;
+
+  void liberer() {
+    nom.dispose();
+    quantite.dispose();
+  }
+}
+
 class _EtatDialogueProduit extends State<_DialogueProduit> {
+  late String _type = widget.produit?.fiche.type ?? 'unite';
+  late final _conso = TextEditingController(
+      text: widget.produit?.fiche.conso == null
+          ? ''
+          : nombrePourSaisie(widget.produit!.fiche.conso!));
+  late final _verres = TextEditingController(
+      text: widget.produit?.fiche.verresParLitre == null
+          ? ''
+          : nombrePourSaisie(widget.produit!.fiche.verresParLitre!));
+  late final _parts = TextEditingController(
+      text: widget.produit?.fiche.partsParEntier?.toString() ?? '');
+  late final List<_LigneIngredient> _lignes = [
+    for (final i in widget.produit?.fiche.ingredients ?? const <Ingredient>[])
+      _LigneIngredient(i),
+  ];
+
   late final _nom = TextEditingController(text: widget.produit?.nom ?? '');
   late final _prix = TextEditingController(
       text: widget.produit == null
           ? ''
           : prixPourSaisie(widget.produit!.prixCentimes));
-  late final _quantite =
-      TextEditingController(text: '${widget.produit?.stock ?? ''}');
-  late bool _suivi = widget.produit?.stock != null;
+  late String _provenance = widget.produit?.fiche.provenance ?? 'achete';
   late String? _icone = widget.produit?.icone;
   late Uint8List? _photo = widget.produit?.photo;
   String? _erreur;
@@ -207,24 +265,174 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
   void dispose() {
     _nom.dispose();
     _prix.dispose();
-    _quantite.dispose();
+    _conso.dispose();
+    _verres.dispose();
+    _parts.dispose();
+    for (final l in _lignes) {
+      l.liberer();
+    }
     super.dispose();
   }
 
   void _valider() {
     final nom = _nom.text.trim();
     final prix = parserPrix(_prix.text);
-    final stock = _suivi ? int.tryParse(_quantite.text.trim()) : null;
+    final conso = parserNombre(_conso.text);
+    final fiche = FicheProduit(
+      type: _type,
+      provenance: _provenance,
+      // Une consommation illisible devient -1 : refusée par la vérification.
+      conso: _conso.text.trim().isEmpty ? null : (conso ?? -1),
+      ingredients: _type == 'compose'
+          ? [
+              for (final l in _lignes)
+                Ingredient(
+                    l.nom.text.trim(), parserNombre(l.quantite.text) ?? 0, l.unite),
+            ]
+          : const [],
+      verresParLitre: _type == 'litre' ? parserNombre(_verres.text) : null,
+      // Un nombre illisible devient 0 : refusé par la vérification.
+      partsParEntier: _type == 'part' && _parts.text.trim().isNotEmpty
+          ? (int.tryParse(_parts.text.trim()) ?? 0)
+          : null,
+    );
+    final erreurFiche = fiche.erreur();
     if (nom.isEmpty || nom.length > 40) {
       setState(() => _erreur = 'Le nom est obligatoire (40 caractères max).');
     } else if (prix == null) {
       setState(() => _erreur = 'Prix invalide (exemple : 2,50).');
-    } else if (_suivi && (stock == null || stock < 0 || stock > 100000)) {
-      setState(() => _erreur = 'Quantité en stock invalide.');
+    } else if (erreurFiche != null) {
+      setState(() => _erreur = erreurFiche);
     } else {
-      Navigator.pop(context,
-          _ResultatProduit(nom, prix, stock, icone: _icone, photo: _photo));
+      Navigator.pop(
+          context,
+          ProduitSaisi(nom, prix, icone: _icone, photo: _photo, fiche: fiche));
     }
+  }
+
+  Widget _champsType() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        DropdownButtonFormField<String>(
+          key: const Key('type_produit'),
+          initialValue: _type,
+          decoration: const InputDecoration(labelText: 'Type de produit'),
+          items: [
+            for (final t in typesProduit)
+              DropdownMenuItem(
+                  key: Key('type_$t'), value: t, child: Text(libellesTypes[t]!)),
+          ],
+          onChanged: (v) => setState(() {
+            _type = v ?? 'unite';
+            _erreur = null;
+          }),
+        ),
+        if (_type == 'litre') ...[
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('verres_par_litre'),
+            controller: _verres,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Verres par litre'),
+          ),
+        ],
+        if (_type == 'part') ...[
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('parts_par_gateau'),
+            controller: _parts,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+                labelText: 'Parts par gâteau', helperText: 'Facultatif'),
+          ),
+        ],
+        if (_type == 'compose') ...[
+          const SizedBox(height: 12),
+          Text('Ingrédients pour UN produit',
+              style: Theme.of(context).textTheme.labelLarge),
+          for (var i = 0; i < _lignes.length; i++) _ligneIngredient(i),
+          TextButton.icon(
+            key: const Key('ajouter_ingredient'),
+            icon: const Icon(Icons.add),
+            label: const Text('Ingrédient'),
+            onPressed: () => setState(() => _lignes.add(_LigneIngredient())),
+          ),
+        ],
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          key: const Key('provenance_produit'),
+          isExpanded: true,
+          initialValue: _provenance,
+          decoration: const InputDecoration(labelText: 'Provenance'),
+          items: [
+            for (final v in provenancesProduit)
+              DropdownMenuItem(
+                  key: Key('provenance_$v'),
+                  value: v,
+                  child: Text(libellesProvenances[v]!)),
+          ],
+          onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('conso_produit'),
+          controller: _conso,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+              labelText: 'Consommation par personne et par jour',
+              helperText: 'Facultatif'),
+        ),
+      ],
+    );
+  }
+
+  Widget _ligneIngredient(int i) {
+    final l = _lignes[i];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          TextField(
+            key: Key('ingredient_nom_$i'),
+            controller: l.nom,
+            decoration: const InputDecoration(labelText: 'Ingrédient'),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: Key('ingredient_qte_$i'),
+                  controller: l.quantite,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Quantité'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              DropdownButton<String>(
+                key: Key('ingredient_unite_$i'),
+                value: l.unite,
+                items: [
+                  for (final u in unitesIngredient)
+                    DropdownMenuItem(
+                        key: Key('unite_${i}_$u'),
+                        value: u,
+                        child: Text(libellesUnites[u]!)),
+                ],
+                onChanged: (v) => setState(() => l.unite = v ?? 'unite'),
+              ),
+              IconButton(
+                key: Key('retirer_ingredient_$i'),
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => _lignes.removeAt(i)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -247,6 +455,7 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Prix en €'),
             ),
+            _champsType(),
             const SizedBox(height: 8),
             SelecteurImage(
               icone: _icone,
@@ -258,20 +467,6 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
               }),
               onErreur: (e) => setState(() => _erreur = e),
             ),
-            SwitchListTile(
-              key: const Key('suivi_stock'),
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Suivre le stock'),
-              value: _suivi,
-              onChanged: (v) => setState(() => _suivi = v),
-            ),
-            if (_suivi)
-              TextField(
-                key: const Key('quantite_stock'),
-                controller: _quantite,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Quantité en stock'),
-              ),
             if (_erreur != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -289,7 +484,7 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             key: const Key('supprimer_produit'),
             style: TypeAction.danger.texte,
             onPressed: () => Navigator.pop(
-                context, const _ResultatProduit('', 0, null, supprimer: true)),
+                context, const ProduitSaisi('', 0, supprimer: true)),
             child: const Text('Supprimer'),
           ),
         TextButton(
@@ -413,7 +608,7 @@ class _EtatSelecteurImage extends State<SelecteurImage> {
             for (final cle in cleIcones)
               ChoiceChip(
                 key: Key('icone_$cle'),
-                label: Icon(iconeDe(cle), size: 20),
+                label: VignetteProduit(icone: cle, taille: 28),
                 selected: _icone == cle,
                 onSelected: (v) => _changer(icone: v ? cle : null, photo: _photo),
               ),

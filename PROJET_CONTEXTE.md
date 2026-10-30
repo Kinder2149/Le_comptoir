@@ -1,5 +1,25 @@
 # PROJET_CONTEXTE — Le Comptoir
 
+## STATUT — fait foi pour les statuts (lu par DevBoard)
+
+```
+STATUT DU PROJET : En développement
+MISSION : Plan initial (étapes 1 à 14) — En attente de ma capture
+MISSION : Publication Play Store — En implémentation
+MISSION : Stock et courses (étapes 1 à 8) — En attente de ma capture
+MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) — En implémentation
+  Étape : B1 Menu = catalogue sans stock — ? — critère : aucun stock dans un menu, provenance acheté / apporté par produit
+  Étape : B2 Ratios et consommation par catégorie — ? — critère : 1 gâteau = n parts, ratio à zéro refusé
+  Étape : B3 Gymnases et stock côté événement — Close — critère : stock propre à l'événement, vendu et reste exacts après 3 ventes
+  Étape : B4 Courses depuis Gymnases et stock — Close — critère : demi-journée, jour complet ou plus, estimation modifiable
+  Étape : B5 Clôture et report de stock — Planifiée — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
+  Étape : B6 Clôture de mission — Planifiée — critère : verdict réussi/échoué par critère rendu par une autre IA
+IDÉES PARQUÉES :
+  - Paiement carte avec Monetico (exploration, rien de figé)
+  - Front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions
+```
+*(Bloc ajouté le 2026-10-30, validé par Kinder. Étapes B3 et B4 : testées par Claude le 29/10, reste la capture de Kinder.)*
+
 ## 1. Vision
 Application mobile de caisse pour les buvettes associatives lors
 d'événements sportifs (souvent sur un week-end). Encaisser vite (icônes
@@ -24,7 +44,8 @@ les buvettes de la saison.
 
 ## 4. Fonctionnalités
 - Menus réutilisables et modifiables, prix par produit, suivi du stock
-  optionnel par produit.
+  optionnel par produit ; type de produit (composé avec recette, à l'unité,
+  à la part, au litre) et consommation par personne et par jour (décisions 36 et 42).
 - Images : modèle fourni intégré à l'application ; photo ajoutée par
   l'association réduite en vignette et stockée avec le produit.
 - Événement : menu associé et modes de paiement autorisés ; seuls ces
@@ -48,7 +69,7 @@ les buvettes de la saison.
 
 ## 5. Hors périmètre
 - Notifications push.
-- Prévision automatique des courses.
+- Prévision automatique des courses qui s'impose : seul un pré-remplissage modifiable existe (décision 42).
 
 ## 6. Décisions figées (01/10/2026)
 1. L'association est l'entité mère ; un seul code d'accès, celui de
@@ -170,7 +191,7 @@ les buvettes de la saison.
     (décision 9). L'événement copie l'image avec le produit : la caisse
     l'affiche même sans réseau. Seule la gestion modifie les images.
     Menu type : proposé à la création d'un menu, lu dans
-    `assets/menu_type.json` (10 produits génériques avec icônes) : pour
+    `assets/menu_type.json` (13 produits avec types, recettes et logos : voir PLAN_STOCK_COURSES.md, étape 2) : pour
     le remplacer par le vôtre, on modifie ce seul fichier.
     Dépendance ajoutée sur accord : image_picker (réduction incluse, pas de
     second module).
@@ -219,11 +240,64 @@ les buvettes de la saison.
 
 32. Logo et icône (05/10/2026) : Kinder a retenu la piste A, « auvent et tasse » (auvent rayé lin et sable au-dessus d'une tasse posée sur un plan de comptoir sable, sur fond anthracite). Sources dans `audit_front/proposition/logo/` ; `fabriquer_icones.py` régénère les icônes Android (adaptative + anciennes), l'écran de démarrage et `play_store/icone_512.png`. Pas d'icône thématique Android 13 (non vérifiée).
 
+33. Chantier « Stock et courses » (figé le 27/10/2026, cahier des charges d'une IA de l'association comparé à l'existant ; détail des étapes, modèle de données et registre du cahier des charges dans PLAN_STOCK_COURSES.md). Trois modules distincts : Menu, Caisse, Courses.
+34. Droits sur le stock : le bénévole garde sa caisse classique et ajoute des parts (gâteau sucré, gâteau salé, salade) au stock de son gymnase ; il ne voit pas le stock complet et ne le modifie pas. Le responsable et les gestionnaires voient et modifient le stock de leurs gymnases.
+    Pourquoi : le bénévole apporte les gâteaux ; la gestion tient les chiffres. Précise la décision 3 et reste dans les gymnases rattachés (décision 29).
+35. Rupture de stock : la vente n'est jamais bloquée (confirme la décision 14) ; en plus du message « Épuisé », le produit change de couleur en caisse.
+36. Types de produit : composé (recette : quantités nécessaires pour UN produit, fractions permises, ex. 1/4 de tranche), à l'unité (fruit, barre), à la part (gâteaux, salade), au litre (café et sodas : litres achetés, ratio litres -> verres vendus ; chaque soda est un produit distinct). Chaque produit du menu a un type et un stock réglable.
+37. Modèle générique : remplace le simple menu type (décision 22). L'association l'utilise tel quel, le modifie, le copie ou crée un menu de zéro. Il est construit à partir de la carte de buvette de Kinder (café, thé, tarte, flan, croque-monsieur, barre chocolatée, fruits, salade, soda, crêpes ; logos sans fond fournis). Dans le modèle, les gâteaux et la salade sont « apportés par les bénévoles » donc hors courses ; l'association peut les intégrer aux courses.
+38. Module Courses : lancé avant ou pendant l'événement. On choisit les produits du menu de l'événement à acheter et la quantité de produits finaux voulue ; pour un produit composé, l'application calcule les ingrédients (« ce qu'il reste » est une saisie facultative qui réduit les quantités à acheter). À la validation, on saisit les quantités réellement achetées ; calcul inverse : le stock gagne ce que permet l'ingrédient LIMITANT (ex. gruyère pour 80 croques = +80). Les courses ajoutent au stock, n'en retirent rien. Les ingrédients n'ont pas de stock : les restes ne sont suivis que par la saisie « ce qu'il reste ». Le coût TOTAL des courses est saisi (pas de prix par élément) et déduit au bilan. Pas de marge, pas de lots, pas de coût moyen.
+39. Stock bas : il ne concerne que les produits finaux, jamais les ingrédients. Il se déclenche à 10 % du DERNIER total de stock enregistré (si le stock est modifié le samedi soir, ce total devient la référence). Les produits sous le seuil s'affichent et sont suggérés aux courses suivantes.
+40. Écartés pour l'instant : transferts entre gymnases (à la main : -10 puis +10), prix d'achat par élément, prévision automatique NON modifiable (voir décision 42), cartes prépayées, terminal bancaire (Monetico, en dernier). Export du bilan : fichier CSV qui s'ouvre dans Excel (pas de vrai .xlsx, qui ajouterait une dépendance) ; bilan de clôture conservé. Remise du fichier sur Android : dépendance éventuelle à demander le moment venu.
+41. Plafond de modules supprimé (remplace la limite de 24). Documentation : 5 fichiers .md max inchangé.
+    Exigences issues de la revue d'équipe Hermès (27/10/2026) : (a) la vente et la baisse de stock sont écrites dans UN MÊME lot (aujourd'hui deux écritures séparées) ; (b) mesurer les lectures du suivi en direct (quota gratuit 50 000/jour) avant de passer à 8 gymnases ; l'estimation d'écritures (environ 11 000/jour pour 3 gymnases et 6 caisses, quota 20 000) tient. L'identifiant unique de vente existe déjà.
+
+42. Pré-remplissage des quantités de courses (27/10/2026, modifie la décision 40) : à la création d'un événement, la gestion règle le nombre de personnes par gymnase et le nombre de jours (2 par défaut). Chaque produit du menu porte une consommation par personne et par jour, modifiable (exemple de départ pour 80 personnes par gymnase : 2 croque-monsieur, 1 boisson, 1 part de gâteau, 1 fruit ou barre, 2 cafés). Le module Courses PRÉ-REMPLIT avec ces réglages les quantités de produits finaux ; la gestion garde la main et modifie chaque chiffre. Estimations de départ du modèle, à corriger par l'association : croque = 2 tranches de pain de mie, 1/4 de tranche de jambon, 25 g de gruyère ; café = 1 litre pour 8 verres. Aucune quantité n'est imposée : rien ne se commande ni ne s'achète sans validation.
+43. Liste de courses de l'an dernier et modèle (28/10/2026, Kinder) : (a) le matériel d'organisation (liquide vaisselle, sopalin, papier toilette, torchons, ruban) n'est PAS dans le modèle de menu ; à la création d'une liste de courses on ajoute à la main des lignes libres (nom, quantité) pour garder une trace centralisée de tout ce qui s'achète. (b) Le modèle est complété : buche de chèvre et tartiflette (recettes alternatives au croque-monsieur) ; les bonbons sont offerts (gratuits, un petit plus) ; le Nutella et le sucre servent aux crêpes sans estimation de quantité (trop aléatoire). (c) Dans le stock, on peut signaler qu'un pot ou paquet est vide (signal « vide », sans quantité). Les valeurs d'exemple du croque restent à recaler : la liste de l'an dernier (1000 tranches de pain, 160 de jambon, 3 kg de gruyère) suggère environ 6 g de gruyère par croque, et non 25 g. Estimation retenue pour le modèle (Claude, faute de chiffres de vente, modifiable par l'association) : environ 400 croques l'an dernier, donc 2 tranches de pain de mie, 1/3 de tranche de jambon, 7 g de gruyère par croque.
+
+44. Limite acceptée sur le stock (29/10/2026, Kinder, après la vérification indépendante du chantier « Stock et courses ») : un bénévole dont la caisse est ouverte peut techniquement, en contournant l'application, modifier la quantité de n'importe quel produit de son gymnase, car la règle de la vente et de l'annulation ne distingue pas une vente d'une correction. Accepté : le bénévole est un membre de confiance, l'application ne lui offre pas cette action, et un durcissement compliquerait la vente sans réseau. Seul l'ajout de parts est borné par le serveur (produit « part », 1 à 1000, quantité et total de référence ensemble). Précise les décisions 34 et 43.
+
+45. Menu et événement (29/10/2026, Kinder, après son test ; modifie les décisions 36 et 37) : le menu est le catalogue de ce qu'on propose, SANS stock. Chaque produit y porte son type, sa provenance (acheté par l'association, ou apporté par les bénévoles donc hors courses sauf ajout à la main) et ses ratios de conversion par catégorie (1 gâteau = n parts, 1 litre = n verres, 1 croque = n composants). Le stock appartient à l'ÉVÉNEMENT, par gymnase, et se gère dans l'onglet « Gymnases et stock ».
+46. Prévision et consommation réelle (29/10/2026, modifie la décision 42) : deux notions distinctes. La PRÉVISION (personnes, durée, consommation par catégorie, réglable) sert à estimer les besoins. La CONSOMMATION RÉELLE se mesure pendant l'événement à partir des ventes, à un instant donné. Au lancement des courses, l'application connaît le consommé et le reste, demande la durée à couvrir (demi-journée, jour complet ou plus) et propose une estimation modifiable ; rien ne s'achète sans validation.
+47. Courses (29/10/2026, précise les décisions 33 et 38) : le module Courses reste distinct ; on y accède depuis « Gymnases et stock », qui lui fournit consommé et reste des produits finaux. Les INGRÉDIENTS restent sans stock (décision 38 inchangée) : signal « vide » et saisie facultative « ce qu'il reste » seulement.
+48. Fin d'événement et report de stock (29/10/2026, remplace la limite « pas de reprise » de la décision 40) : à la clôture, la gestion choisit les produits conservables (ex. soda, café), donne la quantité restante de chacun, l'application la fait confirmer ou modifier. Ces restes sont repris dans le stock de l'événement suivant. Chantier traité en dernier.
+49. Cohérence visuelle (29/10/2026) : l'onglet « Gymnases et stock » et le module Courses suivent l'identité visuelle de la décision 31, comme le reste de l'application.
+50. Recalage du modèle sur l'Excel de l'an passé (30/10/2026, Kinder : « on recale par rapport à ce qu'on a », pas de ventes réelles disponibles, seulement achats 2024-2025 et tarifs 2024) : modèle de 27 produits (3 croques à 1 € dont la tartiflette en variante, boissons à 4 verres de 25 cl par litre, bière, barres, fruit, 7 produits apportés : tarte, flan, gâteau salé (quiche), salade, 3 petites crêpes, sucette, chocolat chaud). Consommations déduites des achats 2025 pour environ 300 personnes-jours (croques 1,7 au total, café 1,3 estimation Excel). Un bénévole ajoute du stock à tout produit de type « part » OU « apporté » (précise la décision 34). Prix à confirmer avec l'affiche de la buvette.
+
 ## 7. Points ouverts
+- Défauts relevés au test de Kinder (29/10/2026) : module Courses introuvable à l'écran ; menu et événement confondus ; onglet « Gymnases et stock » non conforme au thème (décision 49). Plan validé le 29/10/2026 : chantier B1 à B6 dans PLAN_STOCK_COURSES.md, section 5 bis (prochaine : phase 5, cadrage de B1, après initialisation de graphify).
 - Menu type prêt à l'emploi : en place avec des produits génériques
-  (`assets/menu_type.json`) ; à remplacer par le menu fourni par moi. Exemples cités
+  (`assets/menu_type.json`) ; devient le modèle générique (décision 37). Reste à recevoir : les prix de la carte et l'estimation des courses de Kinder (base du modèle). Exemples cités
   au départ, non figés : croque-monsieur, salade, fruits, thé, café,
   barre chocolatée, soda.
+- **Paiement carte avec Monetico (piste A, en phase 2 de cadrage, 18/10/2026 — rien de figé)**
+  - Besoin : le club (seul club visé pour l'instant) encaisse la carte avec l'appli Monetico Tap to
+    Pay (Crédit Mutuel) sur Android ; ses bénévoles saisissent donc chaque montant deux fois
+    (Le Comptoir puis Monetico).
+  - Orientations prises par Kinder : le mode « Carte » actuel reste inchangé ; à l'ouverture de la
+    caisse, proposer d'associer Monetico à cette caisse ; le niveau de liaison sera choisi selon ce
+    que Monetico permet. Hypothèse à confirmer : plusieurs téléphones, chacun connecté au compte
+    Monetico du club par identifiant et mot de passe.
+  - Proposition de Claude (non validée) : Le Comptoir ne fait que vérifier que Monetico est installé
+    sur le téléphone ; il ne connaît jamais les identifiants Monetico du club.
+  - Trois niveaux possibles : (1) liaison complète, Le Comptoir envoie le montant à Monetico et
+    récupère accepté / refusé (exige que Monetico le permette, non documenté publiquement) ;
+    (2) bouton qui ouvre Monetico, le montant est retapé (toujours possible) ; (3) contrôle en fin
+    d'événement, total « Carte » du bilan à comparer au relevé Monetico (toujours possible).
+  - Faits vérifiés (sites Crédit Mutuel / CIC / Monetico, 18/10/2026) : Android 12 ou plus + NFC,
+    réseau nécessaire au paiement, code PIN au-delà de 50 €. Tarifs associations : 10 € HT puis
+    1,70 % + 0,15 €, ou 5 € HT/mois puis 1,00 % + 0,15 €. Appli Android : `com.ei.softpos`.
+    « S'intègre aux solutions d'encaissement » est annoncé sans aucun détail.
+  - Piste B écartée pour l'instant (autre prestataire, Stripe par ex.) : changement de banque
+    d'encaissement, serveur donc forfait Firebase payant, Android 13 minimum, réseau obligatoire.
+  - **Prochaines actions** : (a) Kinder obtient les accès Monetico du club pour tester sur son propre
+    téléphone ; (b) téléphone branché au PC, lire ce que l'appli `com.ei.softpos` accepte de recevoir
+    des autres applis (lecture seule, demande l'outillage Android et le mode développeur) ;
+    (c) en parallèle, question au conseiller Crédit Mutuel : une autre appli peut-elle ouvrir Monetico
+    avec un montant et récupérer le résultat ? documentation et coût ? un contrat sur plusieurs
+    téléphones ?
+  - Points ouverts : redemander l'association à chaque ouverture de caisse ou la retenir sur le
+    téléphone ? que fait la caisse si le paiement carte échoue faute de réseau ?
 
 ## 8. Plan (validé le 01/10/2026)
 Règle : chaque étape est validée par des tests automatiques lancés et
@@ -259,6 +333,19 @@ service.
 Dépendances à demander avant ajout : connexion Google (étape 4),
 gestion des photos (étape 13).
 
+### Plan du chantier « Stock et courses » (validé le 27/10/2026, décisions 33 à 41)
+Une étape à la fois ; chaque étape a un critère écrit par Kinder avant tout code (phase de cadrage).
+1. Types de produit et recettes dans le menu (composé, unité, part, litre avec ratio litres/verres) et consommation par personne et par jour.
+2. Modèle générique : partir du modèle, copier un menu ou partir de zéro ; carte de 10 produits avec logos.
+3. Stock par rôle : saisie et modification par la gestion, ajout de parts par le bénévole, total de référence enregistré à chaque modification.
+4. Caisse : produit coloré en rupture, alerte sous 10 % du dernier total, vente et stock écrits dans un même lot.
+5. Courses, préparation : réglages de l'événement (personnes par gymnase, jours), quantités pré-remplies et modifiables, ingrédients calculés, « ce qu'il reste », suggestions de stock bas.
+6. Courses, validation : quantités réellement achetées, calcul inverse (ingrédient limitant), mise à jour du stock, coût total.
+7. Bilan et export : coût des courses déduit au bilan, export CSV.
+8. Recette : parcours complet automatique, test de Kinder, mesure des lectures du suivi en direct.
+Détail, points à trancher à chaque cadrage et suivi : PLAN_STOCK_COURSES.md.
+Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). Monetico : chantier à part, en dernier.
+
 ## 9. Références techniques (01/10/2026)
 - Projet Firebase : `le-comptoir-60ba8` (n° 522645235489), plan Spark
   (gratuit).
@@ -293,7 +380,7 @@ gestion des photos (étape 13).
   ajoutés après la recette (décision 23). Menu type réel à fournir.
 - Point ouvert : un gestionnaire peut-il changer le code d'accès ?
 
-## 12. État au 05/10/2026 et reprise sur un autre poste
+## 12. État au 28/10/2026 et reprise sur un autre poste
 **Où on en est**
 - Application complète (étapes 1 à 15, gymnases M1-M6, images modifiables depuis l'événement, bilan redessiné,
   thème a1, logo et icône). Vérifié le 05/10/2026 : analyse sans erreur, 141 tests de logique et d'écrans,
@@ -312,7 +399,10 @@ gestion des photos (étape 13).
   classification, public cible, pubs : non) ; test fermé obligatoire (12 testeurs, 14 jours, liste « Testeur PaperClip » de 22) ;
   puis demande d'accès à la production.
   (3) front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions.
-- Points ouverts : un gestionnaire peut-il changer le code d'accès ? Menu type réel à fournir.
+  (4) paiement carte avec Monetico : exploration en cours, voir section 7 (18/10/2026).
+- **Chantier « Stock et courses » (décisions 33 à 43, PLAN_STOCK_COURSES.md)** : étape 1 (types de produit et recettes) implémentée et testée le 28/10/2026 sur la branche `claude/comptoir-app-refinement-cnuyb4` (analyse sans erreur, 162 tests, 146 tests de règles, 18 parcours Android). Règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder). Reste pour l'étape 1 : vérification par une autre IA et capture de Kinder (le test sur téléphones se fera à la fin des étapes). Étape 2 (modèle générique et logos) implémentée et testée le 28/10/2026 (166 tests, 147 tests de règles, 19 parcours Android) ; clé `tarte` des règles déployée le 28/10/2026 (accord de Kinder) ; reste la vérification par une autre IA et la capture de Kinder. Étape 3 (stock par rôle : ajout de parts par le bénévole, total de référence, signal « vide ») implémentée et testée le 28/10/2026 (166 tests, 155 tests de règles, 21 parcours Android) ; règles (champ `reference`, sous-collection `vides`) déployées le 28/10/2026 (accord de Kinder) ; reste la vérification par une autre IA et la capture de Kinder. Étape 4 (caisse : rupture, stock bas, « vide », vente et stock dans un même lot) implémentée et testée le 28/10/2026 (175 tests, 157 tests de règles, 22 parcours Android) ; règles inchangées ; reste la vérification par une autre IA et la capture de Kinder. Étape 5 (courses : préparation) implémentée et testée le 28/10/2026 (187 tests, 162 tests de règles, 23 parcours Android) ; règles (nbJours, personnes, courses/liste) déployées le 28/10/2026 (accord de Kinder) ; reste la vérification par une autre IA et la capture de Kinder. Étape 6 (courses : validation, calcul inverse, ajout au stock) implémentée et testée le 28/10/2026 (195 tests, 166 tests de règles, 24 parcours Android) ; règles (liste validée) déployées le 28/10/2026 (accord de Kinder) ; reste la vérification par une autre IA et la capture de Kinder. Étape 7 (bilan : coût et résultat des courses ; export CSV par la feuille de partage, dépendance `share_plus` accordée par Kinder) implémentée et testée le 28/10/2026 (210 tests, 166 tests de règles, 24 parcours Android) ; règles inchangées ; reste la vérification par une autre IA et la capture de Kinder. Étape 8 (recette) implémentée et testée le 28/10/2026 : parcours complet automatique, lectures mesurées et optimisées (écoute des stocks partagée ; 3 gymnases ≈ 39 % du quota, 8 gymnases ≈ 79 %), version 1.1.0 et APK de recette reconstruit (signé avec la clé de publication ; désinstaller l'ancienne version), 210 tests, 166 tests de règles, 26 parcours Android. Vérification indépendante faite le 29/10/2026 (11 critères réussis, aucun défaut bloquant ; compteur de gymnases verrouillé dans les règles (déployées le 29/10/2026, accord de Kinder) ; lectures corrigées à la hausse, voir section 10 du plan). Reste : test de Kinder sur téléphones, puis fusion dans `main` sur son accord.
+- Piège des règles : une requête évalue 1000 expressions au plus ; ne pas ajouter de contrôles lourds par ingrédient sans mesurer.
+- Points ouverts : un gestionnaire peut-il changer le code d'accès ? Prix réels du modèle à fournir.
 
 **Reprendre sur un autre poste** (fichiers volontairement absents de git) :
 - `lib/firebase_options.dart` et `android/app/google-services.json` : à copier depuis l'autre poste, ou à régénérer avec
@@ -328,4 +418,4 @@ gestion des photos (étape 13).
 - Déployer les règles (seulement après leurs tests) : `firebase deploy --only firestore:rules --project le-comptoir-60ba8`.
 - Pièges : après `ouvrirCaisse` dans un test, toujours `await db.waitForPendingWrites()` ; les fichiers `lib/*.dart` sont en CRLF ;
   deux fichiers de test qui partagent l'émulateur ne réutilisent pas la même adresse e-mail.
-- Limites de Kinder : 24 modules max (23 utilisés), 5 fichiers .md max (4), aucune dépendance sans son accord.
+- Limites de Kinder : plus de plafond de modules (décision 41, 23 utilisés), 5 fichiers .md max (5 : limite atteinte avec PLAN_STOCK_COURSES.md), aucune dépendance sans son accord.

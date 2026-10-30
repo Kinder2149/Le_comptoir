@@ -62,7 +62,7 @@ void main() {
     final depotAsso = DepotAssociations(db);
     final menuId = await depotAsso.menus(assoId).creerMenu('Menu');
     await depotAsso.menus(assoId).ajouterProduit(menuId,
-        nom: 'Café', prixCentimes: 150, stock: 10);
+        nom: 'Café', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
     final evt = await depotEv.creerEvenement(
       nom: 'Tournoi',
@@ -71,12 +71,14 @@ void main() {
       modes: ['especes'],
       gymnases: ['Gymnase A', 'Gymnase B'],
     );
+    await donnerStock(depotEv, evt, 'Café', 10);
     final ancien = await depotEv.creerEvenement(
       nom: 'Ancien tournoi',
       date: '2026-01-10',
       menuId: menuId,
       modes: ['especes'],
     );
+    await donnerStock(depotEv, ancien, 'Café', 10);
     await depotEv.cloturerEvenement(ancien,
         parUid: chefUid, parPrenom: 'Chef', nbCaissesOuvertes: 0);
     final gymnases = await depotEv.suivreGymnases(evt).first;

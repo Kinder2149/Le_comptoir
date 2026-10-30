@@ -13,17 +13,24 @@ rules_version = '2';
 //   associations/{a}                              nom, code, responsableUid, creeLe
 //     membres/{uid}                               prenom, role, rejointLe, codeUtilise, nomme (en attente)
 //     menus/{m}                                   nom, creeLe                       (gestion seulement)
-//       produits/{p}                              nom, prixCentimes, stock?, icone?, photo?, creeLe
+//       produits/{p}                              nom, prixCentimes, stock? (ancien, toléré), icone?, photo?, type?, provenance?, conso?, ingredients?, verresParLitre?, creeLe
 //     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
-//       produits/{p}                              copie des produits du menu (images comprises), SANS stock ; seule l'image se modifie ensuite
+//       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
-//         stocks/{p}                              quantite (absent = pas de suivi de ce produit dans ce gymnase)
+//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
+//                                                 (absent = pas de suivi de ce produit dans ce gymnase)
+//       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
+//                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
+//                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
+//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
+//         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
 //                                                 le stock que dans ses gymnases ; le responsable gère tout.
-//                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases : clôturer
+//                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases (il ne monte qu'avec la
+//                                                 naissance du gymnase `dernierGymnase`) : clôturer
 //                                                 l'événement exige d'être rattaché à TOUS (ou d'être responsable).
 //       caisses/{uid__g}                          une caisse par (membre, gymnase) ; membreUid, gymnaseId, prenom,
 //                                                 statut, ouverteLe, + à la clôture : récapitulatif
@@ -71,11 +78,56 @@ service cloud.firestore {
         && modes.size() <= 4
         && modes.hasOnly(['especes', 'carte', 'cheque', 'autre']);
     }
+    // Recette : 1 à 20 ingrédients {nom (1 à 40 caractères), quantité pour UNE unité (> 0),
+    // unité de la liste fixe}. Pas de boucle dans les règles, et une requête ne peut pas
+    // évaluer plus de 1000 expressions : un test compact, écrit en clair, par position
+    // (une valeur d'un mauvais type fait échouer le test, donc refuse l'écriture).
+    function ingredientsValides(l) {
+      return l is list
+        && l.size() >= 1
+        && l.size() <= 20
+        && (l.size() <= 0 || (l[0].quantite > 0 && l[0].nom.matches('.{1,40}') && l[0].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 1 || (l[1].quantite > 0 && l[1].nom.matches('.{1,40}') && l[1].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 2 || (l[2].quantite > 0 && l[2].nom.matches('.{1,40}') && l[2].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 3 || (l[3].quantite > 0 && l[3].nom.matches('.{1,40}') && l[3].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 4 || (l[4].quantite > 0 && l[4].nom.matches('.{1,40}') && l[4].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 5 || (l[5].quantite > 0 && l[5].nom.matches('.{1,40}') && l[5].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 6 || (l[6].quantite > 0 && l[6].nom.matches('.{1,40}') && l[6].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 7 || (l[7].quantite > 0 && l[7].nom.matches('.{1,40}') && l[7].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 8 || (l[8].quantite > 0 && l[8].nom.matches('.{1,40}') && l[8].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 9 || (l[9].quantite > 0 && l[9].nom.matches('.{1,40}') && l[9].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 10 || (l[10].quantite > 0 && l[10].nom.matches('.{1,40}') && l[10].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 11 || (l[11].quantite > 0 && l[11].nom.matches('.{1,40}') && l[11].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 12 || (l[12].quantite > 0 && l[12].nom.matches('.{1,40}') && l[12].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 13 || (l[13].quantite > 0 && l[13].nom.matches('.{1,40}') && l[13].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 14 || (l[14].quantite > 0 && l[14].nom.matches('.{1,40}') && l[14].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 15 || (l[15].quantite > 0 && l[15].nom.matches('.{1,40}') && l[15].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 16 || (l[16].quantite > 0 && l[16].nom.matches('.{1,40}') && l[16].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 17 || (l[17].quantite > 0 && l[17].nom.matches('.{1,40}') && l[17].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 18 || (l[18].quantite > 0 && l[18].nom.matches('.{1,40}') && l[18].unite.matches('unite|tranche|g|kg|cl|L')))
+        && (l.size() <= 19 || (l[19].quantite > 0 && l[19].nom.matches('.{1,40}') && l[19].unite.matches('unite|tranche|g|kg|cl|L')));
+    }
+    // Type, recette, ratio et consommation. Sans type = « unite ». Une recette
+    // seulement pour un produit composé, un ratio seulement pour un produit au litre.
+    function ficheValide(d) {
+      return (!('type' in d) || d.type in ['compose', 'unite', 'part', 'litre'])
+        && (!('provenance' in d) || d.provenance in ['achete', 'apporte'])
+        && (!('partsParEntier' in d)
+            || (d.get('type', 'unite') == 'part' && d.partsParEntier is int && d.partsParEntier >= 1 && d.partsParEntier <= 100))
+        && (!('conso' in d) || (d.conso is number && d.conso >= 0 && d.conso <= 1000))
+        && (d.get('type', 'unite') == 'compose'
+            ? ('ingredients' in d && ingredientsValides(d.ingredients))
+            : !('ingredients' in d))
+        && (d.get('type', 'unite') == 'litre'
+            ? ('verresParLitre' in d && d.verresParLitre is number && d.verresParLitre > 0 && d.verresParLitre <= 100)
+            : !('verresParLitre' in d));
+    }
     function produitValide(d) {
       return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
-        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'conso', 'ingredients', 'verresParLitre', 'partsParEntier'])
+        && ficheValide(d)
         && (!('icone' in d)
-            || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace']))
+            || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte']))
         && (!('photo' in d)
             || (d.photo is bytes && d.photo.size() <= 30000))
         && texte(d.nom, 40)
@@ -121,6 +173,34 @@ service cloud.firestore {
         && (roleDe(a) == 'responsable'
             || (roleDe(a) == 'gestionnaire'
                 && rattaches(a, e).size() >= get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)));
+    }
+    // Caisse ouverte de l'appelant dans CE gymnase.
+    function caisseOuverteDans(a, e, g) {
+      return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
+        && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g;
+    }
+    // Ajout de stock par un bénévole : de 1 à 1000, sur un produit de type « part » ou
+    // apporté par les bénévoles, et le total de référence monte de la même quantité.
+    function ajoutPartsValide(a, e, p) {
+      let avant = resource.data.quantite;
+      let ajout = request.resource.data.quantite - avant;
+      let fiche = get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p)).data;
+      return ajout >= 1 && ajout <= 1000
+        && request.resource.data.get('reference', -1) == resource.data.get('reference', avant) + ajout
+        && (fiche.get('type', 'unite') == 'part' || fiche.get('provenance', 'achete') == 'apporte');
+    }
+    // Liste de courses en préparation : champs et tailles bornés.
+    function listePreparationValide(d) {
+      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+        && d.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
+        && d.statut == 'preparation'
+        && d.lignes is list
+        && d.lignes.size() <= 400
+        && d.libres is list
+        && d.libres.size() <= 60
+        && d.restes is list
+        && d.restes.size() <= 100
+        && d.majLe is timestamp;
     }
     function stockValide(q) {
       return q is int && q >= -100000 && q <= 100000;
@@ -205,13 +285,27 @@ service cloud.firestore {
           && request.resource.data.date.size() == 10
           && modesValides(request.resource.data.modes);
 
-        // Un gymnase de plus : le compteur monte de 1 (dans le lot qui crée le gymnase).
+        // Durée de l'événement (réglage des courses) : le responsable, ou un gestionnaire
+        // rattaché à tous les gymnases.
+        allow update: if gereTout(a, e)
+          && resource.data.statut == 'en_cours'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbJours'])
+          && request.resource.data.nbJours is number
+          && request.resource.data.nbJours >= 0.5
+          && request.resource.data.nbJours <= 30;
+
+        // Un gymnase de plus : le compteur monte de 1 ET le gymnase `dernierGymnase` naît
+        // dans le même lot (le compteur ne se monte jamais seul : il décide qui est
+        // « rattaché à tous les gymnases »).
         allow update: if estGestion(a)
           && resource.data.statut == 'en_cours'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases', 'dernierGymnase'])
           && request.resource.data.nbGymnases is int
           && request.resource.data.nbGymnases == resource.data.get('nbGymnases', 1) + 1
-          && request.resource.data.nbGymnases <= 8;
+          && request.resource.data.nbGymnases <= 8
+          && request.resource.data.dernierGymnase is string
+          && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase))
+          && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase));
 
         // Clôture : l'événement devient figé. Forcée = des caisses étaient encore
         // ouvertes ; le nombre est conservé pour signaler les ventes manquantes.
@@ -276,6 +370,14 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom'])
             && texte(request.resource.data.nom, 40);
 
+          // Personnes attendues (réglage des courses), par ceux qui lancent les courses.
+          allow update: if gereTout(a, e)
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['personnes'])
+            && request.resource.data.personnes is int
+            && request.resource.data.personnes >= 0
+            && request.resource.data.personnes <= 1000;
+
           match /stocks/{p} {
             allow read: if estGestion(a)
               || (estMembre(a)
@@ -294,22 +396,98 @@ service cloud.firestore {
                       && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
                       && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
               && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-              && request.resource.data.keys().hasOnly(['quantite'])
+              && request.resource.data.keys().hasOnly(['quantite', 'reference'])
+              && request.resource.data.keys().hasAll(['quantite'])
               && request.resource.data.quantite is int
               && request.resource.data.quantite >= 0
-              && request.resource.data.quantite <= 100000;
+              && request.resource.data.quantite <= 100000
+              && (!('reference' in request.resource.data)
+                  || (request.resource.data.reference is int
+                      && request.resource.data.reference >= 0
+                      && request.resource.data.reference <= 100000));
 
-            // Réglage par la gestion, ou vente par un membre dont la caisse ouverte
-            // est dans CE gymnase. Le stock peut passer sous zéro : on avertit le
-            // bénévole, on ne bloque pas la vente.
+            // Trois écritures possibles, tant que l'événement est en cours :
+            //  - réglage ou réapprovisionnement par la gestion de CE gymnase (quantité et
+            //    total de référence) ;
+            //  - vente ou annulation par un membre dont la caisse ouverte est dans CE
+            //    gymnase (la quantité seule ; elle peut passer sous zéro : on avertit le
+            //    bénévole, on ne bloque pas la vente) ;
+            //  - ajout de parts par ce même membre (quantité et référence montent ensemble,
+            //    produit de type « part » seulement).
             allow update: if estMembre(a)
               && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite'])
               && stockValide(request.resource.data.quantite)
-              && (gereGymnase(a, e, g)
-                  || (exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
-                      && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid)).data.gymnaseId == g));
+              && (
+                (gereGymnase(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && (!('reference' in request.resource.data)
+                      || (request.resource.data.reference is int
+                          && request.resource.data.reference >= 0
+                          && request.resource.data.reference <= 100000)))
+                || (caisseOuverteDans(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite']))
+                || (caisseOuverteDans(a, e, g)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && ajoutPartsValide(a, e, p)));
           }
+
+          // Produit signalé « vide » dans ce gymnase : par la gestion de CE gymnase ou par un
+          // membre dont la caisse ouverte y est. Document présent = vide.
+          match /vides/{p} {
+            allow read: if estGestion(a)
+              || (estMembre(a)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+            allow create: if estMembre(a)
+              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && (gereGymnase(a, e, g) || caisseOuverteDans(a, e, g))
+              && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p))
+              && request.resource.data.keys().hasOnly(['creeLe'])
+              && request.resource.data.keys().hasAll(['creeLe'])
+              && request.resource.data.creeLe is timestamp;
+            allow delete: if suppressionEnCours(a)
+              || (estMembre(a)
+                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+                  && (gereGymnase(a, e, g) || caisseOuverteDans(a, e, g)));
+          }
+        }
+
+        // La liste de courses : le responsable, ou un gestionnaire rattaché à tous les
+        // gymnases. Un seul document « liste » ; le contenu est celui de l'application
+        // (tailles bornées, rien d'autre que ces champs).
+        match /courses/{c} {
+          allow read: if gereTout(a, e);
+          allow delete: if suppressionEnCours(a);
+          // En préparation : modifiable à volonté.
+          allow create: if gereTout(a, e)
+            && c == 'liste'
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && listePreparationValide(request.resource.data);
+          allow update: if gereTout(a, e)
+            && c == 'liste'
+            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && resource.data.statut == 'preparation'
+            && (listePreparationValide(request.resource.data)
+                // Validation : la liste devient « validee » avec les achats, les rendements
+                // et le coût, et ne bouge plus ensuite (les ajouts de stock partent dans le
+                // même lot). Une liste déjà validée ne se rejoue pas.
+                || (request.resource.data.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                    && request.resource.data.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe', 'achats', 'rendements', 'coutCentimes', 'valideeLe'])
+                    && request.resource.data.statut == 'validee'
+                    && request.resource.data.lignes is list
+                    && request.resource.data.lignes.size() <= 400
+                    && request.resource.data.libres is list
+                    && request.resource.data.libres.size() <= 60
+                    && request.resource.data.restes is list
+                    && request.resource.data.restes.size() <= 100
+                    && request.resource.data.achats is list
+                    && request.resource.data.achats.size() <= 100
+                    && request.resource.data.rendements is list
+                    && request.resource.data.rendements.size() <= 400
+                    && request.resource.data.coutCentimes is int
+                    && request.resource.data.coutCentimes >= 0
+                    && request.resource.data.coutCentimes <= 100000000
+                    && request.resource.data.majLe is timestamp
+                    && request.resource.data.valideeLe is timestamp));
         }
 
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par
