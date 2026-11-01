@@ -1,5 +1,14 @@
 # CHANGELOG — Le Comptoir
 
+## 01/11/2026 — Retours de Kinder sur le chantier « Stock et courses » (documentation seule)
+- Cinq non-conformités consignées dans `PLAN_STOCK_COURSES.md` (section 5 bis) et `PROJET_CONTEXTE.md` (section 12) :
+  rupture en rouge dans la caisse ; gâteaux et salade en catégories mères avec apports des bénévoles (nom + nombre de
+  parts), sans nombre de parts dans le menu ; consommation par personne non expliquée ; onglet « Courses » de
+  l'événement (stock en amont, prévisions par l'événement passé et le menu, liste de courses) ; import de l'événement de
+  l'an passé depuis le fichier Excel.
+- Suivi des étapes mis à jour (étape 1 non conforme pour le type « part »). Points à trancher listés, rien de décidé.
+- Aucun code modifié, aucune dépendance ajoutée.
+
 ## 28/10/2026 — Chantier « Stock et courses », étape 1 : types de produit et recettes
 - Formulaire « Produit » d'un menu : type (composé, à l'unité, à la part, au litre), recette pour UN produit (jusqu'à 20 ingrédients, quantité fractionnaire, unité parmi unité, tranche, g, kg, cl, L), nombre de verres par litre, consommation par personne et par jour. Champs affichés selon le type ; un produit sans type reste « unité » (prix, stock et image intacts).
 - L'événement copie type, recette, ratio et consommation avec le produit (figés comme le prix) ; le détail de l'événement les affiche.

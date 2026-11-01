@@ -23,6 +23,7 @@ Ne pas les recopier ici : les relire avant chaque étape.
 - **Ingrédient** : un élément d'une recette (pain de mie, jambon, gruyère). Pas de stock : un nom, une quantité, une unité.
 - **Type** : composé (recette) | unité | part | litre (ratio litres -> verres vendus).
 - **Consommation** : quantité d'un produit par personne et par jour (sert au seul pré-remplissage).
+- **Catégorie mère / apport** (01/11/2026, R2) : « Gâteau sucré », « Gâteau salé », « Salade » sont des catégories vendues sous un même nom ; un apport est ce qu'un bénévole apporte (quiche, tarte au thon…) avec son nombre de parts, rangé dans sa catégorie.
 - **Total de référence** : dernier total de stock enregistré ; le seuil « stock bas » est 10 % de ce total.
 - **Courses** : une liste d'achats d'un événement (en préparation, puis validée).
 
@@ -166,6 +167,62 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
   -> export), vérifié chiffre par chiffre ; mesure des lectures du suivi en direct (quota gratuit 50 000/jour, vérifier
   avant de passer à 8 gymnases) ; mise à jour de `RECETTE.md` ; recette sur téléphones par Kinder ; APK reconstruit.
 
+## 5 bis. Retours de Kinder du 01/11/2026 (non-conformités à corriger)
+Constatés par Kinder en essayant l'application après l'étape 1. Ils priment sur ce qui précède quand ils le
+contredisent. Rien de ce qui est marqué « à trancher » n'est décidé : chaque point se tranche au cadrage de l'étape
+qui le porte, une question à la fois.
+
+**R1 — Rupture en rouge dans la caisse.** Un produit qui n'est plus en stock doit apparaître en rouge dans la
+caisse ouverte. Aujourd'hui il ne change pas de couleur (seul le message « Épuisé » existe).
+- Explication : c'est l'étape 4, pas encore faite. La décision 35 disait « change de couleur » : Kinder précise **rouge**.
+- À trancher (étape 4) : la passer avant les étapes 2 et 3 ? (elle ne dépend pas du total de référence pour la rupture seule).
+
+**R2 — Gâteau sucré, gâteau salé, salade : mal compris.** Ces produits sont apportés par les bénévoles ; chacun
+apporte quelque chose de différent (une quiche, une tarte au thon, une tarte aux pommes, un gâteau au chocolat), mais
+tout se vend sous la même entité. Le besoin réel :
+- « Gâteau sucré », « Gâteau salé » et « Salade » sont des **catégories mères** du menu, vendues en caisse sous ce nom.
+- Quand un bénévole arrive à la buvette avec ce qu'il a apporté, il l'**ajoute** : ce que c'est (ex. « quiche ») et le
+  **nombre de parts** qu'on en fait. Chaque apport se range dans sa catégorie mère.
+- Non conforme aujourd'hui : dans le menu, un produit « à la part » laisse définir un nombre de parts (le stock), ce qui
+  n'a pas de sens : les parts n'existent qu'à l'arrivée des apports, pendant l'événement.
+- Conséquence sur le plan : l'étape 1 est à reprendre pour le type « part » (pas de nombre de parts dans le menu) ;
+  l'étape 3 devient « ajout d'un apport » (nom + nombre de parts + catégorie) et non un simple ajout de parts.
+- À trancher (étape 3) : le prix est-il le même pour toutes les parts d'une catégorie (proposé : oui, c'est le prix de
+  la catégorie) ; en caisse, touche-t-on la catégorie seule ou l'apport précis ; la caisse et le bilan montrent-ils le
+  détail des apports ; qui ajoute (tout bénévole avec une caisse ouverte, et la gestion ?) ; peut-on corriger un apport.
+
+**R3 — « Consommation par personne et par jour » : à quoi ça sert ?** Le champ du menu n'est pas compris.
+- Explication : il sert uniquement à pré-remplir la liste de courses (décision 42) : personnes × jours × consommation.
+- Non conforme : l'écran ne le dit pas. À revoir avec R4 : la prévision doit aussi s'appuyer sur l'événement passé.
+- À trancher (étape 5) : libellé et phrase d'aide dans le formulaire ; ce chiffre est-il calculé à partir de
+  l'événement passé quand il existe (ventes ÷ personnes ÷ jours), ou reste-t-il une saisie à la main ?
+
+**R4 — Onglet « Courses » dans l'événement, absent.** Kinder veut, dans l'événement, un onglet « Courses » avec :
+1. **Le stock en amont** : intégrer, voir et modifier le stock dont on dispose avant l'événement (ou n'en avoir aucun).
+2. **Les prévisions de l'événement** : basées sur les données d'un **événement passé s'il en existe un**, combinées aux
+   prédictions enregistrées dans le menu (R3).
+3. **La liste de courses** qui en découle : selon les prévisions, l'effectif et le stock en amont.
+- Explication : les courses sont les étapes 5 et 6, pas encore faites. Mais le besoin diffère du plan : le stock en
+  amont et la prévision par l'événement passé n'y figuraient pas (le plan ne prévoyait que « ce qu'il reste » en
+  saisie facultative et le pré-remplissage par la consommation du menu).
+- ⚠️ La décision 38 dit que les ingrédients n'ont pas de stock. Si le stock en amont contient des ingrédients (reste
+  de gruyère, de café), il faut revenir sur cette décision.
+- À trancher (étape 5) : le stock en amont porte-t-il sur les produits finis, les ingrédients, ou les deux ; est-il
+  par gymnase ou commun à l'association ; quel événement passé sert de référence (le dernier ? choisi par la
+  gestion ?) ; comment on combine événement passé et prédictions du menu quand les deux existent.
+
+**R5 — Reprendre l'événement de l'an passé depuis le fichier Excel.** Kinder dispose d'un document Excel avec toutes
+les données de l'événement de l'an passé : courses, ventes, prédictions. Il doit servir de premier « événement
+passé » pour le modèle (R4).
+- Fichier non reçu au 01/11/2026 (absent du dépôt).
+- Proposé par Claude : un import fait **une seule fois** par Claude Code (lecture du fichier, création de l'événement
+  passé clôturé dans l'association), sans bouton d'import dans l'application. Pourquoi : lire un fichier Excel dans
+  l'application ajouterait une dépendance, pour un besoin qui ne revient pas. Non validé.
+- À trancher : recevoir le fichier ; dans quelle association l'importer ; quelles colonnes correspondent à quoi.
+
+**Effet sur l'ordre des étapes (proposé, non validé)** : corriger le type « part » de l'étape 1 (R2) ; puis l'étape 4
+réduite à la rupture en rouge (R1) ; puis le cadrage des courses refait avec R3, R4 et R5 avant toute ligne de code.
+
 ## 6. Registre du cahier des charges (rien ne se perd)
 | Demande du PDF | Sort |
 |---|---|
@@ -204,11 +261,11 @@ CADRAGE de l'étape (rien n'est supposé), critère de validation (écrit par Ki
 ## 8. Suivi (à mettre à jour à la fin de chaque étape)
 | Étape | État | Date | Critère validé |
 |---|---|---|---|
-| 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles) ; captures dans `audit_front/captures_stock_courses/` ; règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder) |
+| 1 Types et recettes | **implémentée, testée par Claude (28/10/2026)** ; **non conforme pour le type « part » (retour R2 du 01/11/2026, section 5 bis)** ; reste la capture de Kinder | 27-28/10/2026 | critères 1 à 6 réussis par les tests de code (analyse sans erreur, 161 tests de logique et d'écrans, 145 tests de règles) ; captures dans `audit_front/captures_stock_courses/` ; règles déployées sur le vrai projet le 28/10/2026 (accord de Kinder) |
 | 2 Modèle générique et logos | à cadrer | | |
-| 3 Stock par rôle | à cadrer | | |
-| 4 Caisse : rupture et stock bas | à cadrer | | |
-| 5 Courses : préparation | à cadrer | | |
+| 3 Stock par rôle | à cadrer — devient « ajout d'un apport » (R2) | | |
+| 4 Caisse : rupture et stock bas | à cadrer — rupture en rouge (R1) | | |
+| 5 Courses : préparation | à cadrer — onglet Courses, stock en amont, prévision par l'événement passé (R3, R4, R5) | | |
 | 6 Courses : validation | à cadrer | | |
 | 7 Bilan et export CSV | à cadrer | | |
 | 8 Recette | à cadrer | | |
