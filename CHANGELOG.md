@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 06/11/2026 — Mission « Préparer l'événement », P2 : onglet Préparation et stock de départ
+- Bouton « Préparation » dans l'événement (gestion seulement) : étape 1, quantité de départ de chaque produit fini, gymnase par gymnase (un gestionnaire ne voit que les siens). Même chiffre que dans « Gymnases et stocks ». Les restes repris de l'événement précédent sont pré-remplis, marqués « repris de l'événement précédent » et corrigeables. Une fois l'événement ouvert, le stock de départ se lit seulement.
+- Règles d'accès : champ `repris` accepté sur le stock. Déployées le 06/11/2026.
+- Tests : 261 de logique et d'écrans, 204 de règles, 4 parcours Android.
+
 ## 06/11/2026 — Mission « Préparer l'événement », P1 : état « En préparation » (branche `claude/preparation-evenement`)
 - Un événement naît « En préparation » : seule la gestion le voit, aucune caisse ne s'y ouvre. « Ouvrir l'événement » (responsable ou gestionnaire rattaché à tous les gymnases) le passe « En cours ». Les événements créés avant restent « En cours ».
 - Règles d'accès : la gestion peut régler un événement en préparation comme un événement en cours ; caisses, ventes, clôture et lecture des bénévoles restent réservées à « En cours ». Déployées sur le vrai projet le 06/11/2026 (accord de Kinder pour la mission). Tant que l'APK 1.2.0 n'est pas installé, l'ancienne application ne peut plus créer d'événement.

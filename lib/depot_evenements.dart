@@ -140,6 +140,18 @@ class DepotEvenements {
               },
           });
 
+  /// Le stock de départ de chaque gymnase (gymnase -> produit -> quantité et marque
+  /// « repris »), pour l'écran de préparation. Mêmes lectures partagées que les autres.
+  Stream<Map<String, Map<String, StockDepart>>> suivreStocksDepart(String id,
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final e in g.value.stocks.entries)
+                  e.key: StockDepart(e.value.quantite, repris: e.value.repris),
+              },
+          });
+
   /// État du stock de chaque produit, gymnase par gymnase (gymnase -> produit ->
   /// état) : rupture, stock bas, vide. [gymnases] limite aux gymnases voulus.
   Stream<Map<String, Map<String, EtatStock>>> suivreEtats(String id,
@@ -177,7 +189,8 @@ class DepotEvenements {
     late final StreamController<Map<String, _StocksGymnase>> sortie;
     StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? abonnementGymnases;
     final abonnements = <String, List<StreamSubscription<dynamic>>>{};
-    final stocks = <String, Map<String, ({int quantite, int? reference})>>{};
+    final stocks =
+        <String, Map<String, ({int quantite, int? reference, bool repris})>>{};
     final vides = <String, Set<String>>{};
 
     void emettre() {
@@ -219,6 +232,7 @@ class DepotEvenements {
                       d.id: (
                         quantite: d.data()['quantite'] as int,
                         reference: d.data()['reference'] as int?,
+                        repris: d.data()['repris'] == true,
                       ),
                   };
                   emettre();
@@ -366,7 +380,7 @@ class DepotEvenements {
     for (final r in reprises) {
       lot.set(
         ref.collection('gymnases').doc(r.gymnaseId).collection('stocks').doc(r.produitId),
-        {'quantite': r.reste.quantite, 'reference': r.reste.quantite},
+        {'quantite': r.reste.quantite, 'reference': r.reste.quantite, 'repris': true},
       );
       lot.delete(_restes.doc(r.reste.id));
     }
@@ -682,7 +696,7 @@ class DepotEvenements {
 class _StocksGymnase {
   const _StocksGymnase(this.stocks, this.vides);
 
-  final Map<String, ({int quantite, int? reference})> stocks;
+  final Map<String, ({int quantite, int? reference, bool repris})> stocks;
   final Set<String> vides;
 }
 

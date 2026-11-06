@@ -194,6 +194,7 @@ void main() {
     await attendre(tester, find.text('3,00 €'));
     expect(find.text('Café'), findsOneWidget);
     expect(find.byKey(const Key('modifier_evenement')), findsNothing);
+    expect(find.byKey(const Key('voir_preparation')), findsNothing);
     expect(find.byKey(const Key('ancien_evenement')), findsNothing);
 
     // --- Un événement de l'ancien format (sans gymnase) : message clair, pas de

@@ -82,6 +82,15 @@ class Evenement {
   bool get cloture => statut == 'cloture';
 }
 
+/// Stock d'un produit dans un gymnase, vu de la préparation : [repris] = posé à la
+/// création d'après les restes de l'événement précédent (effacé dès qu'on le corrige).
+class StockDepart {
+  const StockDepart(this.quantite, {this.repris = false});
+
+  final int quantite;
+  final bool repris;
+}
+
 /// Produit tel qu'il était dans le menu au moment de la création de l'événement.
 class ProduitEvenement {
   const ProduitEvenement(this.id, this.nom, this.prixCentimes, this.stock,

@@ -508,6 +508,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 | Étape | État | Date | Critères |
 |---|---|---|---|
 | P1 | Close (testée par Claude) | 06/11/2026 | 1 à 7 réussis : règles 197/197 (10 nouveaux, `preparation.test.mjs`), `flutter test` 252/252, `flutter analyze` sans erreur, parcours Android LC2 `evenements_test` + `restes_test` 2/2. Règles déployées le 06/11/2026. Limite : le bouton « Ouvrir l'événement » est testé en logique et dans le parcours `evenements_test`, pas en test d'écran isolé |
+| P2 | Close (testée par Claude) | 06/11/2026 | 1 à 6 réussis : règles 204/204 (7 nouveaux, `stock_depart.test.mjs`), `flutter test` 261/261, analyse sans erreur, parcours Android LC2 `preparation_test` + `restes_test` + `gymnases_test` + `evenements_test` 4/4. Règles (champ `repris`) déployées le 06/11/2026 |
 
 ### Cadrage P1 — État « En préparation » (phase 5, 06/11/2026)
 
@@ -526,6 +527,23 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 **Ce qu'on ne fait pas** : pas d'onglet Préparation ni de stock de départ (P2) ; pas de retour d'un événement ouvert vers « En préparation » ; pas de clôture depuis « En préparation » ; pas de changement des restes ni des caisses ; aucune dépendance.
 
 **Test de chaque critère** : règles (`tests_regles/lancer.ps1`) pour 1, 2, 3, 4, 5, 6 (document sans état `en_preparation` resté ouvert aux caisses) ; test d'écran/logique (`flutter test`) pour la pastille, le bouton selon le rôle, le tri ; parcours Android sur LC2 pour 1, 4 et 7 (création → reprise des restes → ouverture → un bénévole voit l'événement). Règles déployées dès que leurs tests passent.
+
+### Cadrage P2 — Onglet Préparation et stock de départ (phase 5, 06/11/2026)
+
+**Critères du plan, repris tels quels** : (1) l'onglet existe pour la gestion, pas pour un bénévole ; (2) 24 sodas saisis au gymnase A : « Gymnases et stocks » affiche 24 ; (3) un reste repris est pré-rempli, marqué « repris de l'événement précédent », corrigeable ; (4) aucun ingrédient dans la liste ; (5) un gestionnaire ne voit que ses gymnases ; (6) une fois l'événement ouvert, le stock de départ se lit seulement et renvoie vers « Gymnases et stocks ».
+
+**Stratégie**
+- Dans le bloc de gestion de l'événement (déjà réservé à la gestion : un bénévole ne le voit pas), un bouton « Préparation » (clé `voir_preparation`) placé avant « Gymnases et stocks », visible tant que l'événement n'est pas clôturé. Il ouvre un nouvel écran `EcranPreparation` : titre, puis des étapes numérotées. P2 n'ajoute que l'étape 1 « Stock de départ » ; P3 et P4 ajouteront les étapes 2 et 3 (rien n'est affiché pour elles avant).
+- Étape 1 : une carte par gymnase de la portée (`PorteeGestion.gere`), avec la liste des produits finis de l'événement (la liste `produits` de l'événement ne contient déjà jamais d'ingrédient : ils vivent dans les recettes), chacun avec un champ de quantité entière 0 à 100 000 ; saisie = `definirStock` (même écriture que « Gymnases et stocks », donc les deux écrans montrent le même chiffre). Produit sans quantité = non suivi ; bouton « Suivre tous » à zéro réutilisé. Pas de nouvelle structure de données pour le stock.
+- Marque « repris de l'événement précédent » : le stock posé par `repriseDesRestes` à la création gagne un champ booléen `repris: true` (écrit par `creerEvenement`). Toute correction du chiffre (`definirStock`, qui remplace le document) efface la marque. Règles d'accès sur `stocks` : `repris` accepté (booléen `true` seulement) à la création et dans les champs modifiables par la gestion de ce gymnase (`affectedKeys` autorise `repris`, valeur absente ou `true`) ; les branches caisse (vente, annulation, ajout de parts) ne le touchent pas. L'étiquette « Repris de l'événement précédent » s'affiche sous le produit tant que la marque existe.
+- Événement « En cours » ou clôturé : l'étape 1 est en lecture seule (chiffres sans champ de saisie) avec un bouton « Voir Gymnases et stocks » (clé `aller_gymnases_stocks`) ; en préparation : saisie.
+- Flux de lecture : mêmes flux partagés que « Gymnases et stocks » (`suivreProduits`, `suivreStocksParGymnase`) pour ne pas augmenter les lectures ; ajouter `repris` à ce que lit `_lireStocks` (objet stock : quantité, référence, repris) sans casser les usages existants.
+
+**Fichiers touchés** : nouveau `lib/ecran_preparation.dart`, `lib/ecran_evenement.dart` (bouton), `lib/depot_evenements.dart` (champ `repris`, `creerEvenement`, lecture), `firestore.rules`, `tests_regles/preparation.test.mjs` (ou nouveau `tests_regles/stock_depart.test.mjs` inscrit dans `lancer.ps1`), `test/preparation_test.dart` (nouveau), `integration_test/preparation_test.dart` (nouveau parcours), éventuels tests voisins touchés par le changement de lecture.
+
+**Ce qu'on ne fait pas** : personnes et durée (P3), prévision (P4), Excel (P5 et suivantes) ; pas de stock d'ingrédients (décision 54) ; pas de changement de « Gymnases et stocks » ni des courses ; pas de nouvelle dépendance.
+
+**Test de chaque critère** : règles pour la marque `repris` (création, correction, refus d'une valeur autre que `true`, branches caisse intactes) ; `flutter test` pour 1 (bouton absent hors gestion), 4 (liste = produits finis, sans ingrédient), 5 (portée), 6 (lecture seule + lien) et l'étiquette ; parcours Android LC2 pour 2 (24 sodas saisis dans la Préparation, relus dans « Gymnases et stocks ») et 3 (reste gardé à la clôture d'un événement, repris à la création, étiquette visible, corrigé, étiquette disparue).
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

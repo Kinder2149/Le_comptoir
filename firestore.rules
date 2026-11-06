@@ -23,7 +23,7 @@ rules_version = '2';
 //                                                   forcee, nbCaissesOuvertes
 //       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
-//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
+//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »), repris? (true = repris des restes ; effacé à la correction)
 //                                                 (absent = pas de suivi de ce produit dans ce gymnase)
 //       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
@@ -461,8 +461,9 @@ service cloud.firestore {
                       && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
                       && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
               && reglableApres(a, e)
-              && request.resource.data.keys().hasOnly(['quantite', 'reference'])
+              && request.resource.data.keys().hasOnly(['quantite', 'reference', 'repris'])
               && request.resource.data.keys().hasAll(['quantite'])
+              && (!('repris' in request.resource.data) || request.resource.data.repris == true)
               && request.resource.data.quantite is int
               && request.resource.data.quantite >= 0
               && request.resource.data.quantite <= 100000
@@ -484,7 +485,8 @@ service cloud.firestore {
               && (
                 (gereGymnase(a, e, g)
                   && reglable(a, e)
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference', 'repris'])
+                  && (!('repris' in request.resource.data) || request.resource.data.repris == true)
                   && (!('reference' in request.resource.data)
                       || (request.resource.data.reference is int
                           && request.resource.data.reference >= 0

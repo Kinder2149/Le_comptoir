@@ -14,6 +14,7 @@ import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
+import 'ecran_preparation.dart';
 import 'ecran_restes.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -566,6 +567,20 @@ class _EtatBlocGestion extends State<_BlocGestion> {
 
   void _abonner() => _suivi = _creerFlux();
 
+  void _voirGymnases(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranGymnases(
+            depot: widget.depot,
+            evenementId: ev.id,
+            evenementNom: ev.nom,
+            portee: portee,
+            membres: widget.membres,
+            codeAssociation: widget.codeAssociation,
+          ),
+        ),
+      );
+
   @override
   void initState() {
     super.initState();
@@ -638,20 +653,34 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             ? Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: OutlinedButton(
-                  key: const Key('voir_gymnases'),
+                  key: const Key('voir_preparation'),
                   style: TypeAction.gerer.contour,
                   onPressed: () => Navigator.of(context).push<void>(
                     MaterialPageRoute(
-                      builder: (_) => EcranGymnases(
-                        depot: widget.depot,
-                        evenementId: ev.id,
-                        evenementNom: ev.nom,
+                      builder: (_) => EcranPreparation(
+                        evenement: widget.depot.suivreEvenement(ev.id),
                         portee: portee,
-                        membres: widget.membres,
-                        codeAssociation: widget.codeAssociation,
+                        gymnases: widget.depot.suivreGymnases(ev.id),
+                        produits: widget.depot.suivreProduits(ev.id),
+                        stocks: widget.depot
+                            .suivreStocksDepart(ev.id, gymnases: portee.filtre),
+                        definirStock: (g, p, q) =>
+                            widget.depot.definirStock(ev.id, g, p, q),
+                        onVoirGymnases: () => _voirGymnases(context, ev, portee),
                       ),
                     ),
                   ),
+                  child: const Text('Préparation'),
+                ),
+              )
+            : const SizedBox.shrink(),
+        !ev.cloture
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: OutlinedButton(
+                  key: const Key('voir_gymnases'),
+                  style: TypeAction.gerer.contour,
+                  onPressed: () => _voirGymnases(context, ev, portee),
                   child: const Text('Gymnases et stocks'),
                 ),
               )
