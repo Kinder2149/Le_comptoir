@@ -1,5 +1,16 @@
 # CHANGELOG — Le Comptoir
 
+## 06/11/2026 — Mission « Préparer l'événement » : plan prêt (phase 4)
+- Décision 60 : état « En préparation » (invisible aux bénévoles, aucune caisse, « Ouvrir l'événement »).
+- Plan P1 à P11, critères de chaque étape, format du classeur Excel et trois préalables validés par Kinder (PLAN_STOCK_COURSES.md, section 13), avec le prompt de lancement de la session mère.
+- Démarrage du chantier après le test de Kinder sur téléphone des missions en attente.
+
+## 06/11/2026 — Mission « Préparer l'événement » : figeage (phase 3)
+- Décisions 53 à 59 validées par Kinder : onglet Préparation (stock de départ, prévision, courses), stock de départ des produits finis par gymnase, personnes et durée réglées dans la Préparation, prévision à trois sources (menu, événement passé, Excel), modèle Excel à quatre feuilles qui remplace l'export CSV, import de l'Excel de l'an passé, apports nommés des bénévoles.
+- Dépendances accordées : lecture et écriture d'un fichier Excel, choix d'un fichier sur le téléphone.
+- Critère de fin de mission écrit et validé par Kinder (bloc de statut de PROJET_CONTEXTE.md).
+- Retours du 01/11/2026 (R1 à R5) : R1 déjà fait, R2 à R5 repris par ces décisions.
+
 ## 05/11/2026 — Consolidation, temps 2 : vérification par une autre IA
 - « Plan initial (étapes 1 à 14) » : « En attente de ma capture » → « En implémentation », renvoyée au temps 3. Non vérifiable : aucun critère de fin écrit ; RECETTE.md suppose une vraie connexion Google, deux téléphones et la vraie base.
 - « Stock et courses » (section 11) et « C1 + B1 à B5 » (section 12) : réussies (copie locale de Firebase, émulateur ; 247 + 186 + 27 tests réussis). Restent le test et la validation de Kinder.
