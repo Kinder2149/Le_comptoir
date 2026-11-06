@@ -4,17 +4,17 @@
 
 ```
 STATUT DU PROJET : En développement
-MISSION : Plan initial (étapes 1 à 14) — En attente de ma capture
+MISSION : Plan initial (étapes 1 à 14) — En implémentation
 MISSION : Publication Play Store — En implémentation
 MISSION : Stock et courses (étapes 1 à 8) — En attente de ma capture
 MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) — En implémentation
-  Étape : B1 Menu = catalogue sans stock — ? — critère : aucun stock dans un menu, provenance acheté / apporté par produit
-  Étape : B2 Ratios et consommation par catégorie — ? — critère : 1 gâteau = n parts, ratio à zéro refusé
+  Étape : B1 Menu = catalogue sans stock — Close — critère : aucun stock dans un menu, provenance acheté / apporté par produit
+  Étape : B2 Ratios et consommation par catégorie — Close — critère : 1 gâteau = n parts, ratio à zéro refusé
   Étape : B3 Gymnases et stock côté événement — Close — critère : stock propre à l'événement, vendu et reste exacts après 3 ventes
   Étape : B4 Courses depuis Gymnases et stock — Close — critère : demi-journée, jour complet ou plus, estimation modifiable
-  Étape : B5 Clôture et report de stock — Planifiée — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
-  Étape : B6 Clôture de mission — Texte de vérification rédigé le 30/10/2026 (PLAN_STOCK_COURSES.md, section 12), en attente de la vérification par une autre IA et de la capture de Kinder — critère : verdict réussi/échoué par critère rendu par une autre IA
-MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Implémentée et testée par Claude le 30/10/2026 (branche `claude/c1-courses-partielles`, règles déployées le 30/10/2026), reste la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
+  Étape : B5 Clôture et report de stock — Close — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
+  Étape : B6 Clôture de mission — Vérification par une autre IA faite le 05/11/2026 (B1 à B5 et C1 réussis, texte en PLAN_STOCK_COURSES.md section 12), en attente du test et de la capture de Kinder — critère : verdict réussi/échoué par critère rendu par une autre IA
+MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Implémentée et testée par Claude le 30/10/2026, fusionnée dans `main` (règles déployées le 30/10/2026), vérifiée par une autre IA le 05/11/2026, reste le test et la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
 IDÉES PARQUÉES :
   - Paiement carte avec Monetico (exploration, rien de figé)
   - Front : missions (b) caisse, (c) accueil/association, (d) événement/suivi/gymnases, (e) bilan/menus/paramètres, (f) finitions
