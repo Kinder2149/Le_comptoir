@@ -467,7 +467,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 >
 > **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.
 
-## 13. Mission « Préparer l'événement » (décisions 53 à 60, plan proposé le 06/11/2026)
+## 13. Mission « Préparer l'événement » (décisions 53 à 60, plan, critères et préalables validés par Kinder le 06/11/2026)
 
 **Critère de fin de mission (Kinder, 06/11/2026)** : « Je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli. »
 
@@ -507,3 +507,23 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+
+### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
+
+```
+Tu es la session mère de la mission « Préparer l'événement » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture de PHASES_CADRAGE.md).
+
+1. Lis, dans cet ordre : PROJET_CONTEXTE.md (bloc de statut, décisions 53 à 60, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md section 13 (plan P1 à P11, critères, classeur Excel, préalables), CHANGELOG.md (dernière entrée), graphify-out/GRAPH_REPORT.md.
+2. Préalable 1 : demande à Kinder, en une question, si son test sur téléphone des missions en attente est fait. Sinon, tu t'arrêtes là.
+3. Hygiène git : rien de non enregistré, main à jour avec le dépôt en ligne, puis branche `claude/preparation-evenement`. Jamais de travail sur main.
+4. Pour chaque étape, de P1 à P11, dans l'ordre :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 13 (« Cadrage Pn »), critères du plan repris tels quels.
+   b. Phase 6 : confie l'étape à une sous-session neuve (Sonnet) avec son seul dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (10 lignes max).
+   c. Vérifie toi-même que le test de code ou sur émulateur de chaque critère est réussi (flutter analyze, flutter test, tests_regles/lancer.ps1, parcours Android utiles sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (accord de Kinder donné pour toute la mission, préalable 2).
+   d. Ligne dans le tableau de suivi de la section 13, ligne dans CHANGELOG.md, commit sur la branche. Puis étape suivante, sans attendre Kinder.
+5. Dépendances accordées : une pour lire et écrire un fichier Excel, une pour choisir un fichier. Aucune autre sans accord de Kinder.
+6. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite ; P9 si le fichier Excel de l'an passé de Kinder n'est pas dans le dossier du projet.
+7. Clôture : après P11, lance la vérification par une autre IA dans une conversation neuve sur Sonnet, avec le texte de vérification de P11 (capture et verdict par critère). En cas d'échec, retour en phase 6 sur les seuls critères échoués.
+8. Fin : documentation à jour, résumé final dans CHANGELOG.md, branche poussée sur le dépôt, APK de recette 1.2.0 ; puis Kinder fait son test et sa capture. Fusion dans main seulement après son accord écrit.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```

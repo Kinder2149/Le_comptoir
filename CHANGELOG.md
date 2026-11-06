@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 06/11/2026 — Mission « Préparer l'événement » : plan prêt (phase 4)
+- Décision 60 : état « En préparation » (invisible aux bénévoles, aucune caisse, « Ouvrir l'événement »).
+- Plan P1 à P11, critères de chaque étape, format du classeur Excel et trois préalables validés par Kinder (PLAN_STOCK_COURSES.md, section 13), avec le prompt de lancement de la session mère.
+- Démarrage du chantier après le test de Kinder sur téléphone des missions en attente.
+
 ## 06/11/2026 — Mission « Préparer l'événement » : figeage (phase 3)
 - Décisions 53 à 59 validées par Kinder : onglet Préparation (stock de départ, prévision, courses), stock de départ des produits finis par gymnase, personnes et durée réglées dans la Préparation, prévision à trois sources (menu, événement passé, Excel), modèle Excel à quatre feuilles qui remplace l'export CSV, import de l'Excel de l'an passé, apports nommés des bénévoles.
 - Dépendances accordées : lecture et écriture d'un fichier Excel, choix d'un fichier sur le téléphone.
