@@ -89,8 +89,8 @@ String bilanEnCsv({
   ligne(['Bilan', evenement.nom]);
   ligne(['Date', dateAffichee(evenement.date)]);
   ligne(['Vue', vue]);
-  ligne(['État', evenement.enCours ? 'Provisoire (événement en cours)' : 'Définitif (événement clôturé)']);
-  if (!evenement.enCours && evenement.forcee) {
+  ligne(['État', !evenement.cloture ? 'Provisoire (événement en cours)' : 'Définitif (événement clôturé)']);
+  if (evenement.cloture && evenement.forcee) {
     ligne(['Clôture forcée', '${pluriel(evenement.nbCaissesOuvertes, 'caisse')} non clôturée${accord(evenement.nbCaissesOuvertes)} : des ventes peuvent manquer']);
   }
   vide();

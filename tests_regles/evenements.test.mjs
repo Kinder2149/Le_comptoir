@@ -2,12 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  admin, API, RACINE, MAJ, assoAvecGestionnaire, ecrire, modifier, effacer,
+  admin, API, RACINE, MAJ, MAINTENANT, assoAvecGestionnaire, ecrire, modifier, effacer,
   lire, lot, produit,
 } from './outils.mjs';
 
 const evenement = (extra = {}) => ({
-  nom: 'Tournoi', date: '2026-10-03', statut: 'en_cours',
+  nom: 'Tournoi', date: '2026-10-03', statut: 'en_preparation',
   modes: ['especes', 'carte'], menuNom: 'Menu Tournoi', creeLe: MAJ, ...extra,
 });
 
@@ -48,6 +48,16 @@ test('gestion crée un événement avec la copie des produits ; tous les membres
       produitEvenement(id, e, 'p1'),
       produitEvenement(id, e, 'p2'),
     ]), 200);
+    // Né « en préparation » : le bénévole ne le voit qu'une fois l'événement ouvert.
+    assert.equal(await lire(lea, `associations/${id}/evenements/${e}`), 403);
+    await lot(admin, [{
+      update: {
+        name: `${RACINE}/associations/${id}/evenements/${e}`,
+        fields: { statut: { stringValue: 'en_cours' }, ouvertLe: { timestampValue: MAINTENANT } },
+      },
+      updateMask: { fieldPaths: ['statut', 'ouvertLe'] },
+      currentDocument: { exists: true },
+    }]);
     assert.equal(await lire(lea, `associations/${id}/evenements/${e}`), 200);
     assert.equal(await lire(lea, `associations/${id}/evenements/${e}/produits/p1`), 200);
     assert.equal(await lire(qui, `associations/${id}/evenements/${e}/produits/p2`), 200);

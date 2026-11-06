@@ -249,9 +249,9 @@ class _EtatBilan extends State<EcranBilan> {
                       )
                     : const SizedBox.shrink(),
                 _Bandeau(
-                  type: evenement.enCours ? TypeAction.attention : TypeAction.reussir,
-                  icone: evenement.enCours ? Icons.hourglass_top : Icons.verified,
-                  texte: evenement.enCours
+                  type: !evenement.cloture ? TypeAction.attention : TypeAction.reussir,
+                  icone: !evenement.cloture ? Icons.hourglass_top : Icons.verified,
+                  texte: !evenement.cloture
                       ? 'Bilan provisoire : événement en cours'
                       : 'Bilan définitif : événement clôturé',
                   cle: 'bilan_etat',
@@ -265,7 +265,7 @@ class _EtatBilan extends State<EcranBilan> {
                     cle: 'bilan_limite',
                   ),
                 // Clôture forcée : le bilan le dit clairement.
-                if (!evenement.enCours && evenement.forcee)
+                if (evenement.cloture && evenement.forcee)
                   _Bandeau(
                     type: TypeAction.danger,
                     icone: Icons.warning_amber,

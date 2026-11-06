@@ -327,7 +327,7 @@ class DepotEvenements {
     lot.set(ref, {
       'nom': nom.trim(),
       'date': date,
-      'statut': 'en_cours',
+      'statut': 'en_preparation',
       'modes': modes,
       'menuNom': menu.nom,
       'creeLe': FieldValue.serverTimestamp(),
@@ -651,6 +651,18 @@ class DepotEvenements {
           'clotureParPrenom': parPrenom,
           'forcee': nbCaissesOuvertes > 0,
           'nbCaissesOuvertes': nbCaissesOuvertes,
+        });
+      });
+
+  /// Ouvre l'événement : « en préparation » devient « en cours » (les bénévoles le
+  /// voient alors, les caisses peuvent s'ouvrir). Le responsable, ou un gestionnaire
+  /// rattaché à tous les gymnases ; pas de retour en arrière. Nécessite le réseau.
+  Future<void> ouvrirEvenement(String id) =>
+      // Transaction : échoue tout de suite sans réseau au lieu d'attendre.
+      _db.runTransaction((t) async {
+        t.update(_evenements.doc(id), {
+          'statut': 'en_cours',
+          'ouvertLe': Timestamp.now(),
         });
       });
 

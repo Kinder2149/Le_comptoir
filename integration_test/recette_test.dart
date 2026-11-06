@@ -233,8 +233,14 @@ void main() {
     // « Ouvrir la caisse » sur l'écran de l'association (seulement depuis un événement).
     expect(
         find.descendant(
-            of: find.byKey(Key('etat_${evt.id}')), matching: find.text('En cours')),
+            of: find.byKey(Key('etat_${evt.id}')), matching: find.text('En préparation')),
         findsOneWidget);
+    // Aucune caisse ne s'ouvre avant l'ouverture de l'événement.
+    await depotEv.ouvrirEvenement(evt.id);
+    await attendre(
+        tester,
+        find.descendant(
+            of: find.byKey(Key('etat_${evt.id}')), matching: find.text('En cours')));
     expect(find.byKey(const Key('ouvrir_caisse')), findsNothing);
     expect(find.text('Ouvrir la caisse'), findsNothing);
     expect(evt.modes, ['especes', 'carte', 'cheque']);
@@ -687,7 +693,7 @@ void main() {
 
     etape('7 coupure');
     // ============ 7. Coupure de réseau (second événement, pour ne pas fausser le bilan) ============
-    final evt2 = await depotEv.creerEvenement(
+    final evt2 = await creerOuvert(depotEv,
       nom: 'Buvette du dimanche',
       date: dateIso(demain),
       menuId: menu.id,

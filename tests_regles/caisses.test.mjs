@@ -8,7 +8,7 @@ import {
 } from './outils.mjs';
 import {
   baisserStock, caisse, chemins, evenement, evenementEnCours, gymnase, ligne,
-  produitEvenement, vente,
+  ouvrir, produitEvenement, vente,
 } from './outilsCaisse.mjs';
 
 test('un bénévole ouvre SA caisse, et seulement la sienne', async () => {
@@ -156,6 +156,7 @@ test('une vente de 9 produits (ticket complet) passe en une écriture + 9 baisse
     gymnase(id),
     ...Array.from({ length: 9 }, (_, i) => produitEvenement(id, 'e1', `q${i}`, { stock: 10 })),
   ]);
+  assert.equal(await ouvrir(id), 200);
   await lot(lea, [caisse(c.caisse(lea.uid))]);
   const lignes = Array.from({ length: 9 }, () => ligne());
   assert.equal(await lot(lea, [vente(c.vente(lea.uid), {

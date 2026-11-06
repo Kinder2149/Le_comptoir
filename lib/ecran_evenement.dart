@@ -21,25 +21,50 @@ import 'restes.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
-/// Pastille « En cours » (vert) ou « Clôturé » (gris), visible d'un coup d'œil.
+/// Pastille à trois états, visible d'un coup d'œil : « En préparation » (couleur
+/// d'attention), « En cours » (vert) ou « Clôturé » (gris).
 class PastilleEtat extends StatelessWidget {
-  const PastilleEtat({super.key, required this.enCours});
+  const PastilleEtat({super.key, required this.enCours, this.enPreparation = false});
 
   final bool enCours;
+  final bool enPreparation;
 
   @override
   Widget build(BuildContext context) {
-    final texte = enCours ? Palette.saugeFonce : Palette.gris;
+    final Color texte;
+    final Color fond;
+    final IconData icone;
+    final String libelle;
+    if (enPreparation) {
+      texte = Palette.ocreFonce;
+      fond = Palette.ocreDoux;
+      icone = Icons.edit_calendar;
+      libelle = 'En préparation';
+    } else if (enCours) {
+      texte = Palette.saugeFonce;
+      fond = Palette.saugeDoux;
+      icone = Icons.play_circle;
+      libelle = 'En cours';
+    } else {
+      texte = Palette.gris;
+      fond = Palette.sableDoux;
+      icone = Icons.lock;
+      libelle = 'Clôturé';
+    }
     return Chip(
       visualDensity: VisualDensity.compact,
-      avatar: Icon(enCours ? Icons.play_circle : Icons.lock, size: 18, color: texte),
-      label: Text(enCours ? 'En cours' : 'Clôturé',
-          style: TextStyle(color: texte, fontWeight: FontWeight.w700)),
-      backgroundColor: enCours ? Palette.saugeDoux : Palette.sableDoux,
+      avatar: Icon(icone, size: 18, color: texte),
+      label: Text(libelle, style: TextStyle(color: texte, fontWeight: FontWeight.w700)),
+      backgroundColor: fond,
       side: BorderSide.none,
     );
   }
 }
+
+/// Qui peut ouvrir un événement « en préparation » : comme pour la clôture, le
+/// responsable ou un gestionnaire rattaché à tous les gymnases.
+bool peutOuvrirEvenement(Evenement ev, PorteeGestion portee) =>
+    ev.enPreparation && portee.toutVoir;
 
 /// Détail d'un événement : date, modes de paiement, produits et prix copiés.
 class EcranEvenement extends StatelessWidget {
@@ -184,11 +209,52 @@ class EcranEvenement extends StatelessWidget {
           depotCaisses: depot.caisses(ev.id),
           stocks: () => {for (final p in produits) p.id: p.stock},
           onErreur: (_) {},
-          verrouillee: !ev.enCours, // événement clôturé : figé
+          verrouillee: ev.cloture, // événement clôturé : figé
           peutCorriger: false,
         ),
       ),
     );
+  }
+
+  /// Ouverture de l'événement (« en préparation » -> « en cours »), après confirmation.
+  Future<void> _ouvrirEvenement(BuildContext context, Evenement ev) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text("Ouvrir l'événement ?"),
+        content: const Text(
+          "Les bénévoles verront l'événement et pourront ouvrir leur caisse. "
+          'Cette action ne peut pas être annulée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Retour'),
+          ),
+          FilledButton(
+            key: const Key('confirmer_ouverture_evenement'),
+            style: TypeAction.reussir.plein,
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Ouvrir'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await depot.ouvrirEvenement(ev.id);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Ouverture impossible. Vérifiez le réseau.',
+              key: Key('erreur_ouverture_evenement'),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   /// Clôture de l'événement ; forcée s'il reste des caisses non clôturées.
@@ -277,6 +343,7 @@ class EcranEvenement extends StatelessWidget {
     codeAssociation: codeAssociation,
     onOuvrirCaisse: (c) => _ouvrirVentesDe(context, ev, c),
     onCloturer: (caisses) => _cloturer(context, ev, caisses),
+    onOuvrirEvenement: () => _ouvrirEvenement(context, ev),
   );
 
   @override
@@ -294,7 +361,7 @@ class EcranEvenement extends StatelessWidget {
           appBar: AppBar(
             title: Text(ev.nom, key: const Key('titre_evenement')),
             actions: [
-              if (peutModifier && ev.enCours)
+              if (peutModifier && !ev.cloture)
                 IconButton(
                   key: const Key('modifier_evenement'),
                   icon: const Icon(Icons.edit),
@@ -327,15 +394,16 @@ class EcranEvenement extends StatelessWidget {
                 child: PastilleEtat(
                   key: const Key('etat_evenement'),
                   enCours: ev.enCours,
+                  enPreparation: ev.enPreparation,
                 ),
               ),
-              if (!ev.enCours && ev.clotureLe != null)
+              if (ev.cloture && ev.clotureLe != null)
                 Text(
                   'Clôturé par ${ev.clotureParPrenom ?? '?'} le '
                   '${dateAffichee(dateIso(ev.clotureLe!))} à ${heureAffichee(ev.clotureLe!)}',
                   key: const Key('cloture_info'),
                 ),
-              if (!ev.enCours && ev.forcee)
+              if (ev.cloture && ev.forcee)
                 Text(
                   'Clôture forcée : ${pluriel(ev.nbCaissesOuvertes, 'caisse')} non clôturée${accord(ev.nbCaissesOuvertes)}. '
                   'Des ventes peuvent manquer.',
@@ -407,10 +475,10 @@ class EcranEvenement extends StatelessWidget {
                                 resumeFiche(p.fiche),
                           ),
                           // La gestion corrige l'image (pas le nom ni le prix).
-                          trailing: peutModifier && ev.enCours
+                          trailing: peutModifier && !ev.cloture
                               ? const Icon(Icons.image_outlined)
                               : null,
-                          onTap: peutModifier && ev.enCours
+                          onTap: peutModifier && !ev.cloture
                               ? () => _changerImage(context, p)
                               : null,
                         ),
@@ -437,6 +505,7 @@ class _BlocGestion extends StatefulWidget {
     required this.codeAssociation,
     required this.onOuvrirCaisse,
     required this.onCloturer,
+    required this.onOuvrirEvenement,
   });
 
   final DepotEvenements depot;
@@ -446,6 +515,7 @@ class _BlocGestion extends StatefulWidget {
   final Stream<String> codeAssociation;
   final void Function(Caisse caisse) onOuvrirCaisse;
   final void Function(List<Caisse> caisses) onCloturer;
+  final VoidCallback onOuvrirEvenement;
 
   @override
   State<_BlocGestion> createState() => _EtatBlocGestion();
@@ -542,9 +612,29 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                 ),
               )
             : const SizedBox.shrink(),
+        // Ouverture : le responsable, ou un gestionnaire rattaché à tous les gymnases.
+        if (peutOuvrirEvenement(ev, portee))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: FilledButton(
+              key: const Key('ouvrir_evenement'),
+              style: TypeAction.reussir.plein,
+              onPressed: widget.onOuvrirEvenement,
+              child: const Text("Ouvrir l'événement"),
+            ),
+          ),
+        if (ev.enPreparation && !portee.toutVoir)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              "Seul le responsable, ou un gestionnaire rattaché à tous les gymnases, "
+              "peut ouvrir l'événement.",
+              key: Key('ouverture_reservee'),
+            ),
+          ),
         // Les accès (gymnases, bilan) passent AVANT le suivi, qui est long. Éléments
         // toujours présents (vides ou non) : le suivi garde sa place et son état.
-        ev.enCours
+        !ev.cloture
             ? Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: OutlinedButton(
@@ -567,7 +657,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
               )
             : const SizedBox.shrink(),
         // Les courses : responsable, ou gestionnaire rattaché à tous les gymnases.
-        ev.enCours && portee.toutVoir
+        !ev.cloture && portee.toutVoir
             ? Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: OutlinedButton(
@@ -585,6 +675,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                 ),
               )
             : const SizedBox.shrink(),
+        if (!ev.enPreparation)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: OutlinedButton(
@@ -611,16 +702,18 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             child: const Text('Voir le bilan'),
           ),
         ),
-        SuiviEnDirect(
-          key: const Key('suivi_en_direct'),
-          tableau: _suivi.tableau,
-          produits: _suivi.produits,
-          gymnases: _suivi.gymnases,
-          stocks: _suivi.stocks,
-          etats: _suivi.etats,
-          commun: portee.toutVoir,
-          onOuvrirCaisse: widget.onOuvrirCaisse,
-        ),
+        // Rien à suivre tant que l'événement n'est pas ouvert.
+        if (!ev.enPreparation)
+          SuiviEnDirect(
+            key: const Key('suivi_en_direct'),
+            tableau: _suivi.tableau,
+            produits: _suivi.produits,
+            gymnases: _suivi.gymnases,
+            stocks: _suivi.stocks,
+            etats: _suivi.etats,
+            commun: portee.toutVoir,
+            onOuvrirCaisse: widget.onOuvrirCaisse,
+          ),
         if (ev.enCours && !portee.toutVoir)
           const Padding(
             padding: EdgeInsets.only(top: 12),

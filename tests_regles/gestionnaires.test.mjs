@@ -279,7 +279,7 @@ test('au plus 8 gymnases par événement', async () => {
 test('un événement peut naître avec plusieurs gymnases (compteur dans le même lot)', async () => {
   const { chef, id } = await evenementEnCours();
   const evt = (e, n) => ecrire(`associations/${id}/evenements/${e}`, {
-    nom: 'Deux', date: '2026-10-03', statut: 'en_cours', modes: ['especes'],
+    nom: 'Deux', date: '2026-10-03', statut: 'en_preparation', modes: ['especes'],
     menuNom: 'M', creeLe: MAJ, nbGymnases: n,
   });
   const gym = (e, g) => ecrire(`associations/${id}/evenements/${e}/gymnases/${g}`, { nom: g, creeLe: MAJ });
@@ -308,7 +308,7 @@ test('un gestionnaire (non responsable) crée un événement à 3 gymnases et 10
   const base = `associations/${id}/evenements/neuf`;
   const ecritures = [
     ecrire(base, {
-      nom: 'Gros', date: '2026-10-03', statut: 'en_cours', modes: ['especes'],
+      nom: 'Gros', date: '2026-10-03', statut: 'en_preparation', modes: ['especes'],
       menuNom: 'M', creeLe: MAJ, nbGymnases: 3,
     }),
   ];

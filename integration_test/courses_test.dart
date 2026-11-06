@@ -100,7 +100,7 @@ void main() {
         prixCentimes: 250,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -293,7 +293,7 @@ void main() {
         prixCentimes: 250,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,

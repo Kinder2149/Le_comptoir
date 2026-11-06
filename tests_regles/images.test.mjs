@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   admin, assoAvecGestionnaire, ecrire, lire, lot, MAJ, produit, RACINE, API, entier,
 } from './outils.mjs';
-import { evenement, produitEvenement } from './outilsCaisse.mjs';
+import { evenement, ouvrir, produitEvenement } from './outilsCaisse.mjs';
 
 const ICONES = ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda',
   'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte'];
@@ -96,6 +96,7 @@ test('les images sont copiées dans l\'événement et lisibles par les bénévol
     produitEvenement(id, 'e1', 'p2', { champs: icone('cafe') }),
     produitEvenement(id, 'e1', 'p3'),
   ]), 200);
+  assert.equal(await ouvrir(id), 200); // les bénévoles ne voient l'événement qu'une fois ouvert
   const lu = await (await fetch(`${API}/associations/${id}/evenements/e1/produits/p1`, {
     headers: { Authorization: `Bearer ${lea.jeton}` },
   })).json();

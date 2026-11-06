@@ -166,7 +166,7 @@ void main() {
 
     // --- Un événement copie les images avec les produits.
     final depotEv = depotAsso.evenements(assoId);
-    final evt = await depotEv.creerEvenement(
+    final evt = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menu.id,

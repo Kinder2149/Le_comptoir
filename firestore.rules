@@ -17,7 +17,8 @@ rules_version = '2';
 //     restes/{r}                                  nomGymnase, nomProduit, quantite, evenementId, majLe : stock gardé à la clôture
 //                                                 d'un événement pour le suivant (écrit avec la clôture, lu et effacé par la gestion
 //                                                 à la création de l'événement suivant ; identifiant = gymnase__produit, sans accents)
-//     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
+//     evenements/{e}                              nom, date, statut ('en_preparation' à la création, puis 'en_cours' à l'ouverture
+//                                                 (+ ouvertLe), puis 'cloture'), modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
 //       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
@@ -178,6 +179,18 @@ service cloud.firestore {
             || (roleDe(a) == 'gestionnaire'
                 && rattaches(a, e).size() >= get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)));
     }
+    // Événement « en cours » : caisses, ventes, signaux « vide », lecture par les bénévoles.
+    function enCours(a, e) {
+      return get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours';
+    }
+    // Événement que la gestion peut régler : « en préparation » (avant l'ouverture) ou « en cours ».
+    function reglable(a, e) {
+      return get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut in ['en_preparation', 'en_cours'];
+    }
+    // Même test sur l'état du document APRÈS le lot d'écritures (création de l'événement).
+    function reglableApres(a, e) {
+      return getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut in ['en_preparation', 'en_cours'];
+    }
     // Caisse ouverte de l'appelant dans CE gymnase.
     function caisseOuverteDans(a, e, g) {
       return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
@@ -311,7 +324,7 @@ service cloud.firestore {
           && texte(request.resource.data.nom, 60)
           && texte(request.resource.data.date, 10)
           && request.resource.data.date.size() == 10
-          && request.resource.data.statut == 'en_cours'
+          && request.resource.data.statut == 'en_preparation'
           && texte(request.resource.data.menuNom, 40)
           && modesValides(request.resource.data.modes)
           && request.resource.data.creeLe is timestamp;
@@ -319,9 +332,9 @@ service cloud.firestore {
         // Effacé seulement avec toute l'association.
         allow delete: if suppressionEnCours(a);
 
-        // Nom, date et modes restent modifiables tant que l'événement est en cours.
+        // Nom, date et modes restent modifiables tant que l'événement n'est pas clôturé.
         allow update: if estGestion(a)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom', 'date', 'modes'])
           && texte(request.resource.data.nom, 60)
           && request.resource.data.date.size() == 10
@@ -330,7 +343,7 @@ service cloud.firestore {
         // Durée de l'événement (réglage des courses) : le responsable, ou un gestionnaire
         // rattaché à tous les gymnases.
         allow update: if gereTout(a, e)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbJours'])
           && request.resource.data.nbJours is number
           && request.resource.data.nbJours >= 0.5
@@ -340,7 +353,7 @@ service cloud.firestore {
         // dans le même lot (le compteur ne se monte jamais seul : il décide qui est
         // « rattaché à tous les gymnases »).
         allow update: if estGestion(a)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases', 'dernierGymnase'])
           && request.resource.data.nbGymnases is int
           && request.resource.data.nbGymnases == resource.data.get('nbGymnases', 1) + 1
@@ -348,6 +361,16 @@ service cloud.firestore {
           && request.resource.data.dernierGymnase is string
           && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase))
           && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase));
+
+        // Ouverture : « en préparation » devient « en cours » (les bénévoles le voient alors).
+        // Le responsable, ou un gestionnaire rattaché à tous les gymnases, comme la clôture.
+        // Pas de retour en arrière ; seuls le statut et l'horodatage d'ouverture changent.
+        allow update: if gereTout(a, e)
+          && resource.data.statut == 'en_preparation'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['statut', 'ouvertLe'])
+          && request.resource.data.keys().hasAll(['statut', 'ouvertLe'])
+          && request.resource.data.statut == 'en_cours'
+          && request.resource.data.ouvertLe is timestamp;
 
         // Clôture : l'événement devient figé. Forcée = des caisses étaient encore
         // ouvertes ; le nombre est conservé pour signaler les ventes manquantes.
@@ -375,14 +398,14 @@ service cloud.firestore {
 
           // Copie posée à la création de l'événement. Le stock vit dans les gymnases.
           allow create: if estGestion(a)
-            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglableApres(a, e)
             && !('stock' in request.resource.data)
             && produitValide(request.resource.data);
 
           // Ensuite, seule l'image (icône, photo) peut changer, par la gestion et
           // tant que l'événement est en cours : nom et prix restent figés.
           allow update: if estGestion(a)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['icone', 'photo'])
             && produitValide(request.resource.data);
         }
@@ -397,7 +420,7 @@ service cloud.firestore {
           // Créé avec l'événement, ou ajouté plus tard avec le compteur de l'événement
           // monté de 1 dans le même lot.
           allow create: if estGestion(a)
-            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglableApres(a, e)
             && (!exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e))
                 || getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)
                    == get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1) + 1)
@@ -408,13 +431,13 @@ service cloud.firestore {
 
           // Renommer, tant que l'événement est en cours (jamais supprimer).
           allow update: if estGestion(a)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom'])
             && texte(request.resource.data.nom, 40);
 
           // Personnes attendues (réglage des courses), par ceux qui lancent les courses.
           allow update: if gereTout(a, e)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['personnes'])
             && request.resource.data.personnes is int
             && request.resource.data.personnes >= 0
@@ -429,7 +452,7 @@ service cloud.firestore {
             // l'événement est en cours), ou suppression de l'association.
             allow delete: if suppressionEnCours(a)
               || (gereGymnase(a, e, g)
-                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+                  && reglable(a, e));
 
             // Quantité de départ : par la gestion de CE gymnase, ou à la naissance du
             // gymnase (même lot) par un gestionnaire qui crée l'événement.
@@ -437,7 +460,7 @@ service cloud.firestore {
                   || (estGestion(a)
                       && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
                       && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
-              && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+              && reglableApres(a, e)
               && request.resource.data.keys().hasOnly(['quantite', 'reference'])
               && request.resource.data.keys().hasAll(['quantite'])
               && request.resource.data.quantite is int
@@ -457,18 +480,20 @@ service cloud.firestore {
             //  - ajout de parts par ce même membre (quantité et référence montent ensemble,
             //    produit de type « part » seulement).
             allow update: if estMembre(a)
-              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
               && stockValide(request.resource.data.quantite)
               && (
                 (gereGymnase(a, e, g)
+                  && reglable(a, e)
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
                   && (!('reference' in request.resource.data)
                       || (request.resource.data.reference is int
                           && request.resource.data.reference >= 0
                           && request.resource.data.reference <= 100000)))
-                || (caisseOuverteDans(a, e, g)
+                || (enCours(a, e)
+                  && caisseOuverteDans(a, e, g)
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite']))
-                || (caisseOuverteDans(a, e, g)
+                || (enCours(a, e)
+                  && caisseOuverteDans(a, e, g)
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
                   && ajoutPartsValide(a, e, p)));
           }
@@ -502,12 +527,12 @@ service cloud.firestore {
           // En préparation : modifiable à volonté.
           allow create: if gereTout(a, e)
             && c == 'liste'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && listePreparationValide(request.resource.data)
             && !request.resource.data.keys().hasAny(['cumulSeries']);
           allow update: if gereTout(a, e)
             && c == 'liste'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && ((resource.data.statut == 'preparation'
             && cumulIdentique(request.resource.data, resource.data)
             && (listePreparationValide(request.resource.data)
@@ -550,7 +575,7 @@ service cloud.firestore {
           allow read: if estMembre(a) && (u == request.auth.uid || roleDe(a) == 'responsable');
           allow create, update: if estMembre(a)
             && roleDe(a) == 'responsable'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.keys().hasOnly(['gymnases'])
             && request.resource.data.gymnases is list
             && request.resource.data.gymnases.size() <= 8;

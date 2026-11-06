@@ -133,6 +133,7 @@ void main() {
         .docs
         .single
         .id;
+    await depotEv.ouvrirEvenement(evt); // né « en préparation » : on l'ouvre pour les caisses
     final gymnases = await depotEv.suivreGymnases(evt).first;
     expect([for (final g in gymnases) g.nom], ['Gymnase A', 'Gymnase B']);
     final gA = gymnases[0].id, gB = gymnases[1].id;

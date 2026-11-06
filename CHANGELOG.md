@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 06/11/2026 — Mission « Préparer l'événement », P1 : état « En préparation » (branche `claude/preparation-evenement`)
+- Un événement naît « En préparation » : seule la gestion le voit, aucune caisse ne s'y ouvre. « Ouvrir l'événement » (responsable ou gestionnaire rattaché à tous les gymnases) le passe « En cours ». Les événements créés avant restent « En cours ».
+- Règles d'accès : la gestion peut régler un événement en préparation comme un événement en cours ; caisses, ventes, clôture et lecture des bénévoles restent réservées à « En cours ». Déployées sur le vrai projet le 06/11/2026 (accord de Kinder pour la mission). Tant que l'APK 1.2.0 n'est pas installé, l'ancienne application ne peut plus créer d'événement.
+- Tests : 252 de logique et d'écrans, 197 de règles, parcours Android `evenements_test` et `restes_test`.
+
 ## 06/11/2026 — Mission « Préparer l'événement » : plan prêt (phase 4)
 - Décision 60 : état « En préparation » (invisible aux bénévoles, aucune caisse, « Ouvrir l'événement »).
 - Plan P1 à P11, critères de chaque étape, format du classeur Excel et trois préalables validés par Kinder (PLAN_STOCK_COURSES.md, section 13), avec le prompt de lancement de la session mère.

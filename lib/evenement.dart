@@ -53,7 +53,7 @@ class Evenement {
   final String id;
   final String nom;
   final String date;
-  final String statut; // 'en_cours' | 'cloture'
+  final String statut; // 'en_preparation' | 'en_cours' | 'cloture'
   final List<String> modes;
   final String menuNom;
 
@@ -72,7 +72,14 @@ class Evenement {
   /// Durée de l'événement en jours (réglage des courses).
   final double nbJours;
 
+  /// Créé mais pas encore ouvert : seule la gestion le voit, aucune caisse ne s'y ouvre.
+  bool get enPreparation => statut == 'en_preparation';
+
+  /// Ouvert : les bénévoles le voient et les caisses s'ouvrent.
   bool get enCours => statut == 'en_cours';
+
+  /// Terminé : l'événement est figé.
+  bool get cloture => statut == 'cloture';
 }
 
 /// Produit tel qu'il était dans le menu au moment de la création de l'événement.
@@ -109,11 +116,15 @@ String dureeAffichee(Duration d) {
 /// 14 -> « 14 h–15 h », 23 -> « 23 h–0 h ».
 String trancheAffichee(int heure) => '$heure h–${(heure + 1) % 24} h';
 
-/// Événements à afficher : ceux en cours d'abord, puis les plus récents.
+/// Rang d'affichage : en cours, puis en préparation, puis clôturés.
+int _rang(Evenement e) => e.enCours ? 0 : (e.enPreparation ? 1 : 2);
+
+/// Événements à afficher : en cours, en préparation, clôturés ; dans chaque groupe,
+/// les plus récents d'abord.
 List<Evenement> trierEvenements(Iterable<Evenement> evenements) {
   final liste = List.of(evenements);
   liste.sort((a, b) {
-    if (a.enCours != b.enCours) return a.enCours ? -1 : 1;
+    if (_rang(a) != _rang(b)) return _rang(a).compareTo(_rang(b));
     final c = b.date.compareTo(a.date);
     return c != 0 ? c : a.nom.toLowerCase().compareTo(b.nom.toLowerCase());
   });

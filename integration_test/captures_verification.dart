@@ -117,7 +117,7 @@ void main() {
         prixCentimes: 150,
         fiche: const FicheProduit(type: 'part', partsParEntier: 8, provenance: 'apporte'));
     final depotEv = depotAsso.evenements(assoId);
-    final evt = await depotEv.creerEvenement(
+    final evt = await creerOuvert(depotEv,
       nom: 'Tournoi de printemps',
       date: dateIso(DateTime.now()),
       menuId: menuId,

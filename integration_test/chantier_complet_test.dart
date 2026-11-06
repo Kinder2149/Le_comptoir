@@ -83,7 +83,7 @@ void main() {
     final json = await rootBundle.loadString('assets/menu_type.json');
     final menuId = await depotAsso.menus(assoId).creerMenuDepuisModele('Menu', lireMenuType(json));
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,

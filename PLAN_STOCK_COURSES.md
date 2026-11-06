@@ -507,6 +507,25 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| P1 | Close (testée par Claude) | 06/11/2026 | 1 à 7 réussis : règles 197/197 (10 nouveaux, `preparation.test.mjs`), `flutter test` 252/252, `flutter analyze` sans erreur, parcours Android LC2 `evenements_test` + `restes_test` 2/2. Règles déployées le 06/11/2026. Limite : le bouton « Ouvrir l'événement » est testé en logique et dans le parcours `evenements_test`, pas en test d'écran isolé |
+
+### Cadrage P1 — État « En préparation » (phase 5, 06/11/2026)
+
+**Critères du plan, repris tels quels** : (1) un événement neuf est « En préparation » ; (2) un bénévole ne le voit pas ; (3) aucune caisse ne s'y ouvre, ni par l'application ni en contournant (règles) ; (4) « Ouvrir l'événement » le passe « En cours » et le bénévole le voit ; (5) seul le responsable ou un gestionnaire rattaché à tous les gymnases l'ouvre (comme la clôture) ; (6) un événement créé avant P1 reste « En cours » ; (7) les restes gardés sont toujours repris à la création.
+
+**Stratégie**
+- Nouveau statut stocké `en_preparation` (les anciens documents gardent `en_cours`, aucune migration). `Evenement` gagne `enPreparation` et `cloture` ; `enCours` reste « statut == en_cours ». Chaque usage actuel de `!ev.enCours` (= « clôturé ») est relu et remplacé par `ev.cloture`.
+- Règles d'accès : une fonction `reglable(a, e)` (statut `en_preparation` OU `en_cours`) remplace `statut == 'en_cours'` pour tout ce que fait la GESTION (modifier nom/date/modes, durée, gymnases et personnes, produits, stocks réglés par la gestion, suppression de stock, courses, rattachements), afin que P2 à P4 puissent écrire avant l'ouverture. Restent en `en_cours` seulement : lecture par les bénévoles, ouverture de caisse, pointeur `ouvertes`, ventes, annulations, signaux « vide », ajouts de parts et ventes sur le stock (branches caisse), clôture de l'événement, création de restes.
+- Création : `statut == 'en_preparation'` exigé (plus `en_cours`). Les créations de produits, gymnases et stocks (même lot) testent `reglable` sur `getAfter`.
+- Ouverture : nouvelle règle de mise à jour, `gereTout`, `resource.statut == 'en_preparation'`, seuls `statut` (= `en_cours`) et `ouvertLe` (horodatage) changent. Pas de retour en arrière.
+- Application : `creerEvenement` écrit `en_preparation` ; nouvelle méthode `ouvrirEvenement(id)` ; pastille à trois états (« En préparation » en couleur d'attention, « En cours », « Clôturé ») ; bouton « Ouvrir l'événement » (clé `ouvrir_evenement`) visible seulement pour la gestion qui peut (responsable ou rattaché à tous les gymnases) quand l'événement est en préparation, avec confirmation en une phrase ; boutons de caisse, clôture et suivi en direct seulement « En cours » ; tri de la liste : en cours, en préparation, clôturés. Un bénévole n'a déjà que `where statut == en_cours` : rien à changer côté requête.
+- Tests existants : les assistants de test qui créent un événement pour ouvrir des caisses l'ouvrent ensuite (`ouvrirEvenement` ou écriture directe en en_cours côté règles via contournement des règles), sans changer leur objet.
+
+**Fichiers touchés** : `firestore.rules`, `lib/evenement.dart`, `lib/depot_evenements.dart`, `lib/ecran_evenement.dart`, `lib/ecran_association.dart` (pastille de la liste), `lib/ecran_bilan.dart` et `lib/export_bilan.dart` (usages de `enCours`), `tests_regles/evenements.test.mjs` (+ nouveau `tests_regles/preparation.test.mjs`), `tests_regles/outilsCaisse.mjs`, `tests_regles/gestionnaires.test.mjs`, `test/evenement_test.dart` (+ tests voisins qui construisent un `Evenement`), `integration_test/outils.dart` et les parcours qui créent un événement.
+
+**Ce qu'on ne fait pas** : pas d'onglet Préparation ni de stock de départ (P2) ; pas de retour d'un événement ouvert vers « En préparation » ; pas de clôture depuis « En préparation » ; pas de changement des restes ni des caisses ; aucune dépendance.
+
+**Test de chaque critère** : règles (`tests_regles/lancer.ps1`) pour 1, 2, 3, 4, 5, 6 (document sans état `en_preparation` resté ouvert aux caisses) ; test d'écran/logique (`flutter test`) pour la pastille, le bouton selon le rôle, le tri ; parcours Android sur LC2 pour 1, 4 et 7 (création → reprise des restes → ouverture → un bénévole voit l'événement). Règles déployées dès que leurs tests passent.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
