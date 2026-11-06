@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 05/11/2026 — Consolidation, temps 2 : vérification par une autre IA
+- « Plan initial (étapes 1 à 14) » : « En attente de ma capture » → « En implémentation », renvoyée au temps 3. Non vérifiable : aucun critère de fin écrit ; RECETTE.md suppose une vraie connexion Google, deux téléphones et la vraie base.
+- « Stock et courses » (section 11) et « C1 + B1 à B5 » (section 12) : réussies (copie locale de Firebase, émulateur ; 247 + 186 + 27 tests réussis). Restent le test et la validation de Kinder.
+- Fiche d'état remise à jour le 06/11/2026 : B1, B2 et B5 « Close », B6 « vérification faite, en attente du test de Kinder », C1 « fusionnée dans `main` » (branche citée supprimée depuis).
+
 ## 30/10/2026 — Mission C1 : courses en plusieurs séries et partage de la liste (branche `claude/c1-courses-partielles`)
 - Après une validation, « Nouvelle série de courses » ouvre une liste vide pour les achats suivants. Chaque validation ajoute au stock et au coût une seule fois ; un bandeau rappelle les séries déjà validées, le coût cumulé et ce que le stock a déjà reçu. Le bilan compte le coût de toutes les séries, même quand la suivante se prépare.
 - Bouton « Partager la liste » : la liste « À acheter » et les lignes libres, en texte, par la feuille de partage d'Android.
