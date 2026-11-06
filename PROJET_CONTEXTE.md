@@ -15,7 +15,7 @@ MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) �
   Étape : B5 Clôture et report de stock — Close — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
   Étape : B6 Clôture de mission — Vérification par une autre IA faite le 05/11/2026 (B1 à B5 et C1 réussis, texte en PLAN_STOCK_COURSES.md section 12), en attente du test et de la capture de Kinder — critère : verdict réussi/échoué par critère rendu par une autre IA
 MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Implémentée et testée par Claude le 30/10/2026, fusionnée dans `main` (règles déployées le 30/10/2026), vérifiée par une autre IA le 05/11/2026, reste le test et la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
-MISSION : Préparer l'événement (décisions 53 à 59, figée le 06/11/2026) — Figée, plan à valider (phase 4) — critère : je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli
+MISSION : Préparer l'événement (décisions 53 à 60, figée le 06/11/2026) — Figée, plan P1 à P11 à valider (phase 4, PLAN_STOCK_COURSES.md section 13) — critère : je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli
 IDÉES PARQUÉES :
   - Bloc « matériel » (après la mission Préparer l'événement)
   - Paiement carte avec Monetico (exploration, rien de figé)
@@ -281,6 +281,8 @@ les buvettes de la saison.
 58. Excel de l'an passé de Kinder : recopié une fois par Claude Code dans le modèle, puis importé par Kinder dans l'application (premier « événement passé » ; teste l'import en conditions réelles). Fichier à déposer par Kinder dans le dossier du projet.
 59. Apports nommés (retour R2) : un bénévole ajoute un apport (ce que c'est, ex. « quiche », et son nombre de parts) dans un produit-catégorie (ex. « Gâteau salé ») ; la caisse vend la catégorie ; le bilan liste les apports (qui, quoi, combien de parts). Précise les décisions 34 et 50.
     Hors du chantier : le bloc matériel (chantier suivant), Monetico, les points ouverts de la section 7.
+60. État « En préparation » (06/11/2026, validé par Kinder ; précise les décisions 18 et 24) : un événement naît « En préparation » ; seule la gestion le voit ; aucune caisse ne s'y ouvre. « Ouvrir l'événement » (responsable ou gestionnaire rattaché à tous les gymnases, comme la clôture) le passe « En cours » : les bénévoles le voient alors. Les événements créés avant ce changement restent « En cours ».
+    Pourquoi : préparer un tournoi des jours à l'avance sans que les bénévoles le voient ni puissent y encaisser.
 
 ## 7. Points ouverts
 - Retours de Kinder du 01/11/2026 (R1 à R5, écrits sur la branche en ligne `claude/doc-stock-management-dhutbe`, jamais fusionnée) : R1 fait (étape 4), R2 à R5 repris par les décisions 53 à 59. La branche peut être supprimée sur accord de Kinder.

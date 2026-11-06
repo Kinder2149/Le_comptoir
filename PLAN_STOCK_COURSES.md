@@ -466,3 +466,44 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 > lancées par `lancer.ps1` du même dossier).
 >
 > **Rendu attendu** : un tableau critère / verdict / capture, la liste des défauts classés par gravité, et UNE question.
+
+## 13. Mission « Préparer l'événement » (décisions 53 à 60, plan proposé le 06/11/2026)
+
+**Critère de fin de mission (Kinder, 06/11/2026)** : « Je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli. »
+
+**Préalables (à valider avec le plan)** : (1) le chantier (phase 6) démarre après le test de Kinder sur téléphone des missions en attente (Stock et courses, B1 à B6, C1), pour respecter « une mission à la fois » ; (2) les règles d'accès de chaque étape sont déployées sur le vrai projet dès que leurs tests passent, avec un accord donné une fois pour toute la mission ; (3) la session mère (Sonnet) mène les étapes une par une, chacune dans une sous-session neuve.
+
+**Le classeur Excel (décision 57)** : un fichier `.xlsx` ; chaque feuille commence par une ligne d'aide puis une ligne d'en-têtes ; les produits et gymnases se retrouvent par leur NOM (sans casse ni accents, comme le report de stock).
+
+| Feuille | Colonnes | À l'import |
+|---|---|---|
+| Menu | Produit, Prix, Type, Provenance, Verres par litre, Parts par gâteau, Recette, Consommation par personne et par jour | Écran Menus : crée un nouveau menu (étape P7) |
+| Stock de départ | Gymnase, Produit, Quantité | Préparation : stock de départ de l'événement (P6) |
+| Historique | Événement, Gymnase, Personnes, Jours, Produit, Quantité vendue | Préparation : crée une référence de consommation nommée (P6) |
+| Courses | Série, Produit ou ligne libre, Quantité achetée, Coût | Ignorée (sortie seulement) |
+| Bilan (export seulement) | Les rubriques de l'ancien CSV | Ignorée |
+
+**Étapes** (une à la fois, dans l'ordre ; chaque critère est vérifié par un test de code ou sur émulateur)
+
+| # | Étape | Ce que Kinder voit | Critères (test de code) |
+|---|---|---|---|
+| P1 | État « En préparation » (décision 60) | Pastille « En préparation » ; bouton « Ouvrir l'événement » | (1) un événement neuf est « En préparation » ; (2) un bénévole ne le voit pas ; (3) aucune caisse ne s'y ouvre, ni par l'application ni en contournant (règles) ; (4) « Ouvrir l'événement » le passe « En cours » et le bénévole le voit ; (5) seul le responsable ou un gestionnaire rattaché à tous les gymnases l'ouvre (comme la clôture) ; (6) un événement créé avant P1 reste « En cours » ; (7) les restes gardés sont toujours repris à la création |
+| P2 | Onglet Préparation et stock de départ (décisions 53, 54) | Onglet « Préparation » en trois étapes ; étape 1 : quantité par gymnase et produit fini | (1) l'onglet existe pour la gestion, pas pour un bénévole ; (2) 24 sodas saisis au gymnase A : « Gymnases et stocks » affiche 24 ; (3) un reste repris est pré-rempli, marqué « repris de l'événement précédent », corrigeable ; (4) aucun ingrédient dans la liste ; (5) un gestionnaire ne voit que ses gymnases ; (6) une fois l'événement ouvert, le stock de départ se lit seulement et renvoie vers « Gymnases et stocks » |
+| P3 | Personnes et durée (décision 55) | Étape 2 de la Préparation : personnes par gymnase, durée de l'événement | (1) 80 personnes au gymnase A et 2 jours réglés dans la Préparation : Courses affiche et utilise 80 et 2 ; (2) Courses n'a plus de champ « personnes » ; (3) le choix « demi-journée / jour complet / plus » des courses reste, propose « tout l'événement » par défaut, et ne change pas la durée de l'événement ; (4) durée refusée hors 0,5 à 30 jours, personnes hors 0 à la limite actuelle |
+| P4 | Prévision à sources (décision 56) | Tableau produit / consommation / source ; bouton « D'après un événement passé » | (1) par défaut, les chiffres du menu, source « Menu » ; (2) événement passé où 160 croques ont été vendus pour 40 personnes en 2 jours : 2,0 par personne et par jour, source affichée ; (3) un produit absent de la source garde le chiffre du menu ; (4) un chiffre corrigé reste, source « modifié à la main », le menu ne change pas ; (5) un événement passé sans personnes réglées n'est pas proposé (message) ; (6) ventes annulées exclues ; (7) les courses calculent avec ces chiffres (80 personnes × 2 jours × 2,0 = 320, moins le stock) |
+| P5 | Télécharger le modèle (décision 57) | Bouton « Télécharger le modèle Excel » dans la Préparation | (1) un `.xlsx` part par la feuille de partage et s'ouvre avec les feuilles Menu, Stock de départ, Historique, Courses ; (2) Menu contient les produits de l'événement, Stock de départ ses gymnases et produits ; (3) relu par l'application, le fichier donne exactement les mêmes données (aller-retour) ; (4) accents et virgules décimales lisibles dans Excel |
+| P6 | Importer dans la Préparation (décisions 56, 57) | Bouton « Importer un classeur » : choix du fichier, résumé, « Appliquer » | (1) le résumé annonce n stocks et la référence « nom (Excel) » AVANT d'appliquer ; (2) après « Appliquer », le stock de départ est celui du fichier ; (3) la référence apparaît dans les sources de la prévision, avec le chiffre calculé comme en P4 ; (4) un produit ou gymnase inconnu est listé « ignoré », le reste s'applique ; (5) un fichier illisible ou d'un autre format : message clair, rien n'est appliqué ; (6) aucune vente créée, bilans inchangés |
+| P7 | Importer un menu (décision 57) | Écran Menus : « Importer un menu depuis Excel » | (1) la feuille Menu d'un classeur crée un nouveau menu avec types, prix, recettes, ratios et consommations ; (2) une ligne invalide (prix négatif, type inconnu) est listée et ignorée ; (3) le menu importé crée un événement sans erreur |
+| P8 | Export complet du tournoi (décision 57) | Bilan : « Exporter (Excel) » remplace « Exporter (CSV) » | (1) le classeur contient Menu, Stock de départ, Historique (personnes, jours, quantités vendues de cet événement), Courses (séries, achats, coût, lignes libres) et Bilan ; (2) les chiffres du Bilan égalent ceux de l'écran (comparés à un calcul fait à la main) ; (3) réimporté dans un nouvel événement, il donne la même consommation que la source « événement passé » ; (4) l'ancien export CSV a disparu |
+| P9 | Import de l'an passé (décision 58) | La référence « Tournoi de l'an passé (Excel) » dans la prévision | Préalable : le fichier de Kinder déposé dans le projet. (1) Claude Code produit le classeur rempli d'après ce fichier, avec un relevé de ce qui a été repris et de ce qui ne l'a pas été ; (2) importé sur émulateur sans erreur ; (3) consommations égales au calcul à la main noté dans le relevé |
+| P10 | Apports nommés (décision 59) | Bénévole : « Ajouter un apport » (nom, parts) ; bilan : rubrique « Apports » | (1) « Quiche, 8 parts » ajoutée à « Gâteau salé » : stock +8 ; (2) la caisse vend « Gâteau salé » comme avant ; (3) le bilan et l'export listent « Quiche, 8 parts, prénom, gymnase » ; (4) nom vide ou parts hors 1 à 1000 refusés (application et règles) |
+| P11 | Clôture de mission | Texte de vérification et parcours complet | (1) parcours automatique du critère de fin sur émulateur (créer, télécharger, importer, préparer, corriger, courses, ouvrir, vendre, clôturer, exporter) ; (2) texte de vérification rédigé pour une autre IA ; (3) APK de recette reconstruit, version 1.2.0 |
+
+**Dépendances entre étapes** : P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11. P2 a besoin de l'état « En préparation » ; P4 des personnes et de la durée ; P5 à P8 du format du classeur ; P9 de l'import (P6) et du fichier de Kinder ; P10 est indépendante mais placée après pour ne pas mêler deux chantiers ; P11 en dernier.
+
+**Arrêts prévus** : P9 si le fichier de Kinder manque ; toute contradiction avec une décision figée ; deux échecs de suite à la vérification.
+
+**Suivi** (une ligne par étape close)
+
+| Étape | État | Date | Critères |
+|---|---|---|---|
