@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement » close
+- Test sur téléphone fait et validé par Kinder ; branche `claude/preparation-evenement` fusionnée dans `main`, avec le cadrage de la mission « Ergonomie de la gestion », dont la réalisation démarre (branche `claude/ergonomie-gestion`).
+
 ## 07/11/2026 — Mission « Ergonomie de la gestion » : figeage et plan proposé (phases 1 à 4)
 - Audit des écrans de gestion sur émulateur avec le menu modèle (captures `audit_front/ergonomie/avant/`) : pas de repère du moment du tournoi, Préparation en une page d'une dizaine d'écrans, liste de 27 produits répétée sans regroupement, courses sans rayons, icônes fausses, classeur Excel sans mise en forme.
 - Maquette de 7 écrans (https://claude.ai/artifact/Nq98zwiUFctzRs43fcaa4S) et classeur prototype rempli avec le menu modèle (`audit_front/ergonomie/classeur_propose.xlsx`).
