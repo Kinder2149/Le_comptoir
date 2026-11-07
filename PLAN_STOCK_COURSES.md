@@ -723,6 +723,8 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 >
 > **Rendu attendu** : un tableau critère / verdict / preuve, la liste des défauts classés par gravité, et UNE question.
 
+**Vérification indépendante (07/11/2026)** : une IA neuve sur Sonnet (qui n'a pas écrit le code) a refait toutes les suites : analyse sans erreur, `flutter test` 380/380, règles 234/234, 37 parcours Android (34 fichiers) sur LC2 en un seul passage. Les critères 1 à 10 et le critère de fin de Kinder sont **tous réussis, aucun défaut** (preuves = sorties de tests, pas de capture d'écran). Point laissé à Kinder : confirmer au test que les chiffres de l'an passé (estimations, boissons surtout, Coca 1,53 contre 0,32 au menu) lui conviennent.
+
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
 ```
