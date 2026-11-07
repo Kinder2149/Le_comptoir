@@ -402,6 +402,12 @@ class DepotMenus {
     return ref.id;
   }
 
+  /// Crée un NOUVEAU menu depuis les produits lus dans la feuille Menu d'un classeur
+  /// (P7) : un seul lot, mêmes champs que [ajouterProduit] (donc acceptés par les règles
+  /// actuelles). Aucune icône importée. Ne modifie jamais un menu existant.
+  Future<String> creerMenuDepuisClasseur(String nom, List<ProduitModele> produits) =>
+      creerMenuDepuisModele(nom, produits);
+
   /// Copie un menu existant : mêmes produits (types, recettes, provenances,
   /// images). Un ancien stock saisi dans le menu n'est pas copié (décision 45).
   Future<String> copierMenu(String menuId, String nom) async {

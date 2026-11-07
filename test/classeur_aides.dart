@@ -6,6 +6,7 @@ import 'package:le_comptoir/classeur.dart';
 /// Un classeur de test avec les feuilles « Stock de départ » et « Historique » au format
 /// du modèle (ligne d'aide, ligne d'en-têtes, puis les données).
 Uint8List classeurDeTest({
+  List<List<Object?>> menu = const [],
   List<List<Object?>> stock = const [],
   List<List<Object?>> historique = const [],
 }) {
@@ -27,7 +28,7 @@ Uint8List classeurDeTest({
     }
   }
 
-  feuille(feuilleMenu, entetesMenu, const []);
+  feuille(feuilleMenu, entetesMenu, menu);
   feuille(feuilleStock, entetesStock, stock);
   feuille(feuilleHistorique, entetesHistorique, historique);
   feuille(feuilleCourses, entetesCourses, const []);

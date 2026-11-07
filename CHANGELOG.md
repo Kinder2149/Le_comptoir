@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P7 : importer un menu
+- Écran Menus : « Importer un menu depuis Excel » : lit la feuille Menu d'un classeur, affiche un résumé avant écriture (produits à créer, lignes invalides ou en double listées et ignorées), demande le nom, puis crée un NOUVEAU menu (types, prix, recettes, ratios, consommations). Fichier illisible ou sans produit lisible : message clair, rien de créé.
+- Écran de résumé partagé avec l'import de la Préparation. Aucun changement de règles ni de dépendance.
+- Tests : 366 de logique et d'écrans, parcours Android (menu importé → événement créé sans erreur).
+
 ## 07/11/2026 — Mission « Préparer l'événement », P6 : importer dans la Préparation
 - « Importer un classeur » : choix du fichier, résumé avant toute écriture (stocks appliqués, références créées, lignes ignorées avec leur raison), puis « Appliquer ». Le stock de départ du fichier s'applique (événement en préparation seulement) ; chaque événement de la feuille Historique devient une référence « nom (Excel) », réutilisable dans les sources de la prévision (étape 3). Fichier illisible ou d'un autre format : message clair, rien n'est écrit. Aucune vente créée.
 - Règles d'accès : collection `references` de l'association (gestion), effacée avec l'association. Déployées le 07/11/2026.

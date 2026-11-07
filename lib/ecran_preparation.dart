@@ -12,6 +12,7 @@ import 'gymnase.dart';
 import 'import_classeur.dart';
 import 'partage.dart';
 import 'previsions.dart';
+import 'resume_import.dart';
 import 'selecteur.dart';
 import 'theme.dart';
 
@@ -379,92 +380,45 @@ class _EtatCarteClasseur extends State<_CarteClasseur> {
   }
 }
 
-/// Le résumé d'un import, montré AVANT toute écriture : stocks appliqués, références
-/// créées, lignes ignorées avec leur raison, erreurs de lecture. « Appliquer » rend
-/// vrai ; « Annuler » (ou retour) rend faux : rien n'est écrit.
+/// Le résumé d'un import dans la Préparation (voir [EcranResumeImport]) : stocks appliqués
+/// et références créées.
 class _EcranResumeImport extends StatelessWidget {
   const _EcranResumeImport({required this.plan});
 
   final PlanImport plan;
 
-  /// Au-delà de ce nombre, une liste est repliée.
-  static const _seuil = 10;
-
-  Widget _liste(BuildContext context, String titre, List<String> lignes, String cle) {
-    if (lignes.isEmpty) return const SizedBox.shrink();
-    final corps = [for (final l in lignes) Text('• $l')];
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: lignes.length <= _seuil
-          ? Column(
-              key: Key(cle),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titre, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 4),
-                ...corps,
-              ],
-            )
-          : ExpansionTile(
-              key: Key(cle),
-              tilePadding: EdgeInsets.zero,
-              title: Text('$titre (${lignes.length})',
-                  style: Theme.of(context).textTheme.titleSmall),
-              expandedCrossAxisAlignment: CrossAxisAlignment.start,
-              children: corps,
-            ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Résumé de l\'import')),
-      body: ListView(
-        key: const Key('resume_import'),
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Rien n\'est écrit tant que vous n\'avez pas touché « Appliquer ».'),
-          const SizedBox(height: 12),
-          Text(plan.phraseStocks,
-              key: const Key('resume_stocks'),
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (plan.references.isEmpty)
-            const Text('Aucune référence de consommation ne sera créée.',
-                key: Key('resume_aucune_reference'))
-          else
-            for (final (i, phrase) in plan.phrasesReferences.indexed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(phrase,
-                    key: Key('resume_reference_$i'),
-                    style: Theme.of(context).textTheme.titleSmall),
-              ),
-          if (plan.menuIgnore)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Text(
-                  'La feuille Menu est ignorée ici : elle s\'importe depuis l\'écran Menus.',
-                  key: Key('resume_menu_ignore')),
+    return EcranResumeImport(
+      titre: 'Résumé de l\'import',
+      cleAppliquer: const Key('appliquer_import'),
+      libelleAppliquer: 'Appliquer',
+      ignorees: plan.ignorees,
+      erreurs: plan.erreurs,
+      corps: [
+        Text(plan.phraseStocks,
+            key: const Key('resume_stocks'),
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (plan.references.isEmpty)
+          const Text('Aucune référence de consommation ne sera créée.',
+              key: Key('resume_aucune_reference'))
+        else
+          for (final (i, phrase) in plan.phrasesReferences.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(phrase,
+                  key: Key('resume_reference_$i'),
+                  style: Theme.of(context).textTheme.titleSmall),
             ),
-          _liste(context, 'Lignes ignorées', plan.ignorees, 'resume_ignorees'),
-          _liste(context, 'Problèmes de lecture', plan.erreurs, 'resume_erreurs'),
-          const SizedBox(height: 24),
-          FilledButton(
-            key: const Key('appliquer_import'),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Appliquer'),
+        if (plan.menuIgnore)
+          const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text(
+                'La feuille Menu est ignorée ici : elle s\'importe depuis l\'écran Menus.',
+                key: Key('resume_menu_ignore')),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const Key('annuler_import'),
-            style: TypeAction.gerer.contour,
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
