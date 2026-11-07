@@ -716,6 +716,23 @@ class DepotCaisses {
     return sortie.stream;
   }
 
+  /// Le tableau de bord lu une seule fois, complet : toutes les caisses et toutes leurs
+  /// ventes, relues sur le serveur. Sert à un événement passé (prévision). Nécessite le
+  /// réseau ; les droits de lecture sont ceux des caisses (permission-denied sinon).
+  Future<TableauDeBord> lireTableauDeBord() async {
+    const serveur = GetOptions(source: Source.server);
+    final caisses = [
+      for (final d in (await _evenement.collection('caisses').get(serveur)).docs)
+        ?_caisseDe(d),
+    ];
+    final resumes = <ResumeCaisse>[];
+    for (final c in caisses) {
+      final ventes = await _caisse(c.id).collection('ventes').get(serveur);
+      resumes.add(ResumeCaisse(c, [for (final d in ventes.docs) _venteDe(d)]));
+    }
+    return TableauDeBord.depuis(resumes);
+  }
+
   /// Ouvre la caisse si elle n'existe pas (sinon la reprend) : la caisse et son
   /// pointeur partent dans la même écriture groupée. N'attend pas le serveur :
   /// fonctionne sans réseau.

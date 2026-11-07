@@ -10,6 +10,7 @@ import 'ecran_validation_courses.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'partage.dart';
+import 'previsions.dart';
 import 'ticket.dart';
 
 /// Courses d'un événement, en préparation : durée à couvrir (choix local à l'écran,
@@ -43,7 +44,10 @@ class _EtatCourses extends State<EcranCourses> {
   bool _charge = false;
   Object? _erreurChargement;
 
+  /// Produits avec la consommation effective : celle de la prévision de l'événement,
+  /// sinon celle du menu. [_produitsMenu] = tels que l'événement les a copiés.
   List<ProduitEvenement> _produits = const [];
+  List<ProduitEvenement> _produitsMenu = const [];
   List<Gymnase> _gymnases = const [];
   Map<String, List<String>> _suggeres = const {};
 
@@ -105,9 +109,11 @@ class _EtatCourses extends State<EcranCourses> {
       final etats = await widget.depot.suivreEtats(id).first;
       final stocks = await widget.depot.suivreStocksParGymnase(id).first;
       final enregistree = await widget.depot.suivreListeCourses(id).first;
+      final previsions = await _lirePrevisions();
       if (!mounted) return;
       setState(() {
-        _produits = produits;
+        _produitsMenu = produits;
+        _produits = produitsAvecPrevisions(produits, previsions);
         _gymnases = gymnases;
         _stocks = stocks;
         for (final g in gymnases) {
@@ -133,6 +139,16 @@ class _EtatCourses extends State<EcranCourses> {
       });
     } catch (e) {
       if (mounted) setState(() => _erreurChargement = e);
+    }
+  }
+
+  /// Les prévisions de l'événement ; illisibles (réseau, droits) : aucune, les courses
+  /// calculent alors avec les chiffres du menu.
+  Future<Map<String, Prevision>> _lirePrevisions() async {
+    try {
+      return await widget.depot.suivrePrevisions(widget.evenementId).first;
+    } catch (_) {
+      return const {};
     }
   }
 
@@ -236,8 +252,10 @@ class _EtatCourses extends State<EcranCourses> {
       final id = widget.evenementId;
       final evenement = await widget.depot.suivreEvenement(id).first;
       final gymnases = await widget.depot.suivreGymnases(id).first;
+      final previsions = await _lirePrevisions();
       if (!mounted) return;
       setState(() {
+        _produits = produitsAvecPrevisions(_produitsMenu, previsions);
         _joursEvenement = evenement?.nbJours ?? joursParDefaut;
         _gymnases = gymnases;
         for (final g in gymnases) {

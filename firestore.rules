@@ -571,6 +571,25 @@ service cloud.firestore {
                 && request.resource.data.cumulCout == resource.data.get('cumulCout', 0) + resource.data.coutCentimes));
         }
 
+        // Prévision (mission « Préparer l'événement », P4) : la consommation par personne et
+        // par jour d'un produit, propre à l'événement, avec sa source. Un document par produit
+        // (identifiant = celui du produit de l'événement) ; absent = le chiffre du menu.
+        // Lue et écrite par le responsable ou un gestionnaire rattaché à tous les gymnases.
+        match /previsions/{p} {
+          allow read: if gereTout(a, e);
+          allow delete: if suppressionEnCours(a)
+            || (gereTout(a, e) && reglable(a, e));
+          allow create, update: if gereTout(a, e)
+            && reglable(a, e)
+            && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p))
+            && request.resource.data.keys().hasOnly(['conso', 'source'])
+            && request.resource.data.keys().hasAll(['conso', 'source'])
+            && (request.resource.data.conso is int || request.resource.data.conso is float)
+            && request.resource.data.conso >= 0
+            && request.resource.data.conso <= 1000
+            && texte(request.resource.data.source, 80);
+        }
+
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par
         // l'intéressé. Jamais supprimés (on les vide), sauf avec l'association.
         match /rattachements/{u} {

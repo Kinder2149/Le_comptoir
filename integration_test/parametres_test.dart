@@ -95,6 +95,7 @@ void main() {
       await auth.signInWithCredential((await fauxGoogle('chef_param')())!);
     });
     await depotEv.definirRattachement(evt, leaUid, {gym}); // doit disparaître avec l'association
+    await depotEv.definirPrevision(evt, cafeId, 1.5); // la prévision aussi (P4)
     await changerDeSession(tester, () async {
       await auth.createUserWithEmailAndPassword(email: 'max.param@test.fr', password: 'secret12');
     });
@@ -148,6 +149,7 @@ void main() {
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/gymnases/$gym/stocks'), 1);
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/ouvertes'), 1);
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/rattachements'), 1);
+    expect(await restNbDocuments('associations/$assoId/evenements/$evt/previsions'), 1);
 
     // Max, retiré, revient à l'écran d'accueil.
     await changerDeSession(tester, () async {
@@ -219,6 +221,7 @@ void main() {
       'associations/$assoId/evenements/$evt/gymnases/$gym/stocks',
       'associations/$assoId/evenements/$evt/ouvertes',
       'associations/$assoId/evenements/$evt/rattachements',
+      'associations/$assoId/evenements/$evt/previsions',
     ]) {
       expect(await restNbDocuments(c), 0, reason: c);
     }

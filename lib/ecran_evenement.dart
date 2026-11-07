@@ -583,6 +583,11 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             definirPersonnes: (g, n) =>
                 widget.depot.definirPersonnes(ev.id, g, n),
             onVoirGymnases: () => _voirGymnases(context, ev, portee),
+            previsions: widget.depot.suivrePrevisions(ev.id),
+            definirPrevision: (p, c) => widget.depot.definirPrevision(ev.id, p, c),
+            chargerPasses: () => widget.depot.evenementsPasses(sauf: ev.id),
+            appliquerPasse: (r) => widget.depot.appliquerEvenementPasse(ev.id, r),
+            revenirAuMenu: () => widget.depot.revenirAuMenu(ev.id),
           ),
         ),
       );

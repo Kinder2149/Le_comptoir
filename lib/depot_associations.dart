@@ -229,7 +229,7 @@ class DepotAssociations {
   }
 
   /// Supprime l'association et TOUT son contenu (menus, événements, gymnases,
-  /// stocks, rattachements, caisses, ventes, membres, code). Le responsable la marque d'abord « en cours de
+  /// stocks, prévisions, rattachements, caisses, ventes, membres, code). Le responsable la marque d'abord « en cours de
   /// suppression » : c'est ce qui autorise les règles à effacer le reste. Si
   /// l'opération est interrompue, on peut la relancer : elle reprend où elle
   /// s'était arrêtée. Nécessite le réseau.
@@ -250,6 +250,7 @@ class DepotAssociations {
         await g.reference.delete();
       }
       await _effacerCollection(e.reference.collection('courses'));
+      await _effacerCollection(e.reference.collection('previsions'));
       await _effacerCollection(e.reference.collection('ouvertes'));
       await _effacerCollection(e.reference.collection('rattachements'));
       await _effacerCollection(e.reference.collection('produits'));

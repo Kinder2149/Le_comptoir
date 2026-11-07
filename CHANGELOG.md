@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P4 : prévision à sources
+- Préparation, étape 3 : tableau produit / consommation par personne et par jour / source. Par défaut le chiffre du menu ; « D'après un événement passé » calcule ventes non annulées ÷ personnes ÷ jours (événements passés sans personnes réglées non proposés) ; chaque chiffre reste modifiable (« Modifié à la main »), le menu ne change jamais. Courses calcule avec ces chiffres.
+- Règles d'accès : sous-collection `previsions` (gestion qui lance les courses) ; effacée avec l'association. Déployées sur le vrai projet le 07/11/2026.
+- Tests : 293 de logique et d'écrans, 215 de règles, 7 parcours Android.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P3 : personnes et durée
 - Préparation, étape 2 : durée de l'événement (0,5 à 30 jours) et personnes attendues par gymnase (0 à 1000), réglées par le responsable ou un gestionnaire rattaché à tous les gymnases ; lecture seule pour les autres et pour un événement clôturé.
 - Courses ne règle plus les personnes : elle les affiche (« réglé dans la Préparation ») et renvoie vers la Préparation. Son choix de durée devient local : « Tout l'événement » (par défaut), demi-journée, jour complet, plus ; il ne change plus la durée de l'événement.

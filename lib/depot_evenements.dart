@@ -10,6 +10,7 @@ import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'mesure.dart';
+import 'previsions.dart';
 import 'restes.dart';
 import 'ticket.dart';
 
@@ -436,6 +437,130 @@ class DepotEvenements {
   Future<void> definirPersonnes(
           String evenementId, String gymnaseId, int personnes) =>
       _gymnase(evenementId, gymnaseId).update({'personnes': personnes});
+
+  // ---------- Prévision de consommation (mission « Préparer l'événement », P4) ----------
+
+  CollectionReference<Map<String, dynamic>> _previsions(String evenementId) =>
+      _evenements.doc(evenementId).collection('previsions');
+
+  /// Les prévisions enregistrées (produit -> chiffre et source). Réservé à qui a accès
+  /// à tout l'événement (règles d'accès). Un produit sans prévision garde le menu.
+  Stream<Map<String, Prevision>> suivrePrevisions(String evenementId) =>
+      _previsions(evenementId).snapshots().compte('previsions').map((s) => {
+            for (final d in s.docs)
+              if (d.data()['conso'] is num && d.data()['source'] is String)
+                d.id: Prevision((d.data()['conso'] as num).toDouble(),
+                    d.data()['source'] as String),
+          });
+
+  /// Enregistre le chiffre d'un produit, corrigé à la main (le menu ne change pas).
+  Future<void> definirPrevision(String evenementId, String produitId, double conso) =>
+      _previsions(evenementId)
+          .doc(produitId)
+          .set({'conso': conso, 'source': sourceMain});
+
+  /// Écrit et efface des prévisions. Par groupes de 10 : les règles d'accès relisent
+  /// chaque produit (limite de lectures par requête). Écrire est idempotent : en cas
+  /// d'échec au milieu, recommencer donne le même résultat.
+  Future<void> _appliquerPrevisions(String evenementId,
+      {required Map<String, Prevision> ecrire,
+      required Iterable<String> effacer}) async {
+    final operations = <void Function(WriteBatch lot)>[
+      for (final e in ecrire.entries)
+        (lot) => lot.set(_previsions(evenementId).doc(e.key),
+            {'conso': e.value.conso, 'source': e.value.source}),
+      for (final id in effacer) (lot) => lot.delete(_previsions(evenementId).doc(id)),
+    ];
+    for (var i = 0; i < operations.length; i += 10) {
+      final lot = _db.batch();
+      for (final op in operations.skip(i).take(10)) {
+        op(lot);
+      }
+      await lot.commit();
+    }
+  }
+
+  Future<Set<String>> _idsPrevisions(String evenementId) async => {
+        for (final d in (await _previsions(evenementId)
+                .get(const GetOptions(source: Source.server)))
+            .docs)
+          d.id,
+      };
+
+  /// Remet tous les produits au chiffre du menu (efface les prévisions).
+  Future<void> revenirAuMenu(String evenementId) async => _appliquerPrevisions(
+        evenementId,
+        ecrire: const {},
+        effacer: await _idsPrevisions(evenementId),
+      );
+
+  /// Produits d'un événement, lus une fois sur le serveur (sans stock).
+  Future<List<ProduitEvenement>> _lireProduits(String evenementId) async {
+    final s = await _evenements
+        .doc(evenementId)
+        .collection('produits')
+        .get(const GetOptions(source: Source.server));
+    return [
+      for (final d in s.docs)
+        ProduitEvenement(d.id, d.data()['nom'] as String,
+            d.data()['prixCentimes'] as int, null,
+            fiche: FicheProduit.depuis(d.data())),
+    ];
+  }
+
+  /// Les événements clôturés de l'association (sauf [sauf]) : ceux qui peuvent servir
+  /// de référence, et le nombre de ceux écartés faute de personnes réglées. Nécessite
+  /// le réseau.
+  Future<EvenementsPasses> evenementsPasses({String? sauf}) async {
+    const serveur = GetOptions(source: Source.server);
+    final cloturees = await _evenements.where('statut', isEqualTo: 'cloture').get(serveur);
+    final references = <ReferencePassee>[];
+    for (final e in cloturees.docs) {
+      if (e.id == sauf) continue;
+      final gymnases = await e.reference.collection('gymnases').get(serveur);
+      references.add(ReferencePassee(
+        id: e.id,
+        nom: e.data()['nom'] as String,
+        date: e.data()['date'] as String,
+        personnes: gymnases.docs
+            .fold<int>(0, (t, g) => t + ((g.data()['personnes'] as int?) ?? 0)),
+        jours: (e.data()['nbJours'] as num?)?.toDouble() ?? 2.0,
+      ));
+    }
+    return selectionnerReferences(references);
+  }
+
+  /// Applique d'un coup la consommation calculée d'après l'événement [passe] : les
+  /// produits retrouvés par leur nom prennent le chiffre calculé (source « Événement :
+  /// nom »), les autres reviennent au menu. Si les ventes de l'événement passé ne sont
+  /// pas lisibles avec les droits de la personne : [LectureRefusee], rien n'est écrit.
+  Future<void> appliquerEvenementPasse(String evenementId, ReferencePassee passe) async {
+    final produits = await _lireProduits(evenementId);
+    final produitsPasses = {
+      for (final p in await _lireProduits(passe.id)) p.id: p.nom,
+    };
+    final TableauDeBord tableau;
+    try {
+      tableau = await caisses(passe.id).lireTableauDeBord();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw const LectureRefusee();
+      rethrow;
+    }
+    final conso = consoDepuisEvenement(
+      produits: produits,
+      produitsPasses: produitsPasses,
+      tableau: tableau,
+      personnes: passe.personnes,
+      jours: passe.jours,
+    );
+    final source = sourceEvenement(passe.nom);
+    final existantes = await _idsPrevisions(evenementId);
+    await _appliquerPrevisions(
+      evenementId,
+      ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
+      effacer: existantes.where((id) => !conso.containsKey(id)),
+    );
+  }
 
   /// La liste de courses de l'événement (une seule, document « liste »), null
   /// tant qu'elle n'a pas été enregistrée.

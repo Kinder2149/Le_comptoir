@@ -6,6 +6,7 @@ import 'courses.dart' show demiJournee, joursMax, personnesMax;
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'previsions.dart';
 import 'theme.dart';
 
 /// Préparation d'un événement (gestion). Étape 1 : le stock de départ, par gymnase et
@@ -24,6 +25,11 @@ class EcranPreparation extends StatelessWidget {
     required this.definirJours,
     required this.definirPersonnes,
     required this.onVoirGymnases,
+    required this.previsions,
+    required this.definirPrevision,
+    required this.chargerPasses,
+    required this.appliquerPasse,
+    required this.revenirAuMenu,
   });
 
   final Stream<Evenement?> evenement;
@@ -42,6 +48,17 @@ class EcranPreparation extends StatelessWidget {
   /// Étape 2 : durée de l'événement (jours) et personnes attendues par gymnase.
   final Future<void> Function(double jours) definirJours;
   final Future<void> Function(String gymnaseId, int personnes) definirPersonnes;
+
+  /// Étape 3 : prévision de consommation (produit -> chiffre et source). Écrite et lue
+  /// par ceux qui ont accès à tout l'événement ; les autres ne voient qu'une phrase.
+  final Stream<Map<String, Prevision>> previsions;
+  final Future<void> Function(String produitId, double conso) definirPrevision;
+
+  /// Les événements passés proposés comme source, et l'application de l'un d'eux
+  /// (lève [LectureRefusee] si ses ventes ne sont pas lisibles : rien n'est écrit).
+  final Future<EvenementsPasses> Function() chargerPasses;
+  final Future<void> Function(ReferencePassee passe) appliquerPasse;
+  final Future<void> Function() revenirAuMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +130,18 @@ class EcranPreparation extends StatelessWidget {
                             reglable: portee.toutVoir && !ev.cloture,
                             definirJours: definirJours,
                             definirPersonnes: definirPersonnes,
+                          ),
+                          const Divider(height: 32),
+                          _EtapePrevision(
+                            evenement: ev,
+                            produits: liste,
+                            voit: portee.toutVoir,
+                            reglable: portee.toutVoir && !ev.cloture,
+                            previsions: previsions,
+                            definirPrevision: definirPrevision,
+                            chargerPasses: chargerPasses,
+                            appliquerPasse: appliquerPasse,
+                            revenirAuMenu: revenirAuMenu,
                           ),
                         ],
                       ),
@@ -443,6 +472,262 @@ class _EtapePersonnes extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+/// Étape 3 : la prévision de consommation, un chiffre par produit (par personne et par
+/// jour) avec sa source. Par défaut le menu ; un événement passé ou une correction à
+/// la main le remplacent pour cet événement seulement. Les courses s'en servent.
+class _EtapePrevision extends StatelessWidget {
+  const _EtapePrevision({
+    required this.evenement,
+    required this.produits,
+    required this.voit,
+    required this.reglable,
+    required this.previsions,
+    required this.definirPrevision,
+    required this.chargerPasses,
+    required this.appliquerPasse,
+    required this.revenirAuMenu,
+  });
+
+  final Evenement evenement;
+  final List<ProduitEvenement> produits;
+
+  /// Peut lire les prévisions (accès à tout l'événement) ; [reglable] = peut aussi les écrire.
+  final bool voit;
+  final bool reglable;
+  final Stream<Map<String, Prevision>> previsions;
+  final Future<void> Function(String produitId, double conso) definirPrevision;
+  final Future<EvenementsPasses> Function() chargerPasses;
+  final Future<void> Function(ReferencePassee passe) appliquerPasse;
+  final Future<void> Function() revenirAuMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final titre = Text('Étape 3 · Prévision de consommation',
+        key: const Key('titre_etape_prevision'),
+        style: Theme.of(context).textTheme.titleMedium);
+    if (!voit) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          titre,
+          const SizedBox(height: 4),
+          const Text(
+            'Seul le responsable, ou un gestionnaire rattaché à tous les gymnases, '
+            'voit et règle la prévision de consommation.',
+            key: Key('aide_prevision'),
+          ),
+        ],
+      );
+    }
+    return StreamBuilder<Map<String, Prevision>>(
+      stream: previsions,
+      builder: (context, s) {
+        final enregistrees = s.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            titre,
+            const SizedBox(height: 4),
+            Text(
+              reglable
+                  ? 'Combien chaque personne consomme-t-elle de chaque produit, par '
+                      'jour ? Par défaut, les chiffres du menu. Les courses s\'en '
+                      'servent ; le menu ne change jamais.'
+                  : 'L\'événement est clôturé : la prévision se lit seulement.',
+              key: const Key('aide_prevision'),
+            ),
+            const SizedBox(height: 12),
+            if (s.hasError)
+              const Text('Impossible de lire la prévision. Vérifiez le réseau.',
+                  key: Key('erreur_lecture_prevision'))
+            else if (enregistrees == null)
+              const Center(child: CircularProgressIndicator())
+            else ...[
+              if (reglable) ..._actions(context, enregistrees),
+              for (final l in fusionnerPrevisions(produits, enregistrees))
+                Card(
+                  key: Key('prevision_${l.produitId}'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.nom, style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        _ChampReglage<double>(
+                          id: 'conso_${l.produitId}',
+                          etiquette: 'Par personne et par jour',
+                          messageErreur:
+                              'Entrez une consommation de 0 à ${consoPrevisionMax.toInt()}.',
+                          valeur: l.conso,
+                          reglable: reglable,
+                          lire: lireConso,
+                          afficher: consoAffichee,
+                          enregistrer: (v) => definirPrevision(l.produitId, v),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Source : ${l.source}',
+                          key: Key('source_${l.produitId}'),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: l.modifieALaMain
+                                ? Palette.ocreFonce
+                                : Palette.anthracite,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _actions(BuildContext context, Map<String, Prevision> enregistrees) {
+    final aLaMain = enregistrees.values.any((p) => p.source == sourceMain);
+    return [
+      OutlinedButton(
+        key: const Key('prevision_evenement_passe'),
+        style: TypeAction.gerer.contour,
+        onPressed: () => _choisirEvenementPasse(context, aLaMain),
+        child: const Text('D\'après un événement passé'),
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton(
+        key: const Key('prevision_revenir_menu'),
+        style: TypeAction.gerer.contour,
+        onPressed:
+            enregistrees.isEmpty ? null : () => _revenir(context, aLaMain),
+        child: const Text('Revenir au menu'),
+      ),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  void _dire(BuildContext context, String message, Key cle) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message, key: cle)));
+  }
+
+  Future<bool> _confirmer(BuildContext context, String question) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          content: Text(question, key: const Key('question_prevision')),
+          actions: [
+            TextButton(
+              key: const Key('annuler_prevision'),
+              style: TypeAction.gerer.texte,
+              onPressed: () => Navigator.of(c).pop(false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              key: const Key('confirmer_prevision'),
+              onPressed: () => Navigator.of(c).pop(true),
+              child: const Text('Continuer'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
+  static const _perteCorrections =
+      'Des chiffres corrigés à la main seront remplacés. Continuer ?';
+
+  Future<void> _revenir(BuildContext context, bool aLaMain) async {
+    if (aLaMain && !await _confirmer(context, _perteCorrections)) return;
+    try {
+      await revenirAuMenu();
+      if (context.mounted) {
+        _dire(context, 'Tous les produits sont revenus aux chiffres du menu.',
+            const Key('prevision_faite'));
+      }
+    } catch (_) {
+      if (context.mounted) _montrerErreur(context);
+    }
+  }
+
+  Future<void> _choisirEvenementPasse(BuildContext context, bool aLaMain) async {
+    final EvenementsPasses passes;
+    try {
+      passes = await chargerPasses();
+    } catch (_) {
+      if (context.mounted) {
+        _dire(context, 'Impossible de lire les événements passés. Vérifiez le réseau.',
+            const Key('erreur_prevision'));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    final choisi = await showDialog<ReferencePassee>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('D\'après un événement passé'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (passes.utilisables.isEmpty)
+                const Text('Aucun événement passé ne peut servir de référence.',
+                    key: Key('aucun_evenement_passe')),
+              for (final r in passes.utilisables)
+                ListTile(
+                  key: Key('choix_passe_${r.id}'),
+                  minVerticalPadding: 12,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(r.nom),
+                  subtitle: Text('${dateAffichee(r.date)} · '
+                      '${r.personnes} personne${r.personnes > 1 ? 's' : ''} · '
+                      '${consoAffichee(r.jours)} jour${r.jours > 1 ? 's' : ''}'),
+                  onTap: () => Navigator.of(c).pop(r),
+                ),
+              if (passes.sansPersonnes > 0)
+                const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text(messageSansPersonnes,
+                      key: Key('message_sans_personnes')),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('fermer_evenements_passes'),
+            style: TypeAction.gerer.texte,
+            onPressed: () => Navigator.of(c).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+    if (choisi == null || !context.mounted) return;
+    if (aLaMain && !await _confirmer(context, _perteCorrections)) return;
+    try {
+      await appliquerPasse(choisi);
+      if (context.mounted) {
+        _dire(context, 'Prévision calculée d\'après « ${choisi.nom} ».',
+            const Key('prevision_faite'));
+      }
+    } on LectureRefusee {
+      if (context.mounted) {
+        _dire(
+            context,
+            'Les ventes de « ${choisi.nom} » ne peuvent pas être lues avec vos droits. '
+            'Rien n\'a été modifié.',
+            const Key('erreur_prevision'));
+      }
+    } catch (_) {
+      if (context.mounted) _montrerErreur(context);
+    }
   }
 }
 

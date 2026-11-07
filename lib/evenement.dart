@@ -107,6 +107,25 @@ class ProduitEvenement {
   /// Copiées avec le produit : la caisse les affiche même sans réseau.
   final String? icone;
   final Uint8List? photo;
+
+  /// Le même produit avec une autre consommation par personne et par jour (celle de
+  /// la prévision de l'événement). Le produit lui-même, comme le menu, ne change pas.
+  ProduitEvenement avecConso(double conso) => ProduitEvenement(
+        id,
+        nom,
+        prixCentimes,
+        stock,
+        icone: icone,
+        photo: photo,
+        fiche: FicheProduit(
+          type: fiche.type,
+          conso: conso,
+          ingredients: fiche.ingredients,
+          verresParLitre: fiche.verresParLitre,
+          provenance: fiche.provenance,
+          partsParEntier: fiche.partsParEntier,
+        ),
+      );
 }
 
 /// « 14:05 » (heure locale).
