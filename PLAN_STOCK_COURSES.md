@@ -509,6 +509,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 |---|---|---|---|
 | P1 | Close (testée par Claude) | 06/11/2026 | 1 à 7 réussis : règles 197/197 (10 nouveaux, `preparation.test.mjs`), `flutter test` 252/252, `flutter analyze` sans erreur, parcours Android LC2 `evenements_test` + `restes_test` 2/2. Règles déployées le 06/11/2026. Limite : le bouton « Ouvrir l'événement » est testé en logique et dans le parcours `evenements_test`, pas en test d'écran isolé |
 | P2 | Close (testée par Claude) | 06/11/2026 | 1 à 6 réussis : règles 204/204 (7 nouveaux, `stock_depart.test.mjs`), `flutter test` 261/261, analyse sans erreur, parcours Android LC2 `preparation_test` + `restes_test` + `gymnases_test` + `evenements_test` 4/4. Règles (champ `repris`) déployées le 06/11/2026 |
+| P3 | Close (testée par Claude) | 07/11/2026 | 1 à 4 réussis : `flutter test` 269/269 (8 nouveaux : limites de durée et de personnes, lecture seule), analyse sans erreur, règles inchangées (204/204 à P2), parcours Android LC2 `preparation_test` + `courses_test` + `chantier_complet_test` + `recette_test` 6/6 (80 personnes et 2 jours réglés dans la Préparation, Courses lit 80 et 2 et calcule 320 ; « Jour complet » dans Courses : durée de l'événement toujours 2). Limite : l'absence du champ « personnes » dans Courses est constatée par le parcours Android, pas par un test d'écran isolé (pas de faux Firestore) |
 
 ### Cadrage P1 — État « En préparation » (phase 5, 06/11/2026)
 
@@ -544,6 +545,22 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 **Ce qu'on ne fait pas** : personnes et durée (P3), prévision (P4), Excel (P5 et suivantes) ; pas de stock d'ingrédients (décision 54) ; pas de changement de « Gymnases et stocks » ni des courses ; pas de nouvelle dépendance.
 
 **Test de chaque critère** : règles pour la marque `repris` (création, correction, refus d'une valeur autre que `true`, branches caisse intactes) ; `flutter test` pour 1 (bouton absent hors gestion), 4 (liste = produits finis, sans ingrédient), 5 (portée), 6 (lecture seule + lien) et l'étiquette ; parcours Android LC2 pour 2 (24 sodas saisis dans la Préparation, relus dans « Gymnases et stocks ») et 3 (reste gardé à la clôture d'un événement, repris à la création, étiquette visible, corrigé, étiquette disparue).
+
+### Cadrage P3 — Personnes et durée (phase 5, 06/11/2026)
+
+**Critères du plan, repris tels quels** : (1) 80 personnes au gymnase A et 2 jours réglés dans la Préparation : Courses affiche et utilise 80 et 2 ; (2) Courses n'a plus de champ « personnes » ; (3) le choix « demi-journée / jour complet / plus » des courses reste, propose « tout l'événement » par défaut, et ne change pas la durée de l'événement ; (4) durée refusée hors 0,5 à 30 jours, personnes hors 0 à la limite actuelle.
+
+**Stratégie**
+- `EcranPreparation` (P2) gagne l'étape 2 « Personnes et durée », sous l'étape 1 : un champ « Durée de l'événement (jours) » (nombre, virgule ou point, 0,5 à 30) enregistré par `definirJours`, et un champ « Personnes attendues » par gymnase de la portée, entier 0 à `personnesMax` (1000), enregistré par `definirPersonnes`. Même mécanique d'enregistrement que l'étape 1 (à la validation, à la sortie du champ, ou après 0,9 s), même indication « Enregistré ». Valeur hors limites : message sous le champ, rien n'est écrit.
+- Qui règle : les règles actuelles exigent `gereTout` (responsable, ou gestionnaire rattaché à tous les gymnases) pour la durée et les personnes. Les autres gestionnaires voient l'étape 2 en lecture seule avec une phrase d'explication. Événement clôturé : lecture seule. Ouvert (« En cours ») : toujours modifiable par ceux qui y ont droit (les courses peuvent encore se lancer). Aucun changement de règles : pas de déploiement.
+- Courses (`lib/ecran_courses.dart`) : le champ « Personnes attendues » disparaît ; à la place, une ligne de lecture « Personnes attendues : n » (par gymnase) avec la mention « réglé dans la Préparation ». Le choix de durée devient local à l'écran : quatre choix « Tout l'événement » (par défaut, = durée de l'événement), « Demi-journée » (0,5), « Jour complet » (1), « Plus » (champ du nombre de jours, 2 à 30). Il ne s'écrit plus jamais dans l'événement (`definirJours` n'est plus appelé depuis Courses). Il n'est pas mémorisé : l'écran rouvre sur « Tout l'événement » ; la liste enregistrée garde ses quantités. « Recalculer » utilise les personnes de la Préparation et la durée choisie.
+- Si les personnes sont toutes à 0, le message d'aide de Courses renvoie vers la Préparation (bouton « Aller à la Préparation »).
+
+**Fichiers touchés** : `lib/ecran_preparation.dart`, `lib/ecran_courses.dart`, `lib/courses.dart` si besoin (aucune logique de calcul ne change), tests de courses existants à adapter (`test/courses_test.dart`, `integration_test/courses_test.dart`, `integration_test/chantier_complet_test.dart`, `integration_test/recette_test.dart` et tout parcours qui saisit des personnes dans Courses : ils règlent désormais personnes et durée par la Préparation ou directement par le dépôt), nouveaux tests dans `test/preparation_test.dart` et `integration_test/preparation_test.dart`.
+
+**Ce qu'on ne fait pas** : prévision par source (P4), Excel, aucun changement de règles ni de données ; la durée choisie dans Courses n'est pas enregistrée ; pas de nouvelle dépendance.
+
+**Test de chaque critère** : parcours Android LC2 pour 1 (80 personnes et 2 jours réglés dans la Préparation, Courses affiche 80 et 2 et en calcule la liste) et 3 (choix « Jour complet » dans Courses, puis durée de l'événement relue : toujours 2) ; `flutter test` pour 2 (aucun champ `personnes_…` dans Courses), 4 (0,4 et 31 refusés, 0,5 et 30 acceptés ; 1001 et −1 refusés, 0 et 1000 acceptés) et l'étape 2 en lecture seule hors `gereTout`.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

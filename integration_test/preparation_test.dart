@@ -190,11 +190,166 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_preparation')));
     await attendre(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await finTransition(tester);
-    expect(find.byType(TextField), findsNothing);
+    expect(find.byKey(Key('depart_${gA}_$soda')), findsNothing); // plus de saisie de stock
     await attendreTexte(tester, 'lecture_depart_${gA}_$soda', 'Stock : 24');
     expect(texte(tester, 'lecture_depart_${gB}_$croque'), 'Stock : 15');
     await toucher(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await attendre(tester, find.byKey(const Key('titre_stock_evenement')));
     await attendreTexte(tester, 'stock_${gA}_$soda', 'Stock : 24');
+  });
+
+  testWidgets(
+      'personnes et durée : réglées dans la Préparation, lues par les courses, '
+      'durée des courses locale', (tester) async {
+    final db = FirebaseFirestore.instance;
+    final auth = FirebaseAuth.instance;
+    const serveur = GetOptions(source: Source.server);
+    await auth.signOut();
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+
+    await ouvrir(tester, 'responsable', fauxGoogle('chef_personnes_duree'));
+    await creerAssociationParLInterface(tester);
+    final assoId = (await db.collection('users').doc(auth.currentUser!.uid).get())
+        .data()!['assoId'] as String;
+    final depotAsso = DepotAssociations(db);
+    final menus = depotAsso.menus(assoId);
+    final menuId = await menus.creerMenu('Menu Tournoi');
+    await menus.ajouterProduit(menuId,
+        nom: 'Croque',
+        prixCentimes: 300,
+        fiche: const FicheProduit(type: 'compose', conso: 2, ingredients: [
+          Ingredient('Pain de mie', 2, 'tranche'),
+        ]));
+    final depotEv = depotAsso.evenements(assoId);
+    final evt = await depotEv.creerEvenement(
+        nom: 'Tournoi P3',
+        date: dateIso(DateTime.now()),
+        menuId: menuId,
+        modes: ['especes'],
+        gymnases: ['Gymnase A']);
+    await db.waitForPendingWrites();
+    final gA = (await depotEv.suivreGymnases(evt).first).single.id;
+    final croque = (await depotEv.suivreProduits(evt).first).single.id;
+
+    Future<Map<String, dynamic>> docEvt() async => (await db
+            .collection('associations')
+            .doc(assoId)
+            .collection('evenements')
+            .doc(evt)
+            .get(serveur))
+        .data()!;
+    Future<Map<String, dynamic>> docGym() async => (await db
+            .collection('associations')
+            .doc(assoId)
+            .collection('evenements')
+            .doc(evt)
+            .collection('gymnases')
+            .doc(gA)
+            .get(serveur))
+        .data()!;
+    Future<void> saisirChamp(String cle, String valeur) async {
+      // On touche le champ d'abord : après un « ok », il a perdu le focus.
+      await tester.tap(find.byKey(Key(cle)));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.enterText(find.byKey(Key(cle)), valeur);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    String champ(String cle) =>
+        tester.widget<TextField>(find.byKey(Key(cle))).controller!.text;
+    String champQte(String cle) => tester
+        .widget<TextField>(find.descendant(
+            of: find.byKey(Key(cle)), matching: find.byType(TextField)))
+        .controller!
+        .text;
+
+    // ---------- Préparation, étape 2.
+    await attendre(tester, find.text('Tournoi P3'));
+    await finTransition(tester);
+    await toucher(tester, find.text('Tournoi P3'));
+    await attendre(tester, find.byKey(const Key('voir_preparation')));
+    await finTransition(tester);
+    await toucher(tester, find.byKey(const Key('voir_preparation')));
+    await attendre(tester, find.byKey(const Key('titre_etape_personnes')));
+    await finTransition(tester);
+    expect(champ('champ_duree'), '2');
+    expect(champ('champ_personnes_$gA'), '0');
+
+    // Valeurs refusées : message, rien d'écrit.
+    await saisirChamp('champ_duree', '31');
+    expect(find.text('Entrez une durée de 0,5 à 30 jours.'), findsOneWidget);
+    await saisirChamp('champ_duree', '0,4');
+    expect(find.text('Entrez une durée de 0,5 à 30 jours.'), findsOneWidget);
+    await saisirChamp('champ_personnes_$gA', '1001');
+    expect(find.text('Entrez un nombre entier de personnes de 0 à 1000.'),
+        findsOneWidget);
+    await saisirChamp('champ_personnes_$gA', '-1');
+    expect(find.text('Entrez un nombre entier de personnes de 0 à 1000.'),
+        findsOneWidget);
+    expect((await docEvt())['nbJours'] ?? 2, 2);
+    expect((await docGym())['personnes'] ?? 0, 0);
+
+    // 3 jours (virgule acceptée pour 0,5 plus loin), puis 2 jours ; 80 personnes.
+    await saisirChamp('champ_duree', '3');
+    await attendre(tester, find.byKey(const Key('enregistre_duree')));
+    expect((await docEvt())['nbJours'], 3);
+    await saisirChamp('champ_duree', '2');
+    for (var i = 0; i < 100 && (await docEvt())['nbJours'] != 2; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect((await docEvt())['nbJours'], 2);
+    await saisirChamp('champ_personnes_$gA', '80');
+    await attendre(tester, find.byKey(Key('enregistre_personnes_$gA')));
+    expect((await docGym())['personnes'], 80);
+    await db.waitForPendingWrites();
+
+    // ---------- Courses : 80 personnes et 2 jours, sans champ « personnes ».
+    await retour(tester);
+    await attendre(tester, find.byKey(const Key('voir_courses')));
+    await toucher(tester, find.byKey(const Key('voir_courses')));
+    await attendre(tester, find.byKey(const Key('etat_courses')));
+    await finTransition(tester);
+    expect(find.byKey(Key('personnes_$gA')), findsNothing);
+    expect(texte(tester, 'lecture_personnes_$gA'), 'Personnes attendues : 80');
+    expect(find.text('Tout l’événement (2 j)'), findsOneWidget);
+    expect(
+        tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
+        isTrue);
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
+    for (var i = 0;
+        i < 100 && champQte('qte_${gA}_$croque') != '320';
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(champQte('qte_${gA}_$croque'), '320'); // 80 x 2 jours x 2
+
+    // Un jour complet : choix local, la durée de l'événement ne bouge pas.
+    await toucher(tester, find.byKey(const Key('duree_jour')));
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    for (var i = 0;
+        i < 100 && champQte('qte_${gA}_$croque') != '160';
+        i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(champQte('qte_${gA}_$croque'), '160');
+    await attendreTexte(tester, 'etat_courses', 'Enregistré');
+    expect((await docEvt())['nbJours'], 2);
+
+    // On quitte et on rouvre : « Tout l'événement » par défaut, toujours 2 jours.
+    await retour(tester);
+    await attendre(tester, find.byKey(const Key('voir_courses')));
+    await toucher(tester, find.byKey(const Key('voir_courses')));
+    await attendre(tester, find.byKey(const Key('etat_courses')));
+    await finTransition(tester);
+    expect(
+        tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
+        isTrue);
+    expect(find.text('Tout l’événement (2 j)'), findsOneWidget);
+    expect((await docEvt())['nbJours'], 2);
   });
 }

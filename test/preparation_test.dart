@@ -4,7 +4,8 @@ import 'package:le_comptoir/ecran_preparation.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
 
-// Étape P2 : l'écran Préparation, étape 1 « Stock de départ ».
+// Étapes P2 et P3 : l'écran Préparation, étape 1 « Stock de départ » et étape 2
+// « Personnes et durée ».
 //   Gymnases A et B ; produits finis Soda et Croque (jamais d'ingrédient dans la liste).
 //   Stock au départ : A : Soda 6 (repris), Croque 10 ; B : rien.
 Evenement _ev(String statut) => Evenement(
@@ -13,9 +14,14 @@ Evenement _ev(String statut) => Evenement(
     date: '2026-10-03',
     statut: statut,
     modes: const ['carte'],
-    menuNom: 'M');
+    menuNom: 'M',
+    nbJours: 3);
 
-const _gymnases = [Gymnase('gA', 'Gymnase A'), Gymnase('gB', 'Gymnase B')];
+const _gymnases = [Gymnase('gA', 'Gymnase A', 40), Gymnase('gB', 'Gymnase B')];
+
+// Réglages écrits par l'écran (étape 2), remis à zéro à chaque affichage.
+final _joursEcrits = <double>[];
+final _personnesEcrites = <(String, int)>[];
 const _produits = [
   ProduitEvenement('soda', 'Soda', 100, null),
   ProduitEvenement('croque', 'Croque', 300, null),
@@ -37,6 +43,8 @@ Future<List<(String, String, int)>> _afficher(
   tester.view.physicalSize = const Size(1080, 3000);
   tester.view.devicePixelRatio = 2.5;
   addTearDown(tester.view.reset);
+  _joursEcrits.clear();
+  _personnesEcrites.clear();
   final ecrits = <(String, String, int)>[];
   await tester.pumpWidget(MaterialApp(
     home: EcranPreparation(
@@ -46,6 +54,8 @@ Future<List<(String, String, int)>> _afficher(
       produits: Stream.value(_produits),
       stocks: Stream.value(_stocks),
       definirStock: (g, p, q) async => ecrits.add((g, p, q)),
+      definirJours: (j) async => _joursEcrits.add(j),
+      definirPersonnes: (g, n) async => _personnesEcrites.add((g, n)),
       onVoirGymnases: voirGymnases ?? () {},
     ),
   ));
@@ -64,7 +74,8 @@ void main() {
     // Soda et Croque dans chaque gymnase, et rien d'autre.
     expect(find.text('Soda'), findsNWidgets(2));
     expect(find.text('Croque'), findsNWidgets(2));
-    expect(find.byType(TextField), findsNWidgets(4));
+    // 4 quantités de stock + 3 réglages de l'étape 2 (durée, personnes de A et de B).
+    expect(find.byType(TextField), findsNWidgets(7));
     String champ(String cle) =>
         tester.widget<TextField>(find.byKey(Key(cle))).controller!.text;
     expect(champ('depart_gA_soda'), '6');
@@ -137,7 +148,10 @@ void main() {
         (tester) async {
       var renvoi = 0;
       await _afficher(tester, statut: statut, voirGymnases: () => renvoi++);
-      expect(find.byType(TextField), findsNothing);
+      // Plus de quantité de stock à saisir : seuls restent les 3 réglages de l'étape 2
+      // (ils sont lisibles seulement une fois l'événement clôturé).
+      expect(find.byType(TextField), statut == 'cloture' ? findsNothing : findsNWidgets(3));
+      expect(find.byKey(const Key('depart_gA_soda')), findsNothing);
       expect(find.byKey(const Key('suivre_tous_depart_gB')), findsNothing);
       expect(
           tester.widget<Text>(find.byKey(const Key('lecture_depart_gA_soda'))).data,
@@ -149,4 +163,106 @@ void main() {
       expect(renvoi, 1);
     });
   }
+
+  // ---------- Étape 2 : personnes et durée.
+  Future<void> saisirEtValider(WidgetTester tester, String cle, String valeur) async {
+    await tester.enterText(find.byKey(Key(cle)), valeur);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+  }
+
+  testWidgets('étape 2 : durée et personnes de chaque gymnase sont affichées et réglables',
+      (tester) async {
+    await _afficher(tester);
+    expect(find.byKey(const Key('titre_etape_personnes')), findsOneWidget);
+    String champ(String cle) =>
+        tester.widget<TextField>(find.byKey(Key(cle))).controller!.text;
+    expect(champ('champ_duree'), '3');
+    expect(champ('champ_personnes_gA'), '40');
+    expect(champ('champ_personnes_gB'), '0');
+  });
+
+  testWidgets('durée : 0,5 et 30 acceptés (virgule ou point), 0,4 et 31 refusés',
+      (tester) async {
+    await _afficher(tester);
+    const message = 'Entrez une durée de 0,5 à 30 jours.';
+    await saisirEtValider(tester, 'champ_duree', '0,4');
+    expect(find.text(message), findsOneWidget);
+    await saisirEtValider(tester, 'champ_duree', '31');
+    expect(find.text(message), findsOneWidget);
+    expect(_joursEcrits, isEmpty);
+    await saisirEtValider(tester, 'champ_duree', '0,5');
+    expect(find.text(message), findsNothing);
+    await saisirEtValider(tester, 'champ_duree', '30');
+    await saisirEtValider(tester, 'champ_duree', '1.5');
+    expect(_joursEcrits, [0.5, 30.0, 1.5]);
+  });
+
+  testWidgets('personnes : 0 et 1000 acceptés, 1001, -1 et 12,5 refusés', (tester) async {
+    await _afficher(tester);
+    const message = 'Entrez un nombre entier de personnes de 0 à 1000.';
+    for (final mauvais in ['1001', '-1', '12,5']) {
+      await saisirEtValider(tester, 'champ_personnes_gB', mauvais);
+      expect(find.text(message), findsOneWidget, reason: mauvais);
+    }
+    expect(_personnesEcrites, isEmpty);
+    await saisirEtValider(tester, 'champ_personnes_gB', '1000');
+    expect(find.text(message), findsNothing);
+    await saisirEtValider(tester, 'champ_personnes_gA', '0');
+    expect(_personnesEcrites, [('gB', 1000), ('gA', 0)]);
+  });
+
+  testWidgets('une valeur identique à celle enregistrée ne s’écrit pas', (tester) async {
+    await _afficher(tester);
+    await saisirEtValider(tester, 'champ_duree', '3');
+    await saisirEtValider(tester, 'champ_personnes_gA', '40');
+    expect(_joursEcrits, isEmpty);
+    expect(_personnesEcrites, isEmpty);
+  });
+
+  testWidgets('une saisie laissée un instant est enregistrée et signalée', (tester) async {
+    await _afficher(tester);
+    await tester.enterText(find.byKey(const Key('champ_personnes_gB')), '80');
+    await tester.pump(const Duration(seconds: 2));
+    expect(_personnesEcrites, [('gB', 80)]);
+    expect(find.byKey(const Key('enregistre_personnes_gB')), findsOneWidget);
+  });
+
+  testWidgets('gestionnaire non rattaché à tous les gymnases : étape 2 en lecture seule',
+      (tester) async {
+    await _afficher(tester,
+        portee: const PorteeGestion(
+            responsable: false, gymnases: {'gA'}, nbGymnases: 2));
+    expect(find.byKey(const Key('champ_duree')), findsNothing);
+    expect(find.byKey(const Key('champ_personnes_gA')), findsNothing);
+    expect(texte(tester, 'lecture_duree'), "Durée de l'événement (jours) : 3");
+    expect(texte(tester, 'lecture_personnes_gA'), 'Personnes attendues : 40');
+    expect(find.byKey(const Key('lecture_personnes_gB')), findsNothing);
+    expect(find.text(
+        'Seul le responsable, ou un gestionnaire rattaché à tous les gymnases, '
+        'règle les personnes et la durée.'), findsOneWidget);
+  });
+
+  testWidgets('gestionnaire rattaché à tous les gymnases : étape 2 réglable',
+      (tester) async {
+    await _afficher(tester,
+        portee: const PorteeGestion(
+            responsable: false, gymnases: {'gA', 'gB'}, nbGymnases: 2));
+    expect(find.byKey(const Key('champ_duree')), findsOneWidget);
+    expect(find.byKey(const Key('champ_personnes_gB')), findsOneWidget);
+  });
+
+  testWidgets('événement ouvert : étape 2 encore réglable ; clôturé : lecture seule',
+      (tester) async {
+    await _afficher(tester, statut: 'en_cours');
+    expect(find.byKey(const Key('champ_duree')), findsOneWidget);
+    expect(find.byKey(const Key('champ_personnes_gA')), findsOneWidget);
+    await _afficher(tester, statut: 'cloture');
+    expect(find.byKey(const Key('champ_duree')), findsNothing);
+    expect(find.byKey(const Key('champ_personnes_gA')), findsNothing);
+    expect(texte(tester, 'lecture_duree'), "Durée de l'événement (jours) : 3");
+  });
 }
+
+String texte(WidgetTester tester, String cle) =>
+    tester.widget<Text>(find.byKey(Key(cle))).data!;

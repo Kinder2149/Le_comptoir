@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P3 : personnes et durée
+- Préparation, étape 2 : durée de l'événement (0,5 à 30 jours) et personnes attendues par gymnase (0 à 1000), réglées par le responsable ou un gestionnaire rattaché à tous les gymnases ; lecture seule pour les autres et pour un événement clôturé.
+- Courses ne règle plus les personnes : elle les affiche (« réglé dans la Préparation ») et renvoie vers la Préparation. Son choix de durée devient local : « Tout l'événement » (par défaut), demi-journée, jour complet, plus ; il ne change plus la durée de l'événement.
+- Aucun changement de règles d'accès. Tests : 269 de logique et d'écrans, 6 parcours Android.
+
 ## 06/11/2026 — Mission « Préparer l'événement », P2 : onglet Préparation et stock de départ
 - Bouton « Préparation » dans l'événement (gestion seulement) : étape 1, quantité de départ de chaque produit fini, gymnase par gymnase (un gestionnaire ne voit que les siens). Même chiffre que dans « Gymnases et stocks ». Les restes repris de l'événement précédent sont pré-remplis, marqués « repris de l'événement précédent » et corrigeables. Une fois l'événement ouvert, le stock de départ se lit seulement.
 - Règles d'accès : champ `repris` accepté sur le stock. Déployées le 06/11/2026.

@@ -567,6 +567,26 @@ class _EtatBlocGestion extends State<_BlocGestion> {
 
   void _abonner() => _suivi = _creerFlux();
 
+  Future<void> _ouvrirPreparation(
+          BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranPreparation(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            produits: widget.depot.suivreProduits(ev.id),
+            stocks:
+                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
+            definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
+            definirJours: (j) => widget.depot.definirJours(ev.id, j),
+            definirPersonnes: (g, n) =>
+                widget.depot.definirPersonnes(ev.id, g, n),
+            onVoirGymnases: () => _voirGymnases(context, ev, portee),
+          ),
+        ),
+      );
+
   void _voirGymnases(BuildContext context, Evenement ev, PorteeGestion portee) =>
       Navigator.of(context).push<void>(
         MaterialPageRoute(
@@ -655,21 +675,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                 child: OutlinedButton(
                   key: const Key('voir_preparation'),
                   style: TypeAction.gerer.contour,
-                  onPressed: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute(
-                      builder: (_) => EcranPreparation(
-                        evenement: widget.depot.suivreEvenement(ev.id),
-                        portee: portee,
-                        gymnases: widget.depot.suivreGymnases(ev.id),
-                        produits: widget.depot.suivreProduits(ev.id),
-                        stocks: widget.depot
-                            .suivreStocksDepart(ev.id, gymnases: portee.filtre),
-                        definirStock: (g, p, q) =>
-                            widget.depot.definirStock(ev.id, g, p, q),
-                        onVoirGymnases: () => _voirGymnases(context, ev, portee),
-                      ),
-                    ),
-                  ),
+                  onPressed: () => _ouvrirPreparation(context, ev, portee),
                   child: const Text('Préparation'),
                 ),
               )
@@ -697,6 +703,8 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                       builder: (_) => EcranCourses(
                         depot: widget.depot,
                         evenementId: ev.id,
+                        onAllerPreparation: () =>
+                            _ouvrirPreparation(context, ev, portee),
                       ),
                     ),
                   ),

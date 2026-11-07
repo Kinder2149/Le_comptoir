@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'courses.dart' show demiJournee, joursMax, personnesMax;
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -20,6 +21,8 @@ class EcranPreparation extends StatelessWidget {
     required this.produits,
     required this.stocks,
     required this.definirStock,
+    required this.definirJours,
+    required this.definirPersonnes,
     required this.onVoirGymnases,
   });
 
@@ -35,6 +38,10 @@ class EcranPreparation extends StatelessWidget {
   final Future<void> Function(String gymnaseId, String produitId, int quantite)
       definirStock;
   final VoidCallback onVoirGymnases;
+
+  /// Étape 2 : durée de l'événement (jours) et personnes attendues par gymnase.
+  final Future<void> Function(double jours) definirJours;
+  final Future<void> Function(String gymnaseId, int personnes) definirPersonnes;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +103,17 @@ class EcranPreparation extends StatelessWidget {
                               modifiable: modifiable,
                               definirStock: definirStock,
                             ),
+                          const Divider(height: 32),
+                          _EtapePersonnes(
+                            evenement: ev,
+                            gymnases: [
+                              for (final g in tous)
+                                if (portee.gere(g.id)) g
+                            ],
+                            reglable: portee.toutVoir && !ev.cloture,
+                            definirJours: definirJours,
+                            definirPersonnes: definirPersonnes,
+                          ),
                         ],
                       ),
               );
@@ -345,6 +363,238 @@ class _EtatLigneDepart extends State<_LigneDepart> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Étape 2 : durée de l'événement et personnes attendues par gymnase. Les courses
+/// les lisent sans les régler. Seuls le responsable et le gestionnaire rattaché à
+/// tous les gymnases les règlent (comme les règles d'accès) ; les autres les lisent.
+class _EtapePersonnes extends StatelessWidget {
+  const _EtapePersonnes({
+    required this.evenement,
+    required this.gymnases,
+    required this.reglable,
+    required this.definirJours,
+    required this.definirPersonnes,
+  });
+
+  final Evenement evenement;
+  final List<Gymnase> gymnases;
+  final bool reglable;
+  final Future<void> Function(double jours) definirJours;
+  final Future<void> Function(String gymnaseId, int personnes) definirPersonnes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Étape 2 · Personnes et durée',
+            key: const Key('titre_etape_personnes'),
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          reglable
+              ? 'Combien de personnes sont attendues dans chaque gymnase, et '
+                  'combien de jours dure l\'événement ? Les courses s\'en servent.'
+              : evenement.cloture
+                  ? 'L\'événement est clôturé : ces réglages se lisent seulement.'
+                  : 'Seul le responsable, ou un gestionnaire rattaché à tous les '
+                      'gymnases, règle les personnes et la durée.',
+          key: const Key('aide_personnes_duree'),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: _ChampReglage<double>(
+              id: 'duree',
+              etiquette: 'Durée de l\'événement (jours)',
+              messageErreur: 'Entrez une durée de 0,5 à $joursMax jours.',
+              valeur: evenement.nbJours,
+              reglable: reglable,
+              lire: _lireJours,
+              afficher: _afficherJours,
+              enregistrer: definirJours,
+            ),
+          ),
+        ),
+        for (final g in gymnases)
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _ChampReglage<int>(
+                id: 'personnes_${g.id}',
+                etiquette: gymnases.length > 1
+                    ? 'Personnes attendues : ${g.nom}'
+                    : 'Personnes attendues',
+                messageErreur:
+                    'Entrez un nombre entier de personnes de 0 à $personnesMax.',
+                valeur: g.personnes,
+                reglable: reglable,
+                lire: _lirePersonnes,
+                afficher: (n) => '$n',
+                enregistrer: (n) => definirPersonnes(g.id, n),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Durée valide : 0,5 à [joursMax] jours (virgule ou point). Sinon null.
+double? _lireJours(String saisie) {
+  final n = double.tryParse(saisie.trim().replaceAll(',', '.'));
+  return n == null || n < demiJournee || n > joursMax ? null : n;
+}
+
+String _afficherJours(double v) =>
+    v == v.roundToDouble() ? '${v.toInt()}' : '$v'.replaceAll('.', ',');
+
+/// Personnes valides : entier de 0 à [personnesMax]. Sinon null.
+int? _lirePersonnes(String saisie) {
+  final n = int.tryParse(saisie.trim());
+  return n == null || n < 0 || n > personnesMax ? null : n;
+}
+
+/// Un réglage numérique : saisi (enregistré quand on valide, qu'on quitte le champ
+/// ou après une courte pause) ou lu. Une valeur hors limites affiche un message et
+/// n'écrit rien. Clés : `champ_<id>`, `lecture_<id>`, `enregistre_<id>`.
+class _ChampReglage<T extends num> extends StatefulWidget {
+  const _ChampReglage({
+    required this.id,
+    required this.etiquette,
+    required this.messageErreur,
+    required this.valeur,
+    required this.reglable,
+    required this.lire,
+    required this.afficher,
+    required this.enregistrer,
+  });
+
+  final String id;
+  final String etiquette;
+  final String messageErreur;
+  final T valeur;
+  final bool reglable;
+  final T? Function(String saisie) lire;
+  final String Function(T valeur) afficher;
+  final Future<void> Function(T valeur) enregistrer;
+
+  @override
+  State<_ChampReglage<T>> createState() => _EtatChampReglage<T>();
+}
+
+class _EtatChampReglage<T extends num> extends State<_ChampReglage<T>> {
+  late final TextEditingController _texte =
+      TextEditingController(text: widget.afficher(widget.valeur));
+  final FocusNode _focus = FocusNode();
+  Timer? _pause;
+  bool _modifie = false;
+  String? _erreur;
+  bool _enregistre = false;
+
+  /// Dernière valeur écrite, tant que la valeur lue n'a pas rattrapé (évite de
+  /// prendre un retour à l'ancienne valeur pour « rien à écrire »).
+  T? _ecrit;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _valider();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_ChampReglage<T> ancien) {
+    super.didUpdateWidget(ancien);
+    if (widget.valeur != ancien.valeur) _ecrit = null;
+    // Une valeur venue d'ailleurs remplace le champ, sauf pendant qu'on le modifie.
+    if (!_modifie && !_focus.hasFocus) {
+      final attendu = widget.afficher(widget.valeur);
+      if (_texte.text != attendu) _texte.text = attendu;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pause?.cancel();
+    if (_modifie) {
+      final n = widget.lire(_texte.text);
+      if (n != null && n != (_ecrit ?? widget.valeur)) {
+        widget.enregistrer(n).catchError((_) {});
+      }
+    }
+    _texte.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _valider() async {
+    _pause?.cancel();
+    if (!_modifie) return;
+    final n = widget.lire(_texte.text);
+    if (n == null) {
+      setState(() {
+        _erreur = widget.messageErreur;
+        _enregistre = false;
+      });
+      return;
+    }
+    // Marqué « envoyé » avant l'attente : valider puis quitter le champ n'écrit qu'une fois.
+    setState(() {
+      _erreur = null;
+      _modifie = false;
+    });
+    if (n == (_ecrit ?? widget.valeur)) return;
+    try {
+      await widget.enregistrer(n);
+      _ecrit = n;
+      if (mounted) setState(() => _enregistre = true);
+    } catch (_) {
+      _modifie = true;
+      if (mounted) _montrerErreur(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.reglable) {
+      return Text('${widget.etiquette} : ${widget.afficher(widget.valeur)}',
+          key: Key('lecture_${widget.id}'));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          key: Key('champ_${widget.id}'),
+          controller: _texte,
+          focusNode: _focus,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: widget.etiquette,
+            errorText: _erreur,
+            errorMaxLines: 3,
+          ),
+          onChanged: (_) {
+            _modifie = true;
+            _enregistre = false;
+            _pause?.cancel();
+            _pause = Timer(const Duration(milliseconds: 900), _valider);
+          },
+          onSubmitted: (_) => _valider(),
+        ),
+        if (_enregistre && !_modifie && _erreur == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('Enregistré', key: Key('enregistre_${widget.id}')),
+          ),
+      ],
     );
   }
 }

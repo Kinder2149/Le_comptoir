@@ -115,10 +115,11 @@ void main() {
     await toucher(tester, find.text('Tournoi'));
     await attendre(tester, find.byKey(const Key('voir_courses')));
     await finTransition(tester);
+    // Les personnes se règlent dans la Préparation : ici, par le dépôt, avant les courses.
+    await depotEv.definirPersonnes(evtId, gA, 40);
+    await depotEv.definirPersonnes(evtId, gB, 30);
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
-    await saisir(tester, 'personnes_$gA', '40');
-    await saisir(tester, 'personnes_$gB', '30');
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     // 80 et 60 personnes-jours : croques 52 + 36 + 48 = 136 (A), 39 + 27 + 36 = 102 (B) = 238.

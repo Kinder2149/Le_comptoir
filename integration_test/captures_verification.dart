@@ -176,10 +176,11 @@ void main() {
     await retour(tester);
 
     // ---------- B4 : courses, durée à couvrir, estimation modifiable.
+    // Les personnes se règlent dans la Préparation : ici, par le dépôt, avant les courses.
+    await depotEv.definirPersonnes(evt, gA, 40);
+    await depotEv.definirPersonnes(evt, gB, 30);
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
-    await saisir(tester, 'personnes_$gA', '40');
-    await saisir(tester, 'personnes_$gB', '30');
     await toucher(tester, find.byKey(const Key('duree_jour')));
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
