@@ -569,6 +569,9 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
       depot: widget.depotEvenements,
       evenementId: widget.evenement.id,
       gymnaseId: widget.gymnase.id,
+      gymnaseNom: widget.gymnase.nom,
+      uid: widget.uid,
+      prenom: widget.prenom,
       produits: _produitsEvenement,
       onErreur: _surErreur,
     ),
@@ -696,6 +699,9 @@ class _DialogueStockBenevole extends StatelessWidget {
     required this.depot,
     required this.evenementId,
     required this.gymnaseId,
+    required this.gymnaseNom,
+    required this.uid,
+    required this.prenom,
     required this.produits,
     required this.onErreur,
   });
@@ -703,6 +709,9 @@ class _DialogueStockBenevole extends StatelessWidget {
   final DepotEvenements depot;
   final String evenementId;
   final String gymnaseId;
+  final String gymnaseNom;
+  final String uid;
+  final String prenom;
   final List<ProduitEvenement> produits;
   final void Function(Object) onErreur;
 
@@ -718,6 +727,27 @@ class _DialogueStockBenevole extends StatelessWidget {
     // Sans réseau, l'écriture attend l'envoi : on n'attend pas sa fin.
     unawaited(depot
         .ajouterParts(evenementId, gymnaseId, p.id, n)
+        .catchError(onErreur));
+  }
+
+  /// « Ajouter un apport » : un nom (« Quiche ») et un nombre de parts, notés avec le
+  /// prénom et le gymnase ; le stock du produit monte du même nombre.
+  Future<void> _apporter(BuildContext context, ProduitEvenement p) async {
+    final r = await showDialog<({String nom, int parts})>(
+      context: context,
+      builder: (_) => _DialogueApport(produit: p.nom),
+    );
+    if (r == null) return;
+    unawaited(depot
+        .ajouterApport(evenementId,
+            gymnaseId: gymnaseId,
+            gymnaseNom: gymnaseNom,
+            produitId: p.id,
+            produitNom: p.nom,
+            nom: r.nom,
+            parts: r.parts,
+            prenom: prenom,
+            uid: uid)
         .catchError(onErreur));
   }
 
@@ -757,11 +787,22 @@ class _DialogueStockBenevole extends StatelessWidget {
                     dense: true,
                     title: Text(p.nom),
                     subtitle: Text('Stock : ${p.stock}'),
-                    trailing: IconButton(
-                      key: Key('ajout_parts_${p.id}'),
-                      icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'Ajouter au stock',
-                      onPressed: () => _ajouter(context, p),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('ajout_apport_${p.id}'),
+                          icon: const Icon(Icons.volunteer_activism_outlined),
+                          tooltip: 'Ajouter un apport',
+                          onPressed: () => _apporter(context, p),
+                        ),
+                        IconButton(
+                          key: Key('ajout_parts_${p.id}'),
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Ajouter au stock',
+                          onPressed: () => _ajouter(context, p),
+                        ),
+                      ],
                     ),
                   ),
                 if (sansQuantite.isNotEmpty)
@@ -789,6 +830,81 @@ class _DialogueStockBenevole extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Text('Fermer'),
         ),
+      ],
+    );
+  }
+}
+
+/// Un apport nommé : le nom de ce qui est apporté et son nombre de parts (1 à 1000).
+class _DialogueApport extends StatefulWidget {
+  const _DialogueApport({required this.produit});
+
+  final String produit;
+
+  @override
+  State<_DialogueApport> createState() => _EtatDialogueApport();
+}
+
+class _EtatDialogueApport extends State<_DialogueApport> {
+  final _nom = TextEditingController();
+  final _parts = TextEditingController();
+  String? _erreur;
+
+  @override
+  void dispose() {
+    _nom.dispose();
+    _parts.dispose();
+    super.dispose();
+  }
+
+  void _valider() {
+    final parts = int.tryParse(_parts.text.trim());
+    final erreur = erreurApport(_nom.text, parts);
+    if (erreur != null) {
+      setState(() => _erreur = erreur);
+    } else {
+      Navigator.pop(context, (nom: _nom.text.trim(), parts: parts!));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Ajouter un apport : ${widget.produit}'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            key: const Key('saisie_apport_nom'),
+            controller: _nom,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(labelText: 'Nom (par exemple Quiche)'),
+          ),
+          TextField(
+            key: const Key('saisie_apport_parts'),
+            controller: _parts,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Nombre de parts'),
+            onSubmitted: (_) => _valider(),
+          ),
+          if (_erreur != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_erreur!,
+                  key: const Key('erreur_apport'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Retour')),
+        FilledButton(
+            key: const Key('valider_apport'),
+            onPressed: _valider,
+            child: const Text('Ajouter')),
       ],
     );
   }

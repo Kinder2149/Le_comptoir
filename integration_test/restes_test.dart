@@ -57,7 +57,7 @@ void main() {
         fiche: const FicheProduit(type: 'litre', verresParLitre: 4));
     await menus.ajouterProduit(menuId, nom: 'Croque', prixCentimes: 100);
     final depotEv = depotAsso.evenements(assoId);
-    final evt1 = await depotEv.creerEvenement(
+    final evt1 = await creerOuvert(depotEv,
       nom: 'Tournoi 1',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -122,7 +122,7 @@ void main() {
 
     // ---------- 3. Le prochain événement, mêmes noms de gymnases : reprise dans le bon gymnase.
     List<Reprise> reprises = const [];
-    final evt2 = await depotEv.creerEvenement(
+    final evt2 = await creerOuvert(depotEv,
       nom: 'Tournoi 2',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -160,7 +160,7 @@ void main() {
 
     // ---------- 4. Une seule fois : un troisième événement ne reprend rien.
     var repris3 = -1;
-    final evt3 = await depotEv.creerEvenement(
+    final evt3 = await creerOuvert(depotEv,
       nom: 'Tournoi 3',
       date: dateIso(DateTime.now()),
       menuId: menuId,

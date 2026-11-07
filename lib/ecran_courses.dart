@@ -10,17 +10,21 @@ import 'ecran_validation_courses.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'partage.dart';
+import 'previsions.dart';
 import 'ticket.dart';
 
-/// Courses d'un événement, en préparation : réglages (jours, personnes), quantités
-/// de produits finaux par gymnase (pré-remplies, modifiables), liste « À acheter »
-/// calculée, « ce qu'il reste » et lignes libres. Tout s'enregistre tout seul.
+/// Courses d'un événement, en préparation : durée à couvrir (choix local à l'écran,
+/// jamais écrit dans l'événement), personnes attendues (lues, réglées dans la
+/// Préparation), quantités de produits finaux par gymnase (pré-remplies,
+/// modifiables), liste « À acheter » calculée, « ce qu'il reste » et lignes libres.
+/// Tout s'enregistre tout seul.
 class EcranCourses extends StatefulWidget {
   const EcranCourses({
     super.key,
     required this.depot,
     required this.evenementId,
     this.partager = partagerFichierTexte,
+    this.onAllerPreparation,
   });
 
   final DepotEvenements depot;
@@ -28,6 +32,9 @@ class EcranCourses extends StatefulWidget {
 
   /// Remet la liste à partager à la feuille de partage (remplaçable dans les tests).
   final Partageur partager;
+
+  /// Ouvre la Préparation (où se règlent personnes et durée) ; null = pas de renvoi.
+  final Future<void> Function()? onAllerPreparation;
 
   @override
   State<EcranCourses> createState() => _EtatCourses();
@@ -37,11 +44,26 @@ class _EtatCourses extends State<EcranCourses> {
   bool _charge = false;
   Object? _erreurChargement;
 
+  /// Produits avec la consommation effective : celle de la prévision de l'événement,
+  /// sinon celle du menu. [_produitsMenu] = tels que l'événement les a copiés.
   List<ProduitEvenement> _produits = const [];
+  List<ProduitEvenement> _produitsMenu = const [];
   List<Gymnase> _gymnases = const [];
   Map<String, List<String>> _suggeres = const {};
-  double _jours = joursParDefaut;
+
+  /// Durée de l'événement (réglée dans la Préparation) et choix local de durée à
+  /// couvrir : 'tout' (= durée de l'événement, par défaut), 'demi', 'jour' ou 'plus'.
+  double _joursEvenement = joursParDefaut;
+  String _choixDuree = 'tout';
+  int _joursPlus = 2;
   final Map<String, int> _personnes = {};
+
+  double get _jours => switch (_choixDuree) {
+        'demi' => demiJournee,
+        'jour' => 1.0,
+        'plus' => _joursPlus.toDouble(),
+        _ => _joursEvenement,
+      };
 
   /// Stock actuel (gymnase -> produit -> quantité), relu à chaque « Recalculer ».
   Map<String, Map<String, int>> _stocks = const {};
@@ -53,8 +75,6 @@ class _EtatCourses extends State<EcranCourses> {
   ListeCourses _liste = const ListeCourses();
 
   Timer? _minuteur;
-  bool _joursModifies = false;
-  final Set<String> _personnesModifiees = {};
   bool _listeModifiee = false;
   bool _enregistre = true;
   bool _erreurEnregistrement = false;
@@ -89,9 +109,11 @@ class _EtatCourses extends State<EcranCourses> {
       final etats = await widget.depot.suivreEtats(id).first;
       final stocks = await widget.depot.suivreStocksParGymnase(id).first;
       final enregistree = await widget.depot.suivreListeCourses(id).first;
+      final previsions = await _lirePrevisions();
       if (!mounted) return;
       setState(() {
-        _produits = produits;
+        _produitsMenu = produits;
+        _produits = produitsAvecPrevisions(produits, previsions);
         _gymnases = gymnases;
         _stocks = stocks;
         for (final g in gymnases) {
@@ -103,7 +125,7 @@ class _EtatCourses extends State<EcranCourses> {
           });
         }
         _suggeres = produitsSuggeres(etats, gymnases);
-        _jours = evenement?.nbJours ?? joursParDefaut;
+        _joursEvenement = evenement?.nbJours ?? joursParDefaut;
         for (final g in gymnases) {
           _personnes[g.id] = g.personnes;
         }
@@ -120,6 +142,16 @@ class _EtatCourses extends State<EcranCourses> {
     }
   }
 
+  /// Les prévisions de l'événement ; illisibles (réseau, droits) : aucune, les courses
+  /// calculent alors avec les chiffres du menu.
+  Future<Map<String, Prevision>> _lirePrevisions() async {
+    try {
+      return await widget.depot.suivrePrevisions(widget.evenementId).first;
+    } catch (_) {
+      return const {};
+    }
+  }
+
   void _planifier() {
     setState(() => _enregistre = false);
     _minuteur?.cancel();
@@ -128,17 +160,9 @@ class _EtatCourses extends State<EcranCourses> {
 
   Future<void> _enregistrer() async {
     final id = widget.evenementId;
-    final jours = _joursModifies;
-    final personnes = {..._personnesModifiees};
     final liste = _listeModifiee;
-    _joursModifies = false;
-    _personnesModifiees.clear();
     _listeModifiee = false;
     try {
-      if (jours) await widget.depot.definirJours(id, _jours);
-      for (final g in personnes) {
-        await widget.depot.definirPersonnes(id, g, _personnes[g] ?? 0);
-      }
       if (liste) await widget.depot.enregistrerListeCourses(id, _liste);
       if (mounted) {
         setState(() {
@@ -209,29 +233,36 @@ class _EtatCourses extends State<EcranCourses> {
     _planifier();
   }
 
+  /// « Plus » : un nombre entier de jours, de 2 à [joursMax]. Choix local : il ne
+  /// change jamais la durée de l'événement.
   void _surJours(String texte) {
     final n = int.tryParse(texte.trim());
     if (n == null || n < 2 || n > joursMax) return;
-    _jours = n.toDouble();
-    _joursModifies = true;
-    _planifier();
+    setState(() => _joursPlus = n);
   }
 
-  /// Demi-journée (0,5), jour complet (1) ou plus (au moins 2 jours).
-  void _choisirDuree(double jours) {
-    setState(() {
-      _jours = jours;
-      _joursModifies = true;
-    });
-    _planifier();
-  }
+  /// Tout l'événement (par défaut), demi-journée, jour complet ou plus.
+  void _choisirDuree(String choix) => setState(() => _choixDuree = choix);
 
-  void _surPersonnes(String gymnaseId, String texte) {
-    final n = int.tryParse(texte.trim());
-    if (n == null || n < 0 || n > personnesMax) return;
-    _personnes[gymnaseId] = n;
-    _personnesModifiees.add(gymnaseId);
-    _planifier();
+  /// Va régler personnes et durée dans la Préparation, puis relit ces réglages.
+  Future<void> _allerPreparation() async {
+    await widget.onAllerPreparation?.call();
+    if (!mounted) return;
+    try {
+      final id = widget.evenementId;
+      final evenement = await widget.depot.suivreEvenement(id).first;
+      final gymnases = await widget.depot.suivreGymnases(id).first;
+      final previsions = await _lirePrevisions();
+      if (!mounted) return;
+      setState(() {
+        _produits = produitsAvecPrevisions(_produitsMenu, previsions);
+        _joursEvenement = evenement?.nbJours ?? joursParDefaut;
+        _gymnases = gymnases;
+        for (final g in gymnases) {
+          _personnes[g.id] = g.personnes;
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _recalculer() async {
@@ -457,50 +488,62 @@ class _EtatCourses extends State<EcranCourses> {
         const SizedBox(height: 8),
         Text('Durée à couvrir', style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 4),
-        SegmentedButton<String>(
+        Wrap(
           key: const Key('duree_courses'),
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(
-                value: 'demi', label: Text('Demi-journée', key: Key('duree_demi'))),
-            ButtonSegment(
-                value: 'jour', label: Text('Jour complet', key: Key('duree_jour'))),
-            ButtonSegment(value: 'plus', label: Text('Plus', key: Key('duree_plus'))),
+          spacing: 8,
+          children: [
+            for (final (valeur, cle, texte) in [
+              ('tout', 'duree_tout', 'Tout l\u2019événement (${_nombre(_joursEvenement)} j)'),
+              ('demi', 'duree_demi', 'Demi-journée'),
+              ('jour', 'duree_jour', 'Jour complet'),
+              ('plus', 'duree_plus', 'Plus'),
+            ])
+              ChoiceChip(
+                key: Key(cle),
+                label: Text(texte),
+                selected: _choixDuree == valeur,
+                onSelected: (_) => _choisirDuree(valeur),
+              ),
           ],
-          selected: {
-            _jours == demiJournee ? 'demi' : (_jours == 1 ? 'jour' : 'plus')
-          },
-          onSelectionChanged: (s) => _choisirDuree(switch (s.first) {
-            'demi' => demiJournee,
-            'jour' => 1.0,
-            _ => _jours >= 2 ? _jours : 2.0,
-          }),
         ),
-        if (_jours >= 2)
+        if (_choixDuree == 'plus')
           TextFormField(
             key: const Key('jours_courses'),
-            initialValue: '${_jours.toInt()}',
+            initialValue: '$_joursPlus',
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: 'Nombre de jours (2 à 30)'),
             onChanged: _surJours,
           ),
+        const SizedBox(height: 8),
         for (final g in _gymnases)
-          TextFormField(
-            key: Key('personnes_${g.id}'),
-            initialValue: '${_personnes[g.id] ?? 0}',
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-                labelText: _gymnases.length > 1
-                    ? 'Personnes attendues : ${g.nom}'
-                    : 'Personnes attendues'),
-            onChanged: (t) => _surPersonnes(g.id, t),
-          ),
-        if (aucunePersonne)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
             child: Text(
-              'Réglez le nombre de personnes, puis « Recalculer » : les quantités se remplissent.',
-              key: Key('aide_personnes'),
+              _gymnases.length > 1
+                  ? 'Personnes attendues (${g.nom}) : ${_personnes[g.id] ?? 0}'
+                  : 'Personnes attendues : ${_personnes[g.id] ?? 0}',
+              key: Key('lecture_personnes_${g.id}'),
+            ),
+          ),
+        const Text('Réglé dans la Préparation.', key: Key('mention_preparation')),
+        if (aucunePersonne)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Aucune personne attendue : réglez-les dans la Préparation, '
+                  'puis « Recalculer » : les quantités se remplissent.',
+                  key: Key('aide_personnes'),
+                ),
+                if (widget.onAllerPreparation != null)
+                  OutlinedButton(
+                    key: const Key('aller_preparation'),
+                    onPressed: _allerPreparation,
+                    child: const Text('Aller à la Préparation'),
+                  ),
+              ],
             ),
           ),
         Align(

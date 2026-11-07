@@ -64,7 +64,7 @@ void main() {
     await depotAsso.menus(assoId).ajouterProduit(menuId,
         nom: 'Café', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
-    final evt = await depotEv.creerEvenement(
+    final evt = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -72,7 +72,7 @@ void main() {
       gymnases: ['Gymnase A', 'Gymnase B'],
     );
     await donnerStock(depotEv, evt, 'Café', 10);
-    final ancien = await depotEv.creerEvenement(
+    final ancien = await creerOuvert(depotEv,
       nom: 'Ancien tournoi',
       date: '2026-01-10',
       menuId: menuId,

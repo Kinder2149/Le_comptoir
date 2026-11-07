@@ -84,7 +84,7 @@ void main() {
     await menus.ajouterProduit(menuId, nom: 'Gâteau', prixCentimes: 250);
     await menus.ajouterProduit(menuId, nom: 'Soda', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
-    final evt = await depotEv.creerEvenement(
+    final evt = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: '2026-10-03',
       menuId: menuId,

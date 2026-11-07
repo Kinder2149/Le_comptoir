@@ -60,7 +60,7 @@ void main() {
         fiche: const FicheProduit(type: 'part'));
     await menus.ajouterProduit(menuId, nom: 'Crêpe', prixCentimes: 200);
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,

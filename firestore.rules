@@ -17,12 +17,14 @@ rules_version = '2';
 //     restes/{r}                                  nomGymnase, nomProduit, quantite, evenementId, majLe : stock gardé à la clôture
 //                                                 d'un événement pour le suivant (écrit avec la clôture, lu et effacé par la gestion
 //                                                 à la création de l'événement suivant ; identifiant = gymnase__produit, sans accents)
-//     evenements/{e}                              nom, date, statut, modes, menuNom, creeLe,
+//     references/{r}                              nom, lignes[] {nom, conso}, creeLe : consommation par personne et par jour tirée de la feuille Historique d'un classeur Excel (gestion seulement)
+//     evenements/{e}                              nom, date, statut ('en_preparation' à la création, puis 'en_cours' à l'ouverture
+//                                                 (+ ouvertLe), puis 'cloture'), modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
 //                                                   forcee, nbCaissesOuvertes
 //       produits/{p}                              copie des produits du menu (images, type et recette compris), SANS stock ; seule l'image se modifie ensuite
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
-//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »)
+//         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »), repris? (true = repris des restes ; effacé à la correction)
 //                                                 (absent = pas de suivi de ce produit dans ce gymnase)
 //       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
@@ -178,6 +180,18 @@ service cloud.firestore {
             || (roleDe(a) == 'gestionnaire'
                 && rattaches(a, e).size() >= get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)));
     }
+    // Événement « en cours » : caisses, ventes, signaux « vide », lecture par les bénévoles.
+    function enCours(a, e) {
+      return get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours';
+    }
+    // Événement que la gestion peut régler : « en préparation » (avant l'ouverture) ou « en cours ».
+    function reglable(a, e) {
+      return get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut in ['en_preparation', 'en_cours'];
+    }
+    // Même test sur l'état du document APRÈS le lot d'écritures (création de l'événement).
+    function reglableApres(a, e) {
+      return getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut in ['en_preparation', 'en_cours'];
+    }
     // Caisse ouverte de l'appelant dans CE gymnase.
     function caisseOuverteDans(a, e, g) {
       return exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/ouvertes/$(request.auth.uid))
@@ -226,6 +240,27 @@ service cloud.firestore {
     }
     function texte(valeur, max) {
       return valeur is string && valeur.size() >= 1 && valeur.size() <= max;
+    }
+    // Liste de 0 à 200 lignes {nom (1 à 40 caractères), conso (nombre 0 à 1000)}. Pas de boucle dans les
+    // règles et une requête ne peut pas évaluer plus de 1000 expressions : les 12 premières lignes sont
+    // vérifiées une à une, par position (un champ absent ou d'un mauvais type fait échouer le test, donc
+    // refuse l'écriture) ; l'application n'en écrit jamais d'invalide et ignore à la lecture celles
+    // qui ne respecteraient pas ce format.
+    function lignesReferenceValides(l) {
+      return l is list
+        && l.size() <= 200
+        && (l.size() <= 0 || (l[0].nom.size() >= 1 && l[0].nom.size() <= 40 && l[0].conso >= 0 && l[0].conso <= 1000))
+        && (l.size() <= 1 || (l[1].nom.size() >= 1 && l[1].nom.size() <= 40 && l[1].conso >= 0 && l[1].conso <= 1000))
+        && (l.size() <= 2 || (l[2].nom.size() >= 1 && l[2].nom.size() <= 40 && l[2].conso >= 0 && l[2].conso <= 1000))
+        && (l.size() <= 3 || (l[3].nom.size() >= 1 && l[3].nom.size() <= 40 && l[3].conso >= 0 && l[3].conso <= 1000))
+        && (l.size() <= 4 || (l[4].nom.size() >= 1 && l[4].nom.size() <= 40 && l[4].conso >= 0 && l[4].conso <= 1000))
+        && (l.size() <= 5 || (l[5].nom.size() >= 1 && l[5].nom.size() <= 40 && l[5].conso >= 0 && l[5].conso <= 1000))
+        && (l.size() <= 6 || (l[6].nom.size() >= 1 && l[6].nom.size() <= 40 && l[6].conso >= 0 && l[6].conso <= 1000))
+        && (l.size() <= 7 || (l[7].nom.size() >= 1 && l[7].nom.size() <= 40 && l[7].conso >= 0 && l[7].conso <= 1000))
+        && (l.size() <= 8 || (l[8].nom.size() >= 1 && l[8].nom.size() <= 40 && l[8].conso >= 0 && l[8].conso <= 1000))
+        && (l.size() <= 9 || (l[9].nom.size() >= 1 && l[9].nom.size() <= 40 && l[9].conso >= 0 && l[9].conso <= 1000))
+        && (l.size() <= 10 || (l[10].nom.size() >= 1 && l[10].nom.size() <= 40 && l[10].conso >= 0 && l[10].conso <= 1000))
+        && (l.size() <= 11 || (l[11].nom.size() >= 1 && l[11].nom.size() <= 40 && l[11].conso >= 0 && l[11].conso <= 1000));
     }
 
     match /users/{uid} {
@@ -297,6 +332,22 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'cloture';
       }
 
+      // Références de consommation importées d'un classeur Excel (P6) : nom (1 à 60), lignes[] {nom, conso}
+      // (0 à 200), creeLe. Identifiant = clé du nom (minuscules sans accents, 1 à 100 caractères) :
+      // réimporter le même nom remplace la référence. Lues, écrites et supprimées par la gestion de
+      // l'association ; supprimées aussi avec l'association.
+      match /references/{r} {
+        allow read: if estGestion(a);
+        allow delete: if estGestion(a) || suppressionEnCours(a);
+        allow create, update: if estGestion(a)
+          && r.matches('^[a-z0-9_-]{1,100}$')
+          && request.resource.data.keys().hasOnly(['nom', 'lignes', 'creeLe'])
+          && request.resource.data.keys().hasAll(['nom', 'lignes', 'creeLe'])
+          && texte(request.resource.data.nom, 60)
+          && request.resource.data.creeLe is timestamp
+          && lignesReferenceValides(request.resource.data.lignes);
+      }
+
       match /evenements/{e} {
         allow read: if estGestion(a)
           || (estMembre(a) && resource.data.statut == 'en_cours');
@@ -311,7 +362,7 @@ service cloud.firestore {
           && texte(request.resource.data.nom, 60)
           && texte(request.resource.data.date, 10)
           && request.resource.data.date.size() == 10
-          && request.resource.data.statut == 'en_cours'
+          && request.resource.data.statut == 'en_preparation'
           && texte(request.resource.data.menuNom, 40)
           && modesValides(request.resource.data.modes)
           && request.resource.data.creeLe is timestamp;
@@ -319,9 +370,9 @@ service cloud.firestore {
         // Effacé seulement avec toute l'association.
         allow delete: if suppressionEnCours(a);
 
-        // Nom, date et modes restent modifiables tant que l'événement est en cours.
+        // Nom, date et modes restent modifiables tant que l'événement n'est pas clôturé.
         allow update: if estGestion(a)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom', 'date', 'modes'])
           && texte(request.resource.data.nom, 60)
           && request.resource.data.date.size() == 10
@@ -330,7 +381,7 @@ service cloud.firestore {
         // Durée de l'événement (réglage des courses) : le responsable, ou un gestionnaire
         // rattaché à tous les gymnases.
         allow update: if gereTout(a, e)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbJours'])
           && request.resource.data.nbJours is number
           && request.resource.data.nbJours >= 0.5
@@ -340,7 +391,7 @@ service cloud.firestore {
         // dans le même lot (le compteur ne se monte jamais seul : il décide qui est
         // « rattaché à tous les gymnases »).
         allow update: if estGestion(a)
-          && resource.data.statut == 'en_cours'
+          && resource.data.statut in ['en_preparation', 'en_cours']
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nbGymnases', 'dernierGymnase'])
           && request.resource.data.nbGymnases is int
           && request.resource.data.nbGymnases == resource.data.get('nbGymnases', 1) + 1
@@ -348,6 +399,16 @@ service cloud.firestore {
           && request.resource.data.dernierGymnase is string
           && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase))
           && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.dernierGymnase));
+
+        // Ouverture : « en préparation » devient « en cours » (les bénévoles le voient alors).
+        // Le responsable, ou un gestionnaire rattaché à tous les gymnases, comme la clôture.
+        // Pas de retour en arrière ; seuls le statut et l'horodatage d'ouverture changent.
+        allow update: if gereTout(a, e)
+          && resource.data.statut == 'en_preparation'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['statut', 'ouvertLe'])
+          && request.resource.data.keys().hasAll(['statut', 'ouvertLe'])
+          && request.resource.data.statut == 'en_cours'
+          && request.resource.data.ouvertLe is timestamp;
 
         // Clôture : l'événement devient figé. Forcée = des caisses étaient encore
         // ouvertes ; le nombre est conservé pour signaler les ventes manquantes.
@@ -375,14 +436,14 @@ service cloud.firestore {
 
           // Copie posée à la création de l'événement. Le stock vit dans les gymnases.
           allow create: if estGestion(a)
-            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglableApres(a, e)
             && !('stock' in request.resource.data)
             && produitValide(request.resource.data);
 
           // Ensuite, seule l'image (icône, photo) peut changer, par la gestion et
           // tant que l'événement est en cours : nom et prix restent figés.
           allow update: if estGestion(a)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['icone', 'photo'])
             && produitValide(request.resource.data);
         }
@@ -397,7 +458,7 @@ service cloud.firestore {
           // Créé avec l'événement, ou ajouté plus tard avec le compteur de l'événement
           // monté de 1 dans le même lot.
           allow create: if estGestion(a)
-            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglableApres(a, e)
             && (!exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e))
                 || getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1)
                    == get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.get('nbGymnases', 1) + 1)
@@ -408,13 +469,13 @@ service cloud.firestore {
 
           // Renommer, tant que l'événement est en cours (jamais supprimer).
           allow update: if estGestion(a)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nom'])
             && texte(request.resource.data.nom, 40);
 
           // Personnes attendues (réglage des courses), par ceux qui lancent les courses.
           allow update: if gereTout(a, e)
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['personnes'])
             && request.resource.data.personnes is int
             && request.resource.data.personnes >= 0
@@ -429,7 +490,7 @@ service cloud.firestore {
             // l'événement est en cours), ou suppression de l'association.
             allow delete: if suppressionEnCours(a)
               || (gereGymnase(a, e, g)
-                  && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours');
+                  && reglable(a, e));
 
             // Quantité de départ : par la gestion de CE gymnase, ou à la naissance du
             // gymnase (même lot) par un gestionnaire qui crée l'événement.
@@ -437,9 +498,10 @@ service cloud.firestore {
                   || (estGestion(a)
                       && !exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))
                       && existsAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(g))))
-              && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
-              && request.resource.data.keys().hasOnly(['quantite', 'reference'])
+              && reglableApres(a, e)
+              && request.resource.data.keys().hasOnly(['quantite', 'reference', 'repris'])
               && request.resource.data.keys().hasAll(['quantite'])
+              && (!('repris' in request.resource.data) || request.resource.data.repris == true)
               && request.resource.data.quantite is int
               && request.resource.data.quantite >= 0
               && request.resource.data.quantite <= 100000
@@ -457,18 +519,21 @@ service cloud.firestore {
             //  - ajout de parts par ce même membre (quantité et référence montent ensemble,
             //    produit de type « part » seulement).
             allow update: if estMembre(a)
-              && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
               && stockValide(request.resource.data.quantite)
               && (
                 (gereGymnase(a, e, g)
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
+                  && reglable(a, e)
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference', 'repris'])
+                  && (!('repris' in request.resource.data) || request.resource.data.repris == true)
                   && (!('reference' in request.resource.data)
                       || (request.resource.data.reference is int
                           && request.resource.data.reference >= 0
                           && request.resource.data.reference <= 100000)))
-                || (caisseOuverteDans(a, e, g)
+                || (enCours(a, e)
+                  && caisseOuverteDans(a, e, g)
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite']))
-                || (caisseOuverteDans(a, e, g)
+                || (enCours(a, e)
+                  && caisseOuverteDans(a, e, g)
                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantite', 'reference'])
                   && ajoutPartsValide(a, e, p)));
           }
@@ -502,12 +567,12 @@ service cloud.firestore {
           // En préparation : modifiable à volonté.
           allow create: if gereTout(a, e)
             && c == 'liste'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && listePreparationValide(request.resource.data)
             && !request.resource.data.keys().hasAny(['cumulSeries']);
           allow update: if gereTout(a, e)
             && c == 'liste'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && ((resource.data.statut == 'preparation'
             && cumulIdentique(request.resource.data, resource.data)
             && (listePreparationValide(request.resource.data)
@@ -544,13 +609,61 @@ service cloud.firestore {
                 && request.resource.data.cumulCout == resource.data.get('cumulCout', 0) + resource.data.coutCentimes));
         }
 
+        // Prévision (mission « Préparer l'événement », P4) : la consommation par personne et
+        // par jour d'un produit, propre à l'événement, avec sa source. Un document par produit
+        // (identifiant = celui du produit de l'événement) ; absent = le chiffre du menu.
+        // Lue et écrite par le responsable ou un gestionnaire rattaché à tous les gymnases.
+        match /previsions/{p} {
+          allow read: if gereTout(a, e);
+          allow delete: if suppressionEnCours(a)
+            || (gereTout(a, e) && reglable(a, e));
+          allow create, update: if gereTout(a, e)
+            && reglable(a, e)
+            && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(p))
+            && request.resource.data.keys().hasOnly(['conso', 'source'])
+            && request.resource.data.keys().hasAll(['conso', 'source'])
+            && (request.resource.data.conso is int || request.resource.data.conso is float)
+            && request.resource.data.conso >= 0
+            && request.resource.data.conso <= 1000
+            && texte(request.resource.data.source, 80);
+        }
+
+        // Apports nommés (mission « Préparer l'événement », P10, décision 59) : « Quiche,
+        // 8 parts » déclaré par un membre dont la caisse ouverte est dans ce gymnase, dans le
+        // même lot que la hausse du stock du produit (même nombre de parts). Lus par la gestion
+        // pour le bilan et l'export ; jamais modifiés ; supprimés avec l'association.
+        match /apports/{id} {
+          allow read: if estGestion(a);
+          allow delete: if suppressionEnCours(a);
+          allow create: if estMembre(a)
+            && enCours(a, e)
+            && request.resource.data.keys().hasOnly(['produitId', 'produitNom', 'nom', 'parts', 'prenom', 'gymnaseId', 'gymnaseNom', 'uid', 'creeLe'])
+            && request.resource.data.keys().hasAll(['produitId', 'produitNom', 'nom', 'parts', 'prenom', 'gymnaseId', 'gymnaseNom', 'uid', 'creeLe'])
+            && request.resource.data.uid == request.auth.uid
+            && request.resource.data.creeLe is timestamp
+            && texte(request.resource.data.nom, 40)
+            && request.resource.data.nom.matches('.*[^ ].*')
+            && request.resource.data.parts is int
+            && request.resource.data.parts >= 1
+            && request.resource.data.parts <= 1000
+            && texte(request.resource.data.prenom, 40)
+            && texte(request.resource.data.produitNom, 80)
+            && texte(request.resource.data.gymnaseNom, 40)
+            && texte(request.resource.data.produitId, 40)
+            && texte(request.resource.data.gymnaseId, 40)
+            && caisseOuverteDans(a, e, request.resource.data.gymnaseId)
+            && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(request.resource.data.produitId))
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.gymnaseId)/stocks/$(request.resource.data.produitId)).data.quantite
+               == get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.gymnaseId)/stocks/$(request.resource.data.produitId)).data.quantite + request.resource.data.parts;
+        }
+
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par
         // l'intéressé. Jamais supprimés (on les vide), sauf avec l'association.
         match /rattachements/{u} {
           allow read: if estMembre(a) && (u == request.auth.uid || roleDe(a) == 'responsable');
           allow create, update: if estMembre(a)
             && roleDe(a) == 'responsable'
-            && get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)).data.statut == 'en_cours'
+            && reglable(a, e)
             && request.resource.data.keys().hasOnly(['gymnases'])
             && request.resource.data.gymnases is list
             && request.resource.data.gymnases.size() <= 8;

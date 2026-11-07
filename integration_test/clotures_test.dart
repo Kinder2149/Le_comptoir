@@ -75,14 +75,14 @@ void main() {
         nom: 'Croque-monsieur', prixCentimes: 300);
     await menus.ajouterProduit(menuId, nom: 'Café', prixCentimes: 150);
     final depotEv = depotAsso.evenements(assoId);
-    final evt1 = await depotEv.creerEvenement(
+    final evt1 = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,
       modes: ['especes', 'carte'],
     );
     await donnerStock(depotEv, evt1, 'Croque-monsieur', 5);
-    final evt2 = await depotEv.creerEvenement(
+    final evt2 = await creerOuvert(depotEv,
       nom: 'Tournoi 2',
       date: dateIso(DateTime.now()),
       menuId: menuId,

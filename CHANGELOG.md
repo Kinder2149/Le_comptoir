@@ -1,5 +1,61 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P11 : clôture (version 1.2.0)
+- Parcours automatique du critère de fin sur émulateur : créer, télécharger le modèle, le remplir, l'importer, retrouver le stock de départ, prévision d'après l'an passé, corriger un chiffre, lancer les courses, ouvrir, vendre, clôturer, exporter le même classeur.
+- Version 1.2.0 (build 3). Texte de vérification pour une autre IA dans PLAN_STOCK_COURSES.md.
+- **Résumé de la mission** : un événement naît « En préparation » (P1) avec son stock de départ (P2), ses personnes et sa durée (P3) et une prévision à sources — menu, événement passé, classeur Excel, correction à la main (P4) ; un classeur Excel se télécharge (P5), s'importe dans la Préparation (P6) et pour créer un menu (P7), et l'événement s'exporte en classeur complet (P8) ; le classeur de l'an passé est prêt à importer (P9) ; les apports nommés des bénévoles sont notés au stock, au bilan et à l'export (P10). Règles Firestore : `previsions`, `references`, `apports` et l'état « en préparation », déployées. Dépendances ajoutées : `excel` 4.0.6 et `file_picker` 11.0.3.
+- Tests : 380 de logique et d'écrans, 234 de règles, parcours Android de la mission réussis. Vérification par une autre IA le 07/11/2026 : tous les critères réussis, aucun défaut.
+
+## 07/11/2026 — Mission « Préparer l'événement », P10 : apports nommés
+- Caisse, écran Stock : « Ajouter un apport » (nom, nombre de parts) sur les produits « part » ou apportés : le stock monte du même nombre et l'apport est noté avec le prénom et le gymnase. Nom vide ou parts hors 1 à 1000 refusés.
+- Bilan : rubrique « Apports » (« Quiche, 8 parts, Léa, Gymnase A »), limitée aux gymnases visibles et à la vue ; export : même rubrique dans la feuille Bilan.
+- Règles d'accès : collection `apports` (création par un membre à caisse ouverte, avec la hausse de stock correspondante ; lecture par la gestion). Déployées le 07/11/2026.
+- Tests : 380 de logique et d'écrans, 234 de règles, parcours Android.
+
+## 07/11/2026 — Mission « Préparer l'événement », P9 : import de l'an passé
+- Classeur `recette/historique-tournoi-an-passe.xlsx` produit d'après les quantités estimées du fichier d'organisation de l'an passé (relevé de ce qui est repris ou non dans PLAN_STOCK_COURSES.md). Il reste hors dépôt.
+- Test Android : import sans erreur, consommations égales au calcul à la main (113 personnes, 2 jours). Aucun changement de règles ni de dépendance.
+
+## 07/11/2026 — Mission « Préparer l'événement », P8 : export complet du tournoi
+- Bilan : « Exporter (Excel) » remplace « Exporter (CSV) » (supprimé). Le classeur contient les cinq feuilles : Menu, Stock de départ, Historique (personnes, jours, quantités vendues non annulées par gymnase et produit), Courses (achats de la série validée, total de série, cumul des séries précédentes, lignes libres) et Bilan (les rubriques de l'ancien CSV). Réimporté dans la Préparation d'un autre événement, son Historique donne la même consommation que la source « événement passé ».
+- Aucun changement de règles ni de dépendance. Tests : 375 de logique et d'écrans, 6 parcours Android.
+
+## 07/11/2026 — Mission « Préparer l'événement », P7 : importer un menu
+- Écran Menus : « Importer un menu depuis Excel » : lit la feuille Menu d'un classeur, affiche un résumé avant écriture (produits à créer, lignes invalides ou en double listées et ignorées), demande le nom, puis crée un NOUVEAU menu (types, prix, recettes, ratios, consommations). Fichier illisible ou sans produit lisible : message clair, rien de créé.
+- Écran de résumé partagé avec l'import de la Préparation. Aucun changement de règles ni de dépendance.
+- Tests : 366 de logique et d'écrans, parcours Android (menu importé → événement créé sans erreur).
+
+## 07/11/2026 — Mission « Préparer l'événement », P6 : importer dans la Préparation
+- « Importer un classeur » : choix du fichier, résumé avant toute écriture (stocks appliqués, références créées, lignes ignorées avec leur raison), puis « Appliquer ». Le stock de départ du fichier s'applique (événement en préparation seulement) ; chaque événement de la feuille Historique devient une référence « nom (Excel) », réutilisable dans les sources de la prévision (étape 3). Fichier illisible ou d'un autre format : message clair, rien n'est écrit. Aucune vente créée.
+- Règles d'accès : collection `references` de l'association (gestion), effacée avec l'association. Déployées le 07/11/2026.
+- Dépendance ajoutée (accord de Kinder) : `file_picker` 11.0.3, version exacte.
+- Tests : 352 de logique et d'écrans, 230 de règles, parcours Android.
+
+## 07/11/2026 — Mission « Préparer l'événement », P5 : télécharger le modèle Excel
+- Préparation : carte « Classeur Excel » avec « Télécharger le modèle Excel » : un `.xlsx` à quatre feuilles (Menu, Stock de départ, Historique, Courses), chacune avec une ligne d'aide et ses en-têtes. Menu et Stock de départ contiennent déjà les produits et gymnases de l'événement ; le fichier part par la feuille de partage d'Android.
+- Dépendance ajoutée (accord de Kinder) : `excel` 4.0.6, version exacte. Aucun changement de règles.
+- Tests : 310 de logique et d'écrans, parcours Android (le fichier relu redonne exactement les données).
+
+## 07/11/2026 — Mission « Préparer l'événement », P4 : prévision à sources
+- Préparation, étape 3 : tableau produit / consommation par personne et par jour / source. Par défaut le chiffre du menu ; « D'après un événement passé » calcule ventes non annulées ÷ personnes ÷ jours (événements passés sans personnes réglées non proposés) ; chaque chiffre reste modifiable (« Modifié à la main »), le menu ne change jamais. Courses calcule avec ces chiffres.
+- Règles d'accès : sous-collection `previsions` (gestion qui lance les courses) ; effacée avec l'association. Déployées sur le vrai projet le 07/11/2026.
+- Tests : 293 de logique et d'écrans, 215 de règles, 7 parcours Android.
+
+## 07/11/2026 — Mission « Préparer l'événement », P3 : personnes et durée
+- Préparation, étape 2 : durée de l'événement (0,5 à 30 jours) et personnes attendues par gymnase (0 à 1000), réglées par le responsable ou un gestionnaire rattaché à tous les gymnases ; lecture seule pour les autres et pour un événement clôturé.
+- Courses ne règle plus les personnes : elle les affiche (« réglé dans la Préparation ») et renvoie vers la Préparation. Son choix de durée devient local : « Tout l'événement » (par défaut), demi-journée, jour complet, plus ; il ne change plus la durée de l'événement.
+- Aucun changement de règles d'accès. Tests : 269 de logique et d'écrans, 6 parcours Android.
+
+## 06/11/2026 — Mission « Préparer l'événement », P2 : onglet Préparation et stock de départ
+- Bouton « Préparation » dans l'événement (gestion seulement) : étape 1, quantité de départ de chaque produit fini, gymnase par gymnase (un gestionnaire ne voit que les siens). Même chiffre que dans « Gymnases et stocks ». Les restes repris de l'événement précédent sont pré-remplis, marqués « repris de l'événement précédent » et corrigeables. Une fois l'événement ouvert, le stock de départ se lit seulement.
+- Règles d'accès : champ `repris` accepté sur le stock. Déployées le 06/11/2026.
+- Tests : 261 de logique et d'écrans, 204 de règles, 4 parcours Android.
+
+## 06/11/2026 — Mission « Préparer l'événement », P1 : état « En préparation » (branche `claude/preparation-evenement`)
+- Un événement naît « En préparation » : seule la gestion le voit, aucune caisse ne s'y ouvre. « Ouvrir l'événement » (responsable ou gestionnaire rattaché à tous les gymnases) le passe « En cours ». Les événements créés avant restent « En cours ».
+- Règles d'accès : la gestion peut régler un événement en préparation comme un événement en cours ; caisses, ventes, clôture et lecture des bénévoles restent réservées à « En cours ». Déployées sur le vrai projet le 06/11/2026 (accord de Kinder pour la mission). Tant que l'APK 1.2.0 n'est pas installé, l'ancienne application ne peut plus créer d'événement.
+- Tests : 252 de logique et d'écrans, 197 de règles, parcours Android `evenements_test` et `restes_test`.
+
 ## 06/11/2026 — Mission « Préparer l'événement » : plan prêt (phase 4)
 - Décision 60 : état « En préparation » (invisible aux bénévoles, aucune caisse, « Ouvrir l'événement »).
 - Plan P1 à P11, critères de chaque étape, format du classeur Excel et trois préalables validés par Kinder (PLAN_STOCK_COURSES.md, section 13), avec le prompt de lancement de la session mère.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/ecran_evenement.dart';
 import 'package:le_comptoir/evenement.dart';
+import 'package:le_comptoir/gymnase.dart';
 
 void main() {
   test("modes de paiement : liste fixe de 4, libellés dans l'ordre fixe", () {
@@ -44,7 +45,59 @@ void main() {
     expect(f.enCours, isFalse);
   });
 
+  test('trois états : en préparation, en cours, clôturé (un seul à la fois)', () {
+    Evenement avec(String statut) => Evenement(
+        id: 'a', nom: 'T', date: '2026-10-03', statut: statut,
+        modes: const ['carte'], menuNom: 'M');
+    final prep = avec('en_preparation');
+    expect([prep.enPreparation, prep.enCours, prep.cloture], [true, false, false]);
+    final cours = avec('en_cours');
+    expect([cours.enPreparation, cours.enCours, cours.cloture], [false, true, false]);
+    final clos = avec('cloture');
+    expect([clos.enPreparation, clos.enCours, clos.cloture], [false, false, true]);
+  });
+
+  group("ouvrir l'événement (qui peut)", () {
+    Evenement avec(String statut) => Evenement(
+        id: 'a', nom: 'T', date: '2026-10-03', statut: statut,
+        modes: const ['carte'], menuNom: 'M', nbGymnases: 2);
+    const responsable =
+        PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2);
+    const tous = PorteeGestion(responsable: false, gymnases: {'g1', 'g2'}, nbGymnases: 2);
+    const partiel = PorteeGestion(responsable: false, gymnases: {'g1'}, nbGymnases: 2);
+    const aucun = PorteeGestion(responsable: false, gymnases: {}, nbGymnases: 2);
+
+    test('responsable ou gestionnaire rattaché à tous les gymnases, en préparation seulement', () {
+      expect(peutOuvrirEvenement(avec('en_preparation'), responsable), isTrue);
+      expect(peutOuvrirEvenement(avec('en_preparation'), tous), isTrue);
+      expect(peutOuvrirEvenement(avec('en_preparation'), partiel), isFalse);
+      expect(peutOuvrirEvenement(avec('en_preparation'), aucun), isFalse);
+    });
+
+    test('déjà en cours ou clôturé : rien à ouvrir', () {
+      expect(peutOuvrirEvenement(avec('en_cours'), responsable), isFalse);
+      expect(peutOuvrirEvenement(avec('cloture'), responsable), isFalse);
+    });
+  });
+
   group("état d'un événement", () {
+    Evenement evStatut(String id, String statut) => Evenement(
+        id: id,
+        nom: id,
+        date: '2026-10-03',
+        statut: statut,
+        modes: const ['carte'],
+        menuNom: 'M');
+
+    test('liste : en cours, puis en préparation, puis clôturés', () {
+      final tries = trierEvenements([
+        evStatut('c', 'cloture'),
+        evStatut('p', 'en_preparation'),
+        evStatut('e', 'en_cours'),
+      ]);
+      expect(tries.map((e) => e.id), ['e', 'p', 'c']);
+    });
+
     Evenement ev(String id, String nom, String date, bool enCours) => Evenement(
         id: id,
         nom: nom,
@@ -76,6 +129,20 @@ void main() {
       trierEvenements(origine);
       expect(origine.first.id, 'a');
       expect(trierEvenements(const []), isEmpty);
+    });
+
+    testWidgets('la pastille dit « En préparation » (couleur d’attention)', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: PastilleEtat(key: Key('p'), enCours: false, enPreparation: true),
+        ),
+      ));
+      expect(find.descendant(of: find.byKey(const Key('p')), matching: find.text('En préparation')),
+          findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('p')), matching: find.text('En cours')),
+          findsNothing);
+      expect(find.descendant(of: find.byKey(const Key('p')), matching: find.byIcon(Icons.edit_calendar)),
+          findsOneWidget);
     });
 
     testWidgets('la pastille dit « En cours » ou « Clôturé »', (tester) async {

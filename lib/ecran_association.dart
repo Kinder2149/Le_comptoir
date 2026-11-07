@@ -182,7 +182,9 @@ class EcranAssociation extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         PastilleEtat(
-                            key: Key('etat_${e.id}'), enCours: e.enCours),
+                            key: Key('etat_${e.id}'),
+                            enCours: e.enCours,
+                            enPreparation: e.enPreparation),
                         const Icon(Icons.chevron_right),
                       ],
                     ),

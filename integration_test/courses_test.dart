@@ -100,7 +100,7 @@ void main() {
         prixCentimes: 250,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -148,9 +148,17 @@ void main() {
     expect(find.byKey(const Key('aide_personnes')), findsOneWidget);
     expect(find.byKey(Key('qte_${gA}_$croque')), findsNothing);
 
-    // --- 80 et 60 personnes, 2 jours (par défaut) : 320 et 240 croques.
-    await saisir(tester, 'personnes_$gA', '80');
-    await saisir(tester, 'personnes_$gB', '60');
+    // Courses n'a plus de champ « personnes » : elles se règlent dans la Préparation.
+    expect(find.byKey(Key('personnes_$gA')), findsNothing);
+    expect(find.byKey(Key('lecture_personnes_$gA')), findsOneWidget);
+
+    // --- 80 et 60 personnes (réglées hors de Courses), 2 jours : 320 et 240 croques.
+    await depotEv.definirPersonnes(evtId, gA, 80);
+    await depotEv.definirPersonnes(evtId, gB, 60);
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // courses
+    await tester.pump(const Duration(seconds: 1));
+    await toucher(tester, find.byKey(const Key('preparer_courses')));
+    await attendre(tester, find.byKey(const Key('etat_courses')));
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '320');
@@ -252,7 +260,8 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '300');
     expect(valeurChamp(tester, 'qte_${gB}_$croque'), '240');
-    expect(valeurChamp(tester, 'personnes_$gA'), '80');
+    expect(texte(tester, 'lecture_personnes_$gA'),
+        'Personnes attendues (Gymnase A) : 80');
     expect(valeurChamp(tester, 'reste_pain de mie|tranche'), '100');
     expect(texte(tester, 'achat_pain de mie|tranche'), 'Pain de mie : 980 tranches');
     expect(texte(tester, 'libre_0'), 'Liquide vaisselle × 2');
@@ -293,7 +302,7 @@ void main() {
         prixCentimes: 250,
         fiche: const FicheProduit(type: 'part'));
     final depotEv = depotAsso.evenements(assoId);
-    final evtId = await depotEv.creerEvenement(
+    final evtId = await creerOuvert(depotEv,
       nom: 'Tournoi',
       date: dateIso(DateTime.now()),
       menuId: menuId,
@@ -331,12 +340,12 @@ void main() {
     await toucher(tester, find.text('Tournoi'));
     await attendre(tester, find.byKey(const Key('voir_courses')));
     await tester.pump(const Duration(seconds: 1));
+    await depotEv.definirPersonnes(evtId, gA, 80);
+    await depotEv.definirPersonnes(evtId, gB, 60);
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
 
     // --- La liste : 320/240 croques (A passe à 300), 320/240 verres, 12 tartes à A.
-    await saisir(tester, 'personnes_$gA', '80');
-    await saisir(tester, 'personnes_$gB', '60');
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     await saisir(tester, 'qte_${gA}_$croque', '300');
@@ -437,7 +446,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('bilan_cout')));
     expect(texte(tester, 'bilan_cout'), 'Coût des courses : 492,50 €');
     expect(texte(tester, 'bilan_resultat'), 'Résultat : -492,50 €');
-    expect(find.byKey(const Key('exporter_csv')), findsOneWidget);
+    expect(find.byKey(const Key('exporter_excel')), findsOneWidget);
     // En vue d'un gymnase : la mention, pas de coût.
     await toucher(tester, find.byKey(Key('vue_$gA')));
     expect(find.byKey(const Key('bilan_cout_commun')), findsOneWidget);

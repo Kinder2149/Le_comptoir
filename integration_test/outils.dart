@@ -15,6 +15,8 @@ import 'package:le_comptoir/ecran_menu.dart' show SelecteurPhoto, selecteurPhoto
 import 'package:le_comptoir/ecran_qr.dart' show LecteurQr, lecteurQrReel;
 import 'package:le_comptoir/ecran_racine.dart';
 import 'package:le_comptoir/firebase_options.dart';
+import 'package:le_comptoir/gymnase.dart' show nomGymnaseParDefaut;
+import 'package:le_comptoir/restes.dart' show Reprise;
 import 'package:le_comptoir/main.dart';
 
 Future<void> attendre(WidgetTester tester, Finder cible) async {
@@ -38,6 +40,29 @@ Future<void> donnerStock(DepotEvenements depot, String evenementId,
 
 /// Identifiant du gymnase unique d'un événement (le gymnase « Principal »
 /// créé avec lui).
+/// Crée un événement puis l'ouvre : un événement neuf est « en préparation » et aucune
+/// caisse ne s'y ouvre. Pour les parcours dont l'objet n'est pas l'ouverture.
+Future<String> creerOuvert(
+  DepotEvenements depot, {
+  required String nom,
+  required String date,
+  required String menuId,
+  required List<String> modes,
+  List<String> gymnases = const [nomGymnaseParDefaut],
+  void Function(List<Reprise> reprises)? surReprises,
+}) async {
+  final id = await depot.creerEvenement(
+    nom: nom,
+    date: date,
+    menuId: menuId,
+    modes: modes,
+    gymnases: gymnases,
+    surReprises: surReprises,
+  );
+  await depot.ouvrirEvenement(id);
+  return id;
+}
+
 Future<String> gymnaseUnique(DepotEvenements depot, String evenementId) async =>
     (await depot.suivreGymnases(evenementId).first).single.id;
 

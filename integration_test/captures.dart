@@ -66,7 +66,7 @@ void main() {
     final json = await rootBundle.loadString('assets/menu_type.json');
     final menuId = await menus.creerMenuDepuisModele('Menu Tournoi', lireMenuType(json));
     final depotEv = depotAsso.evenements(assoId);
-    final evt = await depotEv.creerEvenement(
+    final evt = await creerOuvert(depotEv,
       nom: 'Tournoi de printemps',
       date: '2026-10-17',
       menuId: menuId,

@@ -6,7 +6,7 @@ import {
   admin, RACINE, MAJ, assoAvecGestionnaire, ecrire, lierGoogle, lire, lot,
   rejoindre, utilisateur,
 } from './outils.mjs';
-import { evenement, gymnase, produitEvenement, caisse } from './outilsCaisse.mjs';
+import { evenement, gymnase, ouvrir, produitEvenement, caisse } from './outilsCaisse.mjs';
 
 const mise = (chemin, fields, masque, extra = {}) => ({
   update: { name: `${RACINE}/${chemin}`, fields: { ...fields, ...extra } },
@@ -81,6 +81,7 @@ test('en attente = droits de bénévole : ni menus, ni événements, ni clôture
   const zoe = await beneviloGoogle(id);
   await lot(chef, [ecrire(`associations/${id}/menus/m1`, { nom: 'Menu', creeLe: MAJ })]);
   await lot(chef, [ecrire(`associations/${id}/evenements/e1`, evenement()), gymnase(id), produitEvenement(id, 'e1', 'p1')]);
+  assert.equal(await ouvrir(id), 200);
   await lot(chef, [nommer(id, zoe.uid)]);
   assert.equal(await lire(zoe, `associations/${id}/menus/m1`), 403);
   assert.equal(await lot(zoe, [ecrire(`associations/${id}/menus/m2`, { nom: 'X', creeLe: MAJ })]), 403);

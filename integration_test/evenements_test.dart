@@ -160,6 +160,24 @@ void main() {
     await attendre(tester, find.text("Tournoi d'automne"));
     await attendre(tester, find.text('Paiements : Espèces, Chèque'));
 
+    // --- Un événement neuf est « En préparation » (rien à suivre, aucune caisse) ;
+    // « Ouvrir l'événement » le passe « En cours » : les bénévoles le voient alors.
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('etat_evenement')),
+            matching: find.text('En préparation')),
+        findsOneWidget);
+    expect(find.byKey(const Key('suivi_en_direct')), findsNothing);
+    await toucher(tester, find.byKey(const Key('ouvrir_evenement')));
+    await attendre(tester, find.byKey(const Key('confirmer_ouverture_evenement')));
+    await toucher(tester, find.byKey(const Key('confirmer_ouverture_evenement')));
+    await attendre(
+        tester,
+        find.descendant(
+            of: find.byKey(const Key('etat_evenement')),
+            matching: find.text('En cours')));
+    expect(find.byKey(const Key('ouvrir_evenement')), findsNothing);
+
     // --- Un bénévole : voit l'événement en cours et ses produits, rien d'autre.
     await auth.signOut();
     await ouvrir(tester, 'benevole', googleAnnule);
@@ -176,6 +194,7 @@ void main() {
     await attendre(tester, find.text('3,00 €'));
     expect(find.text('Café'), findsOneWidget);
     expect(find.byKey(const Key('modifier_evenement')), findsNothing);
+    expect(find.byKey(const Key('voir_preparation')), findsNothing);
     expect(find.byKey(const Key('ancien_evenement')), findsNothing);
 
     // --- Un événement de l'ancien format (sans gymnase) : message clair, pas de

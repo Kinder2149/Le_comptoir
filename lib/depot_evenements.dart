@@ -9,7 +9,9 @@ import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'import_classeur.dart';
 import 'mesure.dart';
+import 'previsions.dart';
 import 'restes.dart';
 import 'ticket.dart';
 
@@ -140,6 +142,31 @@ class DepotEvenements {
               },
           });
 
+  /// Le stock de départ de chaque gymnase (gymnase -> produit -> quantité et marque
+  /// « repris »), pour l'écran de préparation. Mêmes lectures partagées que les autres.
+  Stream<Map<String, Map<String, StockDepart>>> suivreStocksDepart(String id,
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final e in g.value.stocks.entries)
+                  e.key: StockDepart(e.value.quantite, repris: e.value.repris),
+              },
+          });
+
+  /// Le total de référence du stock de chaque gymnase (stock de départ plus
+  /// réapprovisionnements par les courses ; à défaut, la quantité), pour l'export du
+  /// tournoi. Mêmes lectures partagées que les autres : aucune écoute de plus.
+  Stream<Map<String, Map<String, int>>> suivreStocksReference(String id,
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final e in g.value.stocks.entries)
+                  e.key: e.value.reference ?? e.value.quantite,
+              },
+          });
+
   /// État du stock de chaque produit, gymnase par gymnase (gymnase -> produit ->
   /// état) : rupture, stock bas, vide. [gymnases] limite aux gymnases voulus.
   Stream<Map<String, Map<String, EtatStock>>> suivreEtats(String id,
@@ -177,7 +204,8 @@ class DepotEvenements {
     late final StreamController<Map<String, _StocksGymnase>> sortie;
     StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? abonnementGymnases;
     final abonnements = <String, List<StreamSubscription<dynamic>>>{};
-    final stocks = <String, Map<String, ({int quantite, int? reference})>>{};
+    final stocks =
+        <String, Map<String, ({int quantite, int? reference, bool repris})>>{};
     final vides = <String, Set<String>>{};
 
     void emettre() {
@@ -219,6 +247,7 @@ class DepotEvenements {
                       d.id: (
                         quantite: d.data()['quantite'] as int,
                         reference: d.data()['reference'] as int?,
+                        repris: d.data()['repris'] == true,
                       ),
                   };
                   emettre();
@@ -327,7 +356,7 @@ class DepotEvenements {
     lot.set(ref, {
       'nom': nom.trim(),
       'date': date,
-      'statut': 'en_cours',
+      'statut': 'en_preparation',
       'modes': modes,
       'menuNom': menu.nom,
       'creeLe': FieldValue.serverTimestamp(),
@@ -366,7 +395,7 @@ class DepotEvenements {
     for (final r in reprises) {
       lot.set(
         ref.collection('gymnases').doc(r.gymnaseId).collection('stocks').doc(r.produitId),
-        {'quantite': r.reste.quantite, 'reference': r.reste.quantite},
+        {'quantite': r.reste.quantite, 'reference': r.reste.quantite, 'repris': true},
       );
       lot.delete(_restes.doc(r.reste.id));
     }
@@ -422,6 +451,213 @@ class DepotEvenements {
   Future<void> definirPersonnes(
           String evenementId, String gymnaseId, int personnes) =>
       _gymnase(evenementId, gymnaseId).update({'personnes': personnes});
+
+  // ---------- Prévision de consommation (mission « Préparer l'événement », P4) ----------
+
+  CollectionReference<Map<String, dynamic>> _previsions(String evenementId) =>
+      _evenements.doc(evenementId).collection('previsions');
+
+  /// Les prévisions enregistrées (produit -> chiffre et source). Réservé à qui a accès
+  /// à tout l'événement (règles d'accès). Un produit sans prévision garde le menu.
+  Stream<Map<String, Prevision>> suivrePrevisions(String evenementId) =>
+      _previsions(evenementId).snapshots().compte('previsions').map((s) => {
+            for (final d in s.docs)
+              if (d.data()['conso'] is num && d.data()['source'] is String)
+                d.id: Prevision((d.data()['conso'] as num).toDouble(),
+                    d.data()['source'] as String),
+          });
+
+  /// Enregistre le chiffre d'un produit, corrigé à la main (le menu ne change pas).
+  Future<void> definirPrevision(String evenementId, String produitId, double conso) =>
+      _previsions(evenementId)
+          .doc(produitId)
+          .set({'conso': conso, 'source': sourceMain});
+
+  /// Écrit et efface des prévisions. Par groupes de 10 : les règles d'accès relisent
+  /// chaque produit (limite de lectures par requête). Écrire est idempotent : en cas
+  /// d'échec au milieu, recommencer donne le même résultat.
+  Future<void> _appliquerPrevisions(String evenementId,
+      {required Map<String, Prevision> ecrire,
+      required Iterable<String> effacer}) async {
+    final operations = <void Function(WriteBatch lot)>[
+      for (final e in ecrire.entries)
+        (lot) => lot.set(_previsions(evenementId).doc(e.key),
+            {'conso': e.value.conso, 'source': e.value.source}),
+      for (final id in effacer) (lot) => lot.delete(_previsions(evenementId).doc(id)),
+    ];
+    for (var i = 0; i < operations.length; i += 10) {
+      final lot = _db.batch();
+      for (final op in operations.skip(i).take(10)) {
+        op(lot);
+      }
+      await lot.commit();
+    }
+  }
+
+  Future<Set<String>> _idsPrevisions(String evenementId) async => {
+        for (final d in (await _previsions(evenementId)
+                .get(const GetOptions(source: Source.server)))
+            .docs)
+          d.id,
+      };
+
+  /// Remet tous les produits au chiffre du menu (efface les prévisions).
+  Future<void> revenirAuMenu(String evenementId) async => _appliquerPrevisions(
+        evenementId,
+        ecrire: const {},
+        effacer: await _idsPrevisions(evenementId),
+      );
+
+  /// Produits d'un événement, lus une fois sur le serveur (sans stock).
+  Future<List<ProduitEvenement>> _lireProduits(String evenementId) async {
+    final s = await _evenements
+        .doc(evenementId)
+        .collection('produits')
+        .get(const GetOptions(source: Source.server));
+    return [
+      for (final d in s.docs)
+        ProduitEvenement(d.id, d.data()['nom'] as String,
+            d.data()['prixCentimes'] as int, null,
+            fiche: FicheProduit.depuis(d.data())),
+    ];
+  }
+
+  /// Les événements clôturés de l'association (sauf [sauf]) : ceux qui peuvent servir
+  /// de référence, et le nombre de ceux écartés faute de personnes réglées. Nécessite
+  /// le réseau.
+  Future<EvenementsPasses> evenementsPasses({String? sauf}) async {
+    const serveur = GetOptions(source: Source.server);
+    final cloturees = await _evenements.where('statut', isEqualTo: 'cloture').get(serveur);
+    final references = <ReferencePassee>[];
+    for (final e in cloturees.docs) {
+      if (e.id == sauf) continue;
+      final gymnases = await e.reference.collection('gymnases').get(serveur);
+      references.add(ReferencePassee(
+        id: e.id,
+        nom: e.data()['nom'] as String,
+        date: e.data()['date'] as String,
+        personnes: gymnases.docs
+            .fold<int>(0, (t, g) => t + ((g.data()['personnes'] as int?) ?? 0)),
+        jours: (e.data()['nbJours'] as num?)?.toDouble() ?? 2.0,
+      ));
+    }
+    return selectionnerReferences(references);
+  }
+
+  /// Applique d'un coup la consommation calculée d'après l'événement [passe] : les
+  /// produits retrouvés par leur nom prennent le chiffre calculé (source « Événement :
+  /// nom »), les autres reviennent au menu. Si les ventes de l'événement passé ne sont
+  /// pas lisibles avec les droits de la personne : [LectureRefusee], rien n'est écrit.
+  Future<void> appliquerEvenementPasse(String evenementId, ReferencePassee passe) async {
+    final produits = await _lireProduits(evenementId);
+    final produitsPasses = {
+      for (final p in await _lireProduits(passe.id)) p.id: p.nom,
+    };
+    final TableauDeBord tableau;
+    try {
+      tableau = await caisses(passe.id).lireTableauDeBord();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw const LectureRefusee();
+      rethrow;
+    }
+    final conso = consoDepuisEvenement(
+      produits: produits,
+      produitsPasses: produitsPasses,
+      tableau: tableau,
+      personnes: passe.personnes,
+      jours: passe.jours,
+    );
+    final source = sourceEvenement(passe.nom);
+    final existantes = await _idsPrevisions(evenementId);
+    await _appliquerPrevisions(
+      evenementId,
+      ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
+      effacer: existantes.where((id) => !conso.containsKey(id)),
+    );
+  }
+
+  // ---------- Références importées d'un classeur Excel (P6) ----------
+
+  /// Références de consommation nommées, au niveau de l'association (réutilisables d'un
+  /// événement à l'autre) : associations/{a}/references/{id}.
+  CollectionReference<Map<String, dynamic>> get _references =>
+      _db.collection('associations').doc(_assoId).collection('references');
+
+  /// Les références importées, par ordre alphabétique. Une ligne invalide est ignorée.
+  /// Nécessite le réseau ; illisibles (droits, réseau) : [LectureRefusee] ou l'erreur.
+  Future<List<ReferenceImportee>> lireReferences() async {
+    final s = await _references.get(const GetOptions(source: Source.server));
+    final res = <ReferenceImportee>[];
+    for (final d in s.docs) {
+      final nom = d.data()['nom'];
+      final lignes = d.data()['lignes'];
+      if (nom is! String || lignes is! List) continue;
+      res.add(ReferenceImportee(
+        id: d.id,
+        nom: nom,
+        lignes: [
+          for (final l in lignes)
+            // Les règles ne vérifient que les premières lignes : on écarte ici toute
+            // ligne hors format (nom de 1 à 40 caractères, chiffre de 0 à 1000).
+            if (l is Map &&
+                l['nom'] is String &&
+                (l['nom'] as String).isNotEmpty &&
+                (l['nom'] as String).length <= referenceProduitMax &&
+                l['conso'] is num &&
+                (l['conso'] as num) >= 0 &&
+                (l['conso'] as num) <= consoPrevisionMax)
+              LigneReference(l['nom'] as String, (l['conso'] as num).toDouble()),
+        ],
+      ));
+    }
+    res.sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
+    return res;
+  }
+
+  /// Applique d'un coup une référence importée : les produits retrouvés par leur nom
+  /// prennent son chiffre (source = son nom), les autres reviennent au menu (comme
+  /// [appliquerEvenementPasse]).
+  Future<void> appliquerReference(
+      String evenementId, ReferenceImportee reference) async {
+    final produits = await _lireProduits(evenementId);
+    final conso = consoDepuisReference(produits: produits, reference: reference);
+    final source = reference.nom.length <= sourceLongueurMax
+        ? reference.nom
+        : reference.nom.substring(0, sourceLongueurMax);
+    final existantes = await _idsPrevisions(evenementId);
+    await _appliquerPrevisions(
+      evenementId,
+      ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
+      effacer: existantes.where((id) => !conso.containsKey(id)),
+    );
+  }
+
+  /// Exécute un plan d'import : les références (une même clé est remplacée : rejouer est
+  /// sans risque) puis les stocks de départ, comme la saisie à la main (la marque
+  /// « repris » disparaît). Rien d'autre n'est écrit : aucune vente, aucun bilan.
+  /// Les stocks partent par groupes de 20 (limite d'évaluation des règles d'accès) ;
+  /// en cas d'échec au milieu, recommencer donne le même résultat.
+  Future<void> appliquerImport(String evenementId, PlanImport plan) async {
+    for (final r in plan.references) {
+      await _references.doc(r.id).set({
+        'nom': r.nom,
+        'lignes': [
+          for (final l in r.lignes) {'nom': l.nom, 'conso': l.conso},
+        ],
+        'creeLe': FieldValue.serverTimestamp(),
+      });
+    }
+    for (var i = 0; i < plan.stocks.length; i += 20) {
+      final lot = _db.batch();
+      for (final s in plan.stocks.skip(i).take(20)) {
+        lot.set(
+          _gymnase(evenementId, s.gymnaseId).collection('stocks').doc(s.produitId),
+          {'quantite': s.quantite, 'reference': s.quantite},
+        );
+      }
+      await lot.commit();
+    }
+  }
 
   /// La liste de courses de l'événement (une seule, document « liste »), null
   /// tant qu'elle n'a pas été enregistrée.
@@ -547,6 +783,75 @@ class DepotEvenements {
     });
   }
 
+  // ---------- Apports nommés (mission « Préparer l'événement », P10, décision 59) ----------
+
+  CollectionReference<Map<String, dynamic>> _apports(String evenementId) =>
+      _evenements.doc(evenementId).collection('apports');
+
+  /// Un bénévole dont la caisse est ouverte dans ce gymnase déclare un apport : le stock du
+  /// produit monte de [parts] (comme « ajouter au stock ») et l'apport est noté (nom, parts,
+  /// prénom, gymnase), le tout dans un même lot. Les contrôles sont aussi dans les règles.
+  Future<void> ajouterApport(
+    String evenementId, {
+    required String gymnaseId,
+    required String gymnaseNom,
+    required String produitId,
+    required String produitNom,
+    required String nom,
+    required int parts,
+    required String prenom,
+    required String uid,
+  }) async {
+    final erreur = erreurApport(nom, parts);
+    if (erreur != null) throw ArgumentError(erreur);
+    final stock =
+        _gymnase(evenementId, gymnaseId).collection('stocks').doc(produitId);
+    final actuel = (await stock.get()).data();
+    final reference = actuel != null && actuel['reference'] != null
+        ? FieldValue.increment(parts)
+        : ((actuel?['quantite'] as int?) ?? 0) + parts;
+    final lot = _db.batch();
+    lot.update(stock, {
+      'quantite': FieldValue.increment(parts),
+      'reference': reference,
+    });
+    lot.set(_apports(evenementId).doc(), {
+      'produitId': produitId,
+      'produitNom': produitNom,
+      'nom': nom.trim(),
+      'parts': parts,
+      'prenom': prenom,
+      'gymnaseId': gymnaseId,
+      'gymnaseNom': gymnaseNom,
+      'uid': uid,
+      'creeLe': FieldValue.serverTimestamp(),
+    });
+    await lot.commit();
+  }
+
+  /// Les apports de l'événement, du plus ancien au plus récent (gestion).
+  Stream<List<Apport>> suivreApports(String evenementId) =>
+      _apports(evenementId).snapshots().compte('apports').map((s) {
+        final docs = [...s.docs];
+        int ordre(QueryDocumentSnapshot<Map<String, dynamic>> d) =>
+            (d.data()['creeLe'] as Timestamp?)?.millisecondsSinceEpoch ?? 1 << 50;
+        docs.sort((a, b) => ordre(a).compareTo(ordre(b)));
+        return [
+          for (final d in docs)
+            if (d.data()['nom'] is String && d.data()['parts'] is int)
+              Apport(
+                id: d.id,
+                produitId: '${d.data()['produitId']}',
+                produitNom: '${d.data()['produitNom']}',
+                nom: d.data()['nom'] as String,
+                parts: d.data()['parts'] as int,
+                prenom: '${d.data()['prenom']}',
+                gymnaseId: '${d.data()['gymnaseId']}',
+                gymnaseNom: '${d.data()['gymnaseNom']}',
+              ),
+        ];
+      });
+
   /// Les produits signalés « vides » dans un gymnase.
   Stream<Set<String>> suivreVides(String evenementId, String gymnaseId) =>
       _gymnase(evenementId, gymnaseId)
@@ -654,6 +959,18 @@ class DepotEvenements {
         });
       });
 
+  /// Ouvre l'événement : « en préparation » devient « en cours » (les bénévoles le
+  /// voient alors, les caisses peuvent s'ouvrir). Le responsable, ou un gestionnaire
+  /// rattaché à tous les gymnases ; pas de retour en arrière. Nécessite le réseau.
+  Future<void> ouvrirEvenement(String id) =>
+      // Transaction : échoue tout de suite sans réseau au lieu d'attendre.
+      _db.runTransaction((t) async {
+        t.update(_evenements.doc(id), {
+          'statut': 'en_cours',
+          'ouvertLe': Timestamp.now(),
+        });
+      });
+
   Future<void> modifierEvenement(
     String id, {
     required String nom,
@@ -670,7 +987,7 @@ class DepotEvenements {
 class _StocksGymnase {
   const _StocksGymnase(this.stocks, this.vides);
 
-  final Map<String, ({int quantite, int? reference})> stocks;
+  final Map<String, ({int quantite, int? reference, bool repris})> stocks;
   final Set<String> vides;
 }
 

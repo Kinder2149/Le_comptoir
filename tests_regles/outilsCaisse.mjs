@@ -5,13 +5,15 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
-  RACINE, MAJ, MAINTENANT, assoAvecGestionnaire, ecrire, effacer, entier, lot, produit,
+  RACINE, MAJ, MAINTENANT, admin, assoAvecGestionnaire, ecrire, effacer, entier, lot, produit,
 } from './outils.mjs';
 
 export const GYM = 'g1';
 
+// Un événement naît « en_preparation » (les règles l'exigent à la création) ; `ouvrir`
+// le passe « en_cours » (les caisses ne s'ouvrent qu'ensuite).
 export const evenement = (extra = {}) => ({
-  nom: 'Tournoi', date: '2026-10-03', statut: 'en_cours',
+  nom: 'Tournoi', date: '2026-10-03', statut: 'en_preparation',
   modes: ['especes', 'carte'], menuNom: 'Menu Tournoi', creeLe: MAJ, ...extra,
 });
 
@@ -34,6 +36,19 @@ export const produitEvenement = (id, e, p, extra = {}) => {
   }
   return ecriture;
 };
+
+/**
+ * Ouvre l'événement en contournant les règles (administrateur de l'émulateur) : état de
+ * départ de tests dont l'objet n'est pas l'ouverture elle-même.
+ */
+export const ouvrir = (id, e = 'e1') => lot(admin, [{
+  update: {
+    name: `${RACINE}/associations/${id}/evenements/${e}`,
+    fields: { statut: { stringValue: 'en_cours' }, ouvertLe: { timestampValue: MAINTENANT } },
+  },
+  updateMask: { fieldPaths: ['statut', 'ouvertLe'] },
+  currentDocument: { exists: true },
+}]);
 
 /** Le gymnase (à poser dans le même lot que l'événement). */
 export const gymnase = (id, e = 'e1', g = GYM, extra = {}) =>
@@ -151,5 +166,6 @@ export async function evenementEnCours() {
   ]), 200);
   // Le gestionnaire est rattaché au gymnase g1 (sans cela il n'y voit rien).
   assert.equal(await lot(ctx.chef, [rattachement(ctx.id, 'e1', ctx.gestionnaire.uid, [GYM])]), 200);
+  assert.equal(await ouvrir(ctx.id), 200);
   return { ...ctx, c };
 }
