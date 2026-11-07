@@ -52,22 +52,30 @@ String montantCsv(int centimes) {
   return '$signe${a ~/ 100},${(a % 100).toString().padLeft(2, '0')}';
 }
 
-/// « bilan-tournoi-2026-10-03.csv » (nom de l'événement nettoyé).
-String nomFichierBilan(Evenement evenement) {
+/// Nom d'événement nettoyé pour un nom de fichier (minuscules, sans accents, tirets).
+String nomPourFichier(String nom) {
   const accents = {
     'à': 'a', 'â': 'a', 'ä': 'a', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
     'î': 'i', 'ï': 'i', 'ô': 'o', 'ö': 'o', 'ù': 'u', 'û': 'u', 'ü': 'u',
     'ç': 'c', 'œ': 'oe', 'æ': 'ae',
   };
-  final nom = evenement.nom
+  final propre = nom
       .toLowerCase()
       .split('')
       .map((c) => accents[c] ?? c)
       .join()
       .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
       .replaceAll(RegExp(r'^-+|-+$'), '');
-  return 'bilan-${nom.isEmpty ? 'evenement' : nom}-${evenement.date}.csv';
+  return propre.isEmpty ? 'evenement' : propre;
 }
+
+/// « bilan-tournoi-2026-10-03.csv » (nom de l'événement nettoyé).
+String nomFichierBilan(Evenement evenement) =>
+    'bilan-${nomPourFichier(evenement.nom)}-${evenement.date}.csv';
+
+/// « modele-tournoi-2026-10-03.xlsx » (le modèle de classeur Excel de l'événement).
+String nomFichierModele(Evenement evenement) =>
+    'modele-${nomPourFichier(evenement.nom)}-${evenement.date}.xlsx';
 
 /// Le bilan de la vue choisie, en CSV pour Excel (séparateur « ; », virgule
 /// décimale, fins de ligne Windows, marque UTF-8 en tête). [vue] : « Commun » ou le

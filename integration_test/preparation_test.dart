@@ -129,6 +129,8 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_preparation')));
     await attendre(tester, find.byKey(const Key('titre_etape_stock')));
     await finTransition(tester);
+    // Mission P5 : le bouton du modèle Excel est dans la Préparation.
+    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
 
     // Aucun ingrédient dans la liste : seulement Soda et Croque.
     expect(find.text('Pain de mie'), findsNothing);

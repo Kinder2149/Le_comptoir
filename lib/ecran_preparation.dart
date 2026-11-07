@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'classeur.dart';
 import 'courses.dart' show demiJournee, joursMax, personnesMax;
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
+import 'export_bilan.dart' show nomFichierModele;
 import 'gymnase.dart';
+import 'partage.dart';
 import 'previsions.dart';
 import 'theme.dart';
 
@@ -30,6 +33,7 @@ class EcranPreparation extends StatelessWidget {
     required this.chargerPasses,
     required this.appliquerPasse,
     required this.revenirAuMenu,
+    this.partagerModele = partagerFichier,
   });
 
   final Stream<Evenement?> evenement;
@@ -60,6 +64,9 @@ class EcranPreparation extends StatelessWidget {
   final Future<void> Function(ReferencePassee passe) appliquerPasse;
   final Future<void> Function() revenirAuMenu;
 
+  /// Remet le modèle Excel à la feuille de partage (remplaçable dans les tests).
+  final PartageurOctets partagerModele;
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Evenement?>(
@@ -86,6 +93,17 @@ class EcranPreparation extends StatelessWidget {
                     : ListView(
                         padding: const EdgeInsets.all(16),
                         children: [
+                          _CarteClasseur(
+                            evenement: ev,
+                            gymnases: [
+                              for (final g in tous)
+                                if (portee.gere(g.id)) g
+                            ],
+                            produits: liste,
+                            stocks: stock,
+                            partager: partagerModele,
+                          ),
+                          const SizedBox(height: 16),
                           Text('Étape 1 · Stock de départ',
                               key: const Key('titre_etape_stock'),
                               style: Theme.of(context).textTheme.titleMedium),
@@ -148,6 +166,84 @@ class EcranPreparation extends StatelessWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Le modèle du classeur Excel de l'événement (menu et stock de départ remplis),
+/// remis à la feuille de partage d'Android.
+class _CarteClasseur extends StatefulWidget {
+  const _CarteClasseur({
+    required this.evenement,
+    required this.gymnases,
+    required this.produits,
+    required this.stocks,
+    required this.partager,
+  });
+
+  final Evenement evenement;
+  final List<Gymnase> gymnases;
+  final List<ProduitEvenement> produits;
+  final Map<String, Map<String, StockDepart>> stocks;
+  final PartageurOctets partager;
+
+  @override
+  State<_CarteClasseur> createState() => _EtatCarteClasseur();
+}
+
+class _EtatCarteClasseur extends State<_CarteClasseur> {
+  bool _enCours = false;
+
+  Future<void> _telecharger() async {
+    setState(() => _enCours = true);
+    try {
+      final octets = construireModele(
+        produits: widget.produits,
+        gymnases: widget.gymnases,
+        stocks: widget.stocks,
+      );
+      await widget.partager(
+          nomFichierModele(widget.evenement), octets, typeMimeClasseur);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Le partage n\'a pas pu s\'ouvrir. Réessayez.',
+              key: Key('erreur_partage_modele')),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _enCours = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Classeur Excel',
+                key: const Key('titre_classeur'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text(
+              'Téléchargez le modèle : il contient le menu et le stock de départ '
+              'de cet événement. Remplissez-le avec les chiffres de l\'an passé.',
+              key: Key('aide_classeur'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const Key('telecharger_modele'),
+              style: TypeAction.gerer.contour,
+              onPressed: _enCours ? null : _telecharger,
+              icon: const Icon(Icons.download),
+              label: const Text('Télécharger le modèle Excel'),
+            ),
+          ],
         ),
       ),
     );

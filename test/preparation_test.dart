@@ -1,8 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:le_comptoir/classeur.dart';
 import 'package:le_comptoir/ecran_preparation.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
+import 'package:le_comptoir/partage.dart';
 import 'package:le_comptoir/previsions.dart';
 
 // Étapes P2 et P3 : l'écran Préparation, étape 1 « Stock de départ » et étape 2
@@ -48,6 +52,7 @@ Future<List<(String, String, int)>> _afficher(
   Map<String, Prevision> previsions = const {},
   EvenementsPasses passes = const EvenementsPasses([], 0),
   bool refus = false,
+  PartageurOctets? partagerModele,
 }) async {
   tester.view.physicalSize = const Size(1080, 9000);
   tester.view.devicePixelRatio = 2.5;
@@ -77,6 +82,7 @@ Future<List<(String, String, int)>> _afficher(
         _passesAppliquees.add(r.id);
       },
       revenirAuMenu: () async => _retoursAuMenu++,
+      partagerModele: partagerModele ?? (n, o, m) async {},
     ),
   ));
   await tester.pump();
@@ -85,6 +91,64 @@ Future<List<(String, String, int)>> _afficher(
 }
 
 void main() {
+  testWidgets('télécharger le modèle : un .xlsx part à la feuille de partage, '
+      'avec le menu et les stocks affichés', (tester) async {
+    final recus = <(String, Uint8List, String)>[];
+    await _afficher(tester,
+        partagerModele: (n, o, m) async => recus.add((n, o, m)));
+    expect(find.byKey(const Key('titre_classeur')), findsOneWidget);
+    final bouton = find.byKey(const Key('telecharger_modele'));
+    expect(bouton, findsOneWidget);
+    expect(tester.getSize(bouton).height, greaterThanOrEqualTo(48));
+    await tester.tap(bouton);
+    await tester.pump();
+    expect(recus.length, 1);
+    expect(recus.single.$1, 'modele-tournoi-2026-10-03.xlsx');
+    expect(recus.single.$3, typeMimeClasseur);
+    final lu = lireClasseur(recus.single.$2);
+    expect(lu.erreurs, isEmpty);
+    expect(lu.produits.map((p) => p.nom), ['Soda', 'Croque']);
+    expect(
+        lu.stocks.map((s) => (s.gymnase, s.produit, s.quantite)),
+        containsAll([
+          ('Gymnase A', 'Soda', 6),
+          ('Gymnase A', 'Croque', 10),
+          ('Gymnase B', 'Soda', null),
+        ]));
+  });
+
+  testWidgets('un gestionnaire partiel ne reçoit que ses gymnases dans le modèle',
+      (tester) async {
+    final recus = <Uint8List>[];
+    await _afficher(tester,
+        portee: const PorteeGestion(
+            responsable: false, gymnases: {'gB'}, nbGymnases: 2),
+        partagerModele: (n, o, m) async => recus.add(o));
+    await tester.tap(find.byKey(const Key('telecharger_modele')));
+    await tester.pump();
+    expect({for (final s in lireClasseur(recus.single).stocks) s.gymnase},
+        {'Gymnase B'});
+  });
+
+  testWidgets('échec de la feuille de partage : message, le bouton redevient actif',
+      (tester) async {
+    await _afficher(tester, partagerModele: (n, o, m) async => throw Exception('x'));
+    await tester.tap(find.byKey(const Key('telecharger_modele')));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Le partage n\'a pas pu s\'ouvrir. Réessayez.'), findsOneWidget);
+    expect(
+        tester
+            .widget<OutlinedButton>(find.byKey(const Key('telecharger_modele')))
+            .onPressed,
+        isNotNull);
+  });
+
+  testWidgets('le modèle se télécharge aussi quand l\'événement est ouvert',
+      (tester) async {
+    await _afficher(tester, statut: 'en_cours');
+    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+  });
   testWidgets('en préparation : une carte par gymnase, les produits finis seulement, '
       'le stock repris est pré-rempli et marqué', (tester) async {
     await _afficher(tester);

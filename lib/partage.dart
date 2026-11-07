@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -14,6 +15,19 @@ Future<void> partagerFichierTexte(String nomFichier, String contenu) async {
           mimeType: nomFichier.endsWith('.csv') ? 'text/csv' : 'text/plain',
           name: nomFichier)
     ],
+    fileNameOverrides: [nomFichier],
+    subject: nomFichier,
+  );
+}
+
+/// Remet un fichier binaire (classeur Excel) à l'utilisateur. Remplaçable dans les tests.
+typedef PartageurOctets = Future<void> Function(
+    String nomFichier, Uint8List octets, String typeMime);
+
+Future<void> partagerFichier(
+    String nomFichier, Uint8List octets, String typeMime) async {
+  await Share.shareXFiles(
+    [XFile.fromData(octets, mimeType: typeMime, name: nomFichier)],
     fileNameOverrides: [nomFichier],
     subject: nomFichier,
   );
