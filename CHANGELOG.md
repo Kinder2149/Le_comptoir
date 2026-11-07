@@ -1,5 +1,9 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P9 : import de l'an passé
+- Classeur `recette/historique-tournoi-an-passe.xlsx` produit d'après les quantités estimées du fichier d'organisation de l'an passé (relevé de ce qui est repris ou non dans PLAN_STOCK_COURSES.md). Il reste hors dépôt.
+- Test Android : import sans erreur, consommations égales au calcul à la main (113 personnes, 2 jours). Aucun changement de règles ni de dépendance.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P8 : export complet du tournoi
 - Bilan : « Exporter (Excel) » remplace « Exporter (CSV) » (supprimé). Le classeur contient les cinq feuilles : Menu, Stock de départ, Historique (personnes, jours, quantités vendues non annulées par gymnase et produit), Courses (achats de la série validée, total de série, cumul des séries précédentes, lignes libres) et Bilan (les rubriques de l'ancien CSV). Réimporté dans la Préparation d'un autre événement, son Historique donne la même consommation que la source « événement passé ».
 - Aucun changement de règles ni de dépendance. Tests : 375 de logique et d'écrans, 6 parcours Android.
