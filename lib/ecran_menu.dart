@@ -222,11 +222,13 @@ class _LigneIngredient {
       : nom = TextEditingController(text: i?.nom ?? ''),
         quantite = TextEditingController(
             text: i == null ? '' : nombrePourSaisie(i.quantite)),
-        unite = i?.unite ?? 'unite';
+        unite = i?.unite ?? 'unite',
+        rayon = i?.rayon ?? 'autre';
 
   final TextEditingController nom;
   final TextEditingController quantite;
   String unite;
+  String rayon;
 
   void liberer() {
     nom.dispose();
@@ -257,6 +259,8 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
           ? ''
           : prixPourSaisie(widget.produit!.prixCentimes));
   late String _provenance = widget.produit?.fiche.provenance ?? 'achete';
+  late String _famille = widget.produit?.fiche.famille ?? 'autre';
+  late String _rayon = widget.produit?.fiche.rayon ?? 'autre';
   late String? _icone = widget.produit?.icone;
   late Uint8List? _photo = widget.produit?.photo;
   String? _erreur;
@@ -281,13 +285,18 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
     final fiche = FicheProduit(
       type: _type,
       provenance: _provenance,
+      famille: _famille,
+      rayon: _rayon,
       // Une consommation illisible devient -1 : refusée par la vérification.
       conso: _conso.text.trim().isEmpty ? null : (conso ?? -1),
       ingredients: _type == 'compose'
           ? [
               for (final l in _lignes)
                 Ingredient(
-                    l.nom.text.trim(), parserNombre(l.quantite.text) ?? 0, l.unite),
+                    l.nom.text.trim(),
+                    parserNombre(l.quantite.text) ?? 0,
+                    l.unite,
+                    l.rayon),
             ]
           : const [],
       verresParLitre: _type == 'litre' ? parserNombre(_verres.text) : null,
@@ -328,6 +337,21 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             _type = v ?? 'unite';
             _erreur = null;
           }),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          key: const Key('famille_produit'),
+          isExpanded: true,
+          initialValue: _famille,
+          decoration: const InputDecoration(labelText: 'Famille'),
+          items: [
+            for (final f in famillesProduit)
+              DropdownMenuItem(
+                  key: Key('famille_$f'),
+                  value: f,
+                  child: Text(libellesFamilles[f]!)),
+          ],
+          onChanged: (v) => setState(() => _famille = v ?? 'autre'),
         ),
         if (_type == 'litre') ...[
           const SizedBox(height: 12),
@@ -375,6 +399,23 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
           ],
           onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
         ),
+        if (_type != 'compose' && _provenance == 'achete') ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: const Key('rayon_produit'),
+            isExpanded: true,
+            initialValue: _rayon,
+            decoration: const InputDecoration(labelText: 'Rayon des courses'),
+            items: [
+              for (final r in rayonsCourses)
+                DropdownMenuItem(
+                    key: Key('rayon_$r'),
+                    value: r,
+                    child: Text(libellesRayons[r]!)),
+            ],
+            onChanged: (v) => setState(() => _rayon = v ?? 'autre'),
+          ),
+        ],
         const SizedBox(height: 8),
         TextField(
           key: const Key('conso_produit'),
@@ -429,6 +470,20 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
                 onPressed: () => setState(() => _lignes.removeAt(i)),
               ),
             ],
+          ),
+          DropdownButtonFormField<String>(
+            key: Key('ingredient_rayon_$i'),
+            isExpanded: true,
+            initialValue: l.rayon,
+            decoration: const InputDecoration(labelText: 'Rayon'),
+            items: [
+              for (final r in rayonsCourses)
+                DropdownMenuItem(
+                    key: Key('rayon_${i}_$r'),
+                    value: r,
+                    child: Text(libellesRayons[r]!)),
+            ],
+            onChanged: (v) => setState(() => l.rayon = v ?? 'autre'),
           ),
         ],
       ),

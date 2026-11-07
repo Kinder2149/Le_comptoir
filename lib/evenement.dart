@@ -124,6 +124,8 @@ class ProduitEvenement {
           verresParLitre: fiche.verresParLitre,
           provenance: fiche.provenance,
           partsParEntier: fiche.partsParEntier,
+          famille: fiche.famille,
+          rayon: fiche.rayon,
         ),
       );
 }

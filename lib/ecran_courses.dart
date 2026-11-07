@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
+import 'depot_menus.dart' show libellesRayons, rayonsCourses;
 import 'ecran_caisse.dart' show couleurEtat;
 import 'ecran_validation_courses.dart';
 import 'evenement.dart';
@@ -712,6 +713,7 @@ class _DialogueLibre extends StatefulWidget {
 class _EtatDialogueLibre extends State<_DialogueLibre> {
   final _nom = TextEditingController();
   final _quantite = TextEditingController(text: '1');
+  String _rayon = 'autre';
   String? _erreur;
 
   @override
@@ -729,7 +731,7 @@ class _EtatDialogueLibre extends State<_DialogueLibre> {
     } else if (q == null || q <= 0 || q > 100000) {
       setState(() => _erreur = 'Entrez une quantité supérieure à zéro.');
     } else {
-      Navigator.pop(context, LigneLibre(nom, q));
+      Navigator.pop(context, LigneLibre(nom, q, _rayon));
     }
   }
 
@@ -752,6 +754,20 @@ class _EtatDialogueLibre extends State<_DialogueLibre> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(labelText: 'Quantité', errorText: _erreur),
             onSubmitted: (_) => _valider(),
+          ),
+          DropdownButtonFormField<String>(
+            key: const Key('rayon_libre'),
+            isExpanded: true,
+            initialValue: _rayon,
+            decoration: const InputDecoration(labelText: 'Rayon'),
+            items: [
+              for (final r in rayonsCourses)
+                DropdownMenuItem(
+                    key: Key('rayon_libre_$r'),
+                    value: r,
+                    child: Text(libellesRayons[r]!)),
+            ],
+            onChanged: (v) => setState(() => _rayon = v ?? 'autre'),
           ),
         ],
       ),

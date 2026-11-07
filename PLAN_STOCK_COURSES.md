@@ -771,12 +771,22 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 **Dépendances entre étapes** : E1 → E2 → E3 → E4 → E5 → E6 → E7 → E8 → E9. E2 a besoin des familles (E1) ; E3 range les écrans que E4 à E7 refont ; E6 a besoin des rayons (E1) ; E8 a besoin des familles et des rayons ; E9 en dernier.
 
+**Cadrages d'étape** (phase 5, écrits par la session mère avant chaque étape ; les critères sont ceux du tableau ci-dessus, repris tels quels)
+
+*Cadrage E1 — Familles et rayons (08/11/2026)*
+- Stratégie : deux listes fixes en code, reprises à l'identique dans les règles. Familles `croques, boissons_chaudes, boissons_fraiches, snacks_fruits, fait_maison, autre` (libellés : Croques, Boissons chaudes, Boissons fraîches, Snacks et fruits, Fait maison, Autre). Rayons `boulangerie, frais, boissons, epicerie, entretien, autre` (Boulangerie, Frais et crèmerie, Boissons, Épicerie, Entretien et matériel, Autre). Champ facultatif `famille` dans la fiche du produit (absent = « autre ») ; champ facultatif `rayon` sur chaque ingrédient de recette, sur chaque produit acheté tel quel (non composé) et sur chaque ligne libre de courses (absent = « autre »). Rien n'est obligatoire : les données existantes restent valides.
+- Fichiers touchés : `lib/depot_menus.dart` (listes, libellés, `FicheProduit.famille`/`rayon`, `Ingredient.rayon`, `erreur()`, lecture du modèle), `lib/courses.dart` (`LigneLibre.rayon`), `lib/depot_evenements.dart` et `lib/evenement.dart` (famille et rayon suivent la fiche copiée dans l'événement), `lib/ecran_menu.dart` (choix de la famille ; rayon par ingrédient ; rayon du produit acheté tel quel), `lib/ecran_courses.dart` (rayon d'une ligne libre, à la saisie seulement), `assets/menu_type.json` (famille et rayon des produits et ingrédients), `firestore.rules` (listes fixes, champs facultatifs dans `produitValide`/`ficheValide`, `ingredientsValides` et lignes libres), tests de logique et `tests_regles/` (nouveau fichier `familles_rayons.test.mjs`, ajouté à `lancer.ps1`).
+- Piège : les règles évaluent 1000 expressions au plus par requête. Le contrôle du rayon d'un ingrédient reste une expression courte par position ; mesurer avec un produit à 20 ingrédients et garder de la marge.
+- Ce qu'on ne fait pas : aucun affichage par familles (E2), aucune liste par rayons (E6), aucun changement de calcul, pas de colonne Excel (E8), pas de famille ni de rayon libres.
+- Test : `flutter analyze`, `flutter test`, `tests_regles/lancer.ps1` (y compris 20 ingrédients avec rayon). Le déploiement des règles est fait par la session mère après les tests.
+
 **Arrêts prévus** : une contradiction avec une décision figée ; une dépendance nouvelle nécessaire (par exemple si les listes déroulantes ou les en-têtes figés de E8 ne peuvent pas s'écrire avec l'outil Excel actuel) ; deux échecs de suite à la vérification.
 
 **Suivi** (une ligne par étape close)
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| E1 Familles et rayons | Implémentée et testée (397 tests, 241 tests de règles) ; règles à déployer | 08/11/2026 | (1) à (5) réussis par test de code |
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

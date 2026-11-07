@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Prévision</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ligne{display:grid;grid-template-columns:minmax(0,1fr) 64px 86px;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #EFE7DA;min-height:44px}
+.chiffre{height:36px;border-radius:10px;border:1px solid #CDBFA8;text-align:center;font:500 15px Roboto;color:#2F343C;background:#fff;width:64px;box-sizing:border-box}
+.besoin{text-align:right;font-size:14px;font-weight:700}
+.source{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;display:inline-block;margin-top:2px}
+.famille{display:flex;align-items:center;gap:8px;padding:12px 12px 8px;font-weight:700;font-size:15px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F4EFE6;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column">
+  <header style="background:#2F343C;color:#fff;padding:18px 16px 12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="Main.dc.html" aria-label="Retour" style="color:#fff;width:40px;height:40px;display:flex;align-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+      <div style="flex:1"><div style="font-size:12px;color:#D9B06F">Avant · étape 3 sur 4</div><div style="font-size:20px;font-weight:700">Prévision</div></div>
+    </div>
+  </header>
+
+  <section style="margin:12px 16px 0;padding:14px;border-radius:16px;background:#2F343C;color:#fff;display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;color:#D9B06F">Calculée pour</div>
+    <div style="font-size:18px;font-weight:700">120 personnes × 2 jours</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;color:#c9ccd1;flex:1">Source : « Tournoi 2025 » (Excel)</span>
+      <button style="height:36px;border-radius:10px;border:1px solid #D9B06F;background:transparent;color:#D9B06F;font:700 13px Roboto;padding:0 12px">Changer</button>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 86px;gap:8px;padding:12px 28px 4px;font-size:11px;color:#5d6168;text-transform:uppercase;letter-spacing:.04em">
+    <span>Produit</span><span style="text-align:center">Par pers. et par jour</span><span style="text-align:right">Pour le tournoi</span>
+  </div>
+
+  <main style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:10px">
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#D9B06F"></span>Croques</div>
+      <div class="ligne"><span><span style="display:block;font-size:15px;font-weight:500">Croque-monsieur</span><span class="source" style="background:#EDE6F3;color:#6C4F86">Tournoi 2025</span></span><input class="chiffre" aria-label="Croque-monsieur par personne et par jour" value="0,65"><span class="besoin">156</span></div>
+      <div class="ligne"><span><span style="display:block;font-size:15px;font-weight:500">Croque végé</span><span class="source" style="background:#F8EBD3;color:#7a520c">Corrigé à la main</span></span><input class="chiffre" aria-label="Croque végé par personne et par jour" value="0,3"><span class="besoin">72</span></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#9A670F"></span>Boissons chaudes</div>
+      <div class="ligne"><span><span style="display:block;font-size:15px;font-weight:500">Café</span><span class="source" style="background:#EDE6F3;color:#6C4F86">Tournoi 2025</span></span><input class="chiffre" aria-label="Café par personne et par jour" value="1,3"><span class="besoin">312 verres<span style="display:block;font-weight:400;font-size:12px;color:#5d6168">78 L</span></span></div>
+      <div class="ligne"><span><span style="display:block;font-size:15px;font-weight:500">Thé</span><span class="source" style="background:#E9E6E0;color:#4a4e55">Menu</span></span><input class="chiffre" aria-label="Thé par personne et par jour" value="0,3"><span class="besoin">72</span></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#A04467"></span>Boissons fraîches</div>
+      <div class="ligne"><span><span style="display:block;font-size:15px;font-weight:500">Coca</span><span class="source" style="background:#EDE6F3;color:#6C4F86">Tournoi 2025</span></span><input class="chiffre" aria-label="Coca par personne et par jour" value="0,32"><span class="besoin">77 verres<span style="display:block;font-weight:400;font-size:12px;color:#5d6168">dont 24 en stock</span></span></div>
+    </section>
+    <p style="margin:0;font-size:12px;color:#5d6168;line-height:1.4">Le fait maison (tartes, flans, crêpes) n'entre pas dans les courses : il arrive avec les bénévoles.</p>
+  </main>
+
+  <footer style="padding:12px 16px 20px;border-top:1px solid #E3DACB">
+    <a href="Courses.dc.html" style="display:flex;align-items:center;justify-content:center;height:56px;border-radius:14px;background:#2F343C;color:#fff;font:700 16px Roboto;text-decoration:none">Voir la liste de courses</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

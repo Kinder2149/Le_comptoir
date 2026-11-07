@@ -187,12 +187,13 @@ void main() {
         .map((m) => m.group(1)!)
         .toList();
     expect(liste(RegExp(r"d\.type in \[([^\]]*)\]")), typesProduit);
-    final unites = RegExp(r"unite\.matches\('([^']*)'\)")
+    // Unité et rayon sont testés ensemble : '(unite|tranche|...)[|](rayons)'.
+    final unites = RegExp(r"matches\('\(([^)]*)\)\[\|\]")
         .firstMatch(regles)!
         .group(1)!
         .split('|');
     expect(unites, unitesIngredient);
-    expect(regles, contains('l.size() <= $maxIngredients'));
+    expect(regles, contains('n <= $maxIngredients'));
   });
 
   group('formulaire produit', () {

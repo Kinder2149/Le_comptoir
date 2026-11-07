@@ -53,12 +53,16 @@ class LigneCourse {
 /// Ligne libre (décision 43) : matériel d'organisation, etc. Elle n'entre ni
 /// dans le stock ni dans le calcul.
 class LigneLibre {
-  const LigneLibre(this.nom, this.quantite);
+  const LigneLibre(this.nom, this.quantite, [this.rayon = 'autre']);
 
   final String nom;
   final double quantite;
 
-  Map<String, dynamic> versMap() => {'nom': nom, 'quantite': quantite};
+  /// Rayon des courses (voir [rayonsCourses]).
+  final String rayon;
+
+  Map<String, dynamic> versMap() =>
+      {'nom': nom, 'quantite': quantite, if (rayon != 'autre') 'rayon': rayon};
 }
 
 /// Ce que la validation ajoute au stock d'un gymnase pour un produit.
@@ -210,7 +214,8 @@ class ListeCourses {
         ],
         libres: [
           for (final l in (d['libres'] as List?) ?? const [])
-            LigneLibre(l['nom'] as String, (l['quantite'] as num).toDouble()),
+            LigneLibre(l['nom'] as String, (l['quantite'] as num).toDouble(),
+                rayonDepuis(l['rayon'])),
         ],
         restes: {
           for (final r in (d['restes'] as List?) ?? const [])
