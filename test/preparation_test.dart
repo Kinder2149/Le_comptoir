@@ -6,8 +6,11 @@ import 'package:le_comptoir/classeur.dart';
 import 'package:le_comptoir/ecran_preparation.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
+import 'package:le_comptoir/import_classeur.dart';
 import 'package:le_comptoir/partage.dart';
 import 'package:le_comptoir/previsions.dart';
+
+import 'classeur_aides.dart';
 
 // Étapes P2 et P3 : l'écran Préparation, étape 1 « Stock de départ » et étape 2
 // « Personnes et durée ».
@@ -32,6 +35,14 @@ final _personnesEcrites = <(String, int)>[];
 final _previsionsEcrites = <(String, double)>[];
 final _passesAppliquees = <String>[];
 var _retoursAuMenu = 0;
+
+// Import d'un classeur (P6) : références proposées, références appliquées, plans appliqués,
+// et le fichier que le sélecteur factice rend.
+var _references = <ReferenceImportee>[];
+final _referencesAppliquees = <String>[];
+final _plansImportes = <PlanImport>[];
+Uint8List? _classeurChoisi;
+Object? _echecImport;
 const _produits = [
   ProduitEvenement('soda', 'Soda', 100, null),
   ProduitEvenement('croque', 'Croque', 300, null),
@@ -53,6 +64,9 @@ Future<List<(String, String, int)>> _afficher(
   EvenementsPasses passes = const EvenementsPasses([], 0),
   bool refus = false,
   PartageurOctets? partagerModele,
+  List<ReferenceImportee> references = const [],
+  Uint8List? classeur,
+  Object? echecImport,
 }) async {
   tester.view.physicalSize = const Size(1080, 9000);
   tester.view.devicePixelRatio = 2.5;
@@ -62,6 +76,11 @@ Future<List<(String, String, int)>> _afficher(
   _previsionsEcrites.clear();
   _passesAppliquees.clear();
   _retoursAuMenu = 0;
+  _references = references;
+  _referencesAppliquees.clear();
+  _plansImportes.clear();
+  _classeurChoisi = classeur;
+  _echecImport = echecImport;
   final ecrits = <(String, String, int)>[];
   await tester.pumpWidget(MaterialApp(
     home: EcranPreparation(
@@ -82,6 +101,13 @@ Future<List<(String, String, int)>> _afficher(
         _passesAppliquees.add(r.id);
       },
       revenirAuMenu: () async => _retoursAuMenu++,
+      chargerReferences: () async => _references,
+      appliquerReference: (r) async => _referencesAppliquees.add(r.id),
+      importer: (plan) async {
+        if (_echecImport != null) throw _echecImport!;
+        _plansImportes.add(plan);
+      },
+      choisirClasseur: () async => _classeurChoisi,
       partagerModele: partagerModele ?? (n, o, m) async {},
     ),
   ));
@@ -498,6 +524,229 @@ void main() {
     await _afficher(tester, statut: 'en_cours');
     expect(find.byKey(const Key('champ_conso_soda')), findsOneWidget);
     expect(find.byKey(const Key('prevision_evenement_passe')), findsOneWidget);
+  });
+
+  // ------------------------------------------------------------ P6 : importer
+  group('P6 : importer un classeur', () {
+    // Historique : Tournoi 2025, 2 gymnases de 20 personnes (valeur répétée), 2 jours.
+    Uint8List fichier({
+      List<List<Object?>> stock = const [],
+      List<List<Object?>> histo = const [],
+    }) =>
+        classeurDeTest(stock: stock, historique: histo);
+    final stockOk = <List<Object?>>[
+      ['Gymnase A', 'Soda', 24],
+      ['gymnase b', 'CROQUE', 12],
+      ['Gymnase A', 'Café', 5],
+      ['Gymnase C', 'Soda', 3],
+      ['Gymnase B', 'Soda', null],
+    ];
+    final histoOk = <List<Object?>>[
+      ['Tournoi 2025', 'Gymnase A', 20, 2, 'Croque', 100],
+      ['Tournoi 2025', 'Gymnase A', 20, 2, 'Soda', 40],
+      ['Tournoi 2025', 'Gymnase B', 20, 2, 'Croque', 60],
+    ];
+
+    testWidgets('critère 1 : le résumé annonce les stocks et la référence AVANT d\'appliquer',
+        (tester) async {
+      await _afficher(tester, classeur: fichier(stock: stockOk, histo: histoOk));
+      expect(find.byKey(const Key('importer_classeur')), findsOneWidget);
+      expect(tester.getSize(find.byKey(const Key('importer_classeur'))).height,
+          greaterThanOrEqualTo(48));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'resume_stocks'), '2 stocks seront appliqués.');
+      expect(texte(tester, 'resume_reference_0'),
+          'Référence créée : Tournoi 2025 (Excel) — 2 produits');
+      // Rien n'est écrit tant que « Appliquer » n'est pas touché.
+      expect(_plansImportes, isEmpty);
+      expect(find.byKey(const Key('appliquer_import')), findsOneWidget);
+      expect(tester.getSize(find.byKey(const Key('appliquer_import'))).height,
+          greaterThanOrEqualTo(48));
+      await tester.tap(find.byKey(const Key('appliquer_import')));
+      await tester.pumpAndSettle();
+      expect(_plansImportes.length, 1);
+      final plan = _plansImportes.single;
+      expect(plan.stocks.map((s) => (s.gymnaseId, s.produitId, s.quantite)),
+          [('gA', 'soda', 24), ('gB', 'croque', 12)]);
+      expect(plan.references.single.nom, 'Tournoi 2025 (Excel)');
+      expect(texte(tester, 'confirmation_import'),
+          'Stocks appliqués : 2. Références enregistrées : Tournoi 2025 (Excel).');
+    });
+
+    testWidgets('critère 4 : un produit ou un gymnase inconnu est listé « ignoré », '
+        'le reste s\'applique', (tester) async {
+      await _afficher(tester, classeur: fichier(stock: stockOk));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'resume_stocks'), '2 stocks seront appliqués.');
+      expect(find.byKey(const Key('resume_ignorees')), findsOneWidget);
+      expect(find.textContaining('« Gymnase A » / « Café » : produit inconnu'),
+          findsOneWidget);
+      expect(find.textContaining('« Gymnase C » / « Soda » : gymnase inconnu'),
+          findsOneWidget);
+      expect(find.byKey(const Key('resume_aucune_reference')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('appliquer_import')));
+      await tester.pumpAndSettle();
+      expect(_plansImportes.single.stocks.length, 2);
+    });
+
+    testWidgets('événement ouvert : 0 stock appliqué (raison dite), la référence s\'importe',
+        (tester) async {
+      await _afficher(tester,
+          statut: 'en_cours',
+          classeur: fichier(stock: stockOk, histo: histoOk));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'resume_stocks'), 'Aucun stock ne sera appliqué.');
+      expect(texte(tester, 'resume_reference_0'),
+          'Référence créée : Tournoi 2025 (Excel) — 2 produits');
+      expect(find.textContaining(messageStockFerme), findsWidgets);
+      await tester.tap(find.byKey(const Key('appliquer_import')));
+      await tester.pumpAndSettle();
+      expect(_plansImportes.single.stocks, isEmpty);
+      expect(_plansImportes.single.references.length, 1);
+      expect(texte(tester, 'confirmation_import'),
+          'Stocks appliqués : 0. Références enregistrées : Tournoi 2025 (Excel).');
+    });
+
+    testWidgets('annuler le résumé : rien n\'est écrit', (tester) async {
+      await _afficher(tester, classeur: fichier(stock: stockOk, histo: histoOk));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('annuler_import')));
+      await tester.pumpAndSettle();
+      expect(_plansImportes, isEmpty);
+      expect(find.byKey(const Key('confirmation_import')), findsNothing);
+      expect(find.byKey(const Key('erreur_import')), findsNothing);
+    });
+
+    testWidgets('choix du fichier annulé : rien ne se passe', (tester) async {
+      await _afficher(tester);
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('resume_import')), findsNothing);
+      expect(find.byKey(const Key('erreur_import')), findsNothing);
+      expect(_plansImportes, isEmpty);
+    });
+
+    testWidgets('critère 5 : octets quelconques, message clair, aucun résumé',
+        (tester) async {
+      await _afficher(tester, classeur: Uint8List.fromList(List.filled(300, 7)));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'erreur_import'), messageClasseurIllisible);
+      expect(find.byKey(const Key('resume_import')), findsNothing);
+      expect(_plansImportes, isEmpty);
+    });
+
+    testWidgets('critère 5 : un classeur d\'un autre format (sans feuille Stock ni '
+        'Historique) est refusé de la même façon', (tester) async {
+      await _afficher(tester, classeur: classeurAutreFormat());
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'erreur_import'), messageClasseurIllisible);
+      expect(find.byKey(const Key('resume_import')), findsNothing);
+      expect(_plansImportes, isEmpty);
+    });
+
+    testWidgets('un modèle vide (aucune donnée) est refusé aussi', (tester) async {
+      await _afficher(tester, classeur: fichier());
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'erreur_import'), messageClasseurIllisible);
+      expect(_plansImportes, isEmpty);
+    });
+
+    testWidgets('échec à l\'écriture : message clair, le bouton redevient actif',
+        (tester) async {
+      await _afficher(tester,
+          classeur: fichier(stock: stockOk), echecImport: Exception('réseau'));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('appliquer_import')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'erreur_import'),
+          startsWith('L\'import n\'a pas pu être terminé.'));
+      expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('importer_classeur')))
+              .onPressed,
+          isNotNull);
+    });
+
+    testWidgets('événement clôturé : pas de bouton d\'import', (tester) async {
+      await _afficher(tester, statut: 'cloture');
+      expect(find.byKey(const Key('importer_classeur')), findsNothing);
+      expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+    });
+
+    testWidgets('gestionnaire partiel : un gymnase hors de sa portée est ignoré, '
+        'avec la raison', (tester) async {
+      await _afficher(tester,
+          portee: const PorteeGestion(
+              responsable: false, gymnases: {'gB'}, nbGymnases: 2),
+          classeur: fichier(stock: [
+            ['Gymnase A', 'Soda', 24],
+            ['Gymnase B', 'Soda', 8],
+          ]));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'resume_stocks'), '1 stock sera appliqué.');
+      expect(find.textContaining('ne fait pas partie de vos gymnases'),
+          findsOneWidget);
+      await tester.tap(find.byKey(const Key('appliquer_import')));
+      await tester.pumpAndSettle();
+      expect(_plansImportes.single.stocks.map((s) => s.gymnaseId), ['gB']);
+    });
+
+    testWidgets('plus de 10 lignes ignorées : la liste est repliée', (tester) async {
+      await _afficher(tester, classeur: fichier(stock: [
+        for (var i = 0; i < 12; i++) ['Gymnase A', 'Produit $i', 1],
+      ]));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExpansionTile), findsOneWidget);
+      expect(find.text('Lignes ignorées (12)'), findsOneWidget);
+      expect(find.textContaining('Produit 3'), findsNothing);
+      await tester.tap(find.text('Lignes ignorées (12)'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Produit 3'), findsOneWidget);
+    });
+
+    testWidgets('les erreurs de lecture sont dites (ligne invalide), le reste s\'applique',
+        (tester) async {
+      await _afficher(tester, classeur: fichier(stock: [
+        ['Gymnase A', 'Soda', 24],
+        ['Gymnase A', 'Croque', 'beaucoup'],
+      ]));
+      await tester.tap(find.byKey(const Key('importer_classeur')));
+      await tester.pumpAndSettle();
+      expect(texte(tester, 'resume_stocks'), '1 stock sera appliqué.');
+      expect(find.byKey(const Key('resume_erreurs')), findsOneWidget);
+      expect(find.textContaining('n\'est pas un nombre'), findsOneWidget);
+    });
+
+    testWidgets('critère 3 (écran) : la référence importée est proposée dans '
+        '« D\'après une source » et s\'applique', (tester) async {
+      const ref = ReferenceImportee(
+        id: 'tournoi-2025-excel',
+        nom: 'Tournoi 2025 (Excel)',
+        lignes: [LigneReference('Croque', 2.0)],
+      );
+      await _afficher(tester, references: const [ref]);
+      await tester.tap(find.byKey(const Key('prevision_evenement_passe')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('choix_reference_tournoi-2025-excel')),
+          findsOneWidget);
+      expect(find.byKey(const Key('aucun_evenement_passe')), findsNothing);
+      await tester.tap(find.byKey(const Key('choix_reference_tournoi-2025-excel')));
+      await tester.pumpAndSettle();
+      expect(_referencesAppliquees, ['tournoi-2025-excel']);
+      expect(_passesAppliquees, isEmpty);
+      expect(texte(tester, 'prevision_faite'),
+          'Prévision calculée d\'après « Tournoi 2025 (Excel) ».');
+    });
   });
 }
 

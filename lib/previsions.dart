@@ -1,3 +1,4 @@
+import 'classeur.dart' show LigneHistorique;
 import 'depot_caisses.dart' show TableauDeBord;
 import 'depot_menus.dart' show cleIngredient;
 import 'evenement.dart';
@@ -135,9 +136,15 @@ Map<String, double> consoDepuisEvenement({
   return {
     for (final p in produits)
       if (vendusParNom[cleIngredient(p.nom)] case final vendus?)
-        p.id: vendus / personnes / jours,
+        p.id: consoParPersonneEtParJour(vendus, personnes, jours),
   };
 }
+
+/// LA formule de la consommation : quantité vendue ÷ personnes ÷ jours. Utilisée par
+/// la source « événement passé » (P4) et par les références importées d'un classeur
+/// Excel (P6) : un seul calcul.
+double consoParPersonneEtParJour(int vendus, int personnes, double jours) =>
+    vendus / personnes / jours;
 
 /// Le chiffre tel qu'on l'écrit à l'écran : « 2 », « 1,5 », « 1,67 » (2 décimales
 /// au plus).
@@ -161,4 +168,165 @@ double? lireConso(String saisie) {
 /// personne (elle n'est pas rattachée à tous ses gymnases). Rien n'est écrit.
 class LectureRefusee implements Exception {
   const LectureRefusee();
+}
+
+// ---------------------------------------------------- références importées (P6)
+
+/// Nombre maximal de produits dans une référence (limite des règles d'accès).
+const referenceLignesMax = 200;
+
+/// Longueurs maximales (mêmes limites que les règles d'accès).
+const referenceNomMax = 60;
+const referenceProduitMax = 40;
+
+const suffixeReference = ' (Excel)';
+
+/// Un produit d'une référence : son nom tel qu'écrit dans le classeur et sa
+/// consommation par personne et par jour.
+class LigneReference {
+  const LigneReference(this.nom, this.conso);
+
+  final String nom;
+  final double conso;
+}
+
+/// Une référence de consommation nommée, calculée d'après la feuille Historique d'un
+/// classeur et rangée au niveau de l'association (réutilisable d'une année sur l'autre).
+class ReferenceImportee {
+  const ReferenceImportee({
+    required this.id,
+    required this.nom,
+    required this.lignes,
+  });
+
+  /// Clé normalisée du nom : réimporter le même nom remplace la référence.
+  final String id;
+
+  /// « Tournoi 2025 (Excel) » : c'est aussi la source affichée dans la prévision.
+  final String nom;
+  final List<LigneReference> lignes;
+}
+
+/// L'identifiant d'une référence : minuscules sans accents, `[a-z0-9_-]`, 1 à 100
+/// caractères. Vide si le nom ne contient rien d'exploitable.
+String cleReference(String nom) {
+  var s = cleIngredient(nom)
+      .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  if (s.length > 100) s = s.substring(0, 100);
+  return s;
+}
+
+/// Les références calculées d'un classeur et ce qui n'a pas pu l'être.
+class ReferencesCalculees {
+  const ReferencesCalculees(this.references, this.erreurs);
+
+  final List<ReferenceImportee> references;
+  final List<String> erreurs;
+}
+
+/// Calcule UNE référence par événement distinct de la feuille Historique, nommée
+/// « <Événement> (Excel) ». Par produit (retrouvé par sa clé sans casse ni accents, nom
+/// gardé tel qu'écrit) : somme des quantités vendues ÷ personnes de l'événement ÷ jours
+/// ([consoParPersonneEtParJour]). Les personnes sont la somme des gymnases distincts :
+/// la valeur d'un gymnase est répétée sur ses lignes, on la prend une fois. Un événement
+/// aux valeurs contradictoires, sans personnes, ou dont une consommation dépasse
+/// [consoPrevisionMax] n'est pas retenu et l'erreur est dite.
+ReferencesCalculees calculerReferences(List<LigneHistorique> lignes) {
+  final groupes = <String, List<LigneHistorique>>{};
+  final noms = <String, String>{};
+  final erreurs = <String>[];
+  for (final l in lignes) {
+    final base = l.evenement.trim();
+    final id = cleReference('$base$suffixeReference');
+    if (id.isEmpty) {
+      erreurs.add('Historique : le nom d\'événement « $base » est inutilisable.');
+      continue;
+    }
+    (groupes[id] ??= []).add(l);
+    noms.putIfAbsent(id, () => base);
+  }
+  final references = <ReferenceImportee>[];
+  for (final e in groupes.entries) {
+    final base = noms[e.key]!;
+    final etiquette = 'Historique « $base »';
+    final personnesParGymnase = <String, int>{};
+    double? jours;
+    String? probleme;
+    for (final l in e.value) {
+      final g = cleIngredient(l.gymnase);
+      final deja = personnesParGymnase[g];
+      if (deja != null && deja != l.personnes) {
+        probleme = 'le nombre de personnes du gymnase « ${l.gymnase} » '
+            'n\'est pas le même sur toutes ses lignes';
+        break;
+      }
+      personnesParGymnase[g] = l.personnes;
+      if (jours != null && jours != l.jours) {
+        probleme = 'la durée n\'est pas la même sur toutes les lignes';
+        break;
+      }
+      jours = l.jours;
+    }
+    final personnes = personnesParGymnase.values.fold<int>(0, (t, n) => t + n);
+    if (probleme == null && (personnes <= 0)) {
+      probleme = 'aucun nombre de personnes renseigné';
+    }
+    final vendus = <String, int>{};
+    final nomsProduits = <String, String>{};
+    if (probleme == null) {
+      for (final l in e.value) {
+        final p = cleIngredient(l.produit);
+        vendus[p] = (vendus[p] ?? 0) + l.quantiteVendue;
+        nomsProduits.putIfAbsent(p, () => l.produit);
+      }
+      if (vendus.length > referenceLignesMax) {
+        probleme = 'plus de $referenceLignesMax produits';
+      }
+    }
+    final calcul = <LigneReference>[];
+    if (probleme == null) {
+      for (final p in vendus.entries) {
+        final conso = consoParPersonneEtParJour(p.value, personnes, jours!);
+        if (conso > consoPrevisionMax) {
+          probleme = 'la consommation de « ${nomsProduits[p.key]} » dépasse '
+              '${consoPrevisionMax.toInt()} par personne et par jour';
+          break;
+        }
+        var nom = nomsProduits[p.key]!;
+        if (nom.length > referenceProduitMax) {
+          nom = nom.substring(0, referenceProduitMax);
+        }
+        calcul.add(LigneReference(nom, conso));
+      }
+    }
+    if (probleme != null) {
+      erreurs.add('$etiquette : $probleme. Cet événement n\'est pas retenu comme référence.');
+      continue;
+    }
+    var nomBase = base;
+    final reste = referenceNomMax - suffixeReference.length;
+    if (nomBase.length > reste) nomBase = nomBase.substring(0, reste);
+    references.add(ReferenceImportee(
+        id: e.key, nom: '$nomBase$suffixeReference', lignes: calcul));
+  }
+  references.sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
+  return ReferencesCalculees(references, erreurs);
+}
+
+/// La consommation de chaque produit de l'événement d'après une référence importée :
+/// produit retrouvé par son nom (sans casse ni accents). Un produit absent de la
+/// référence n'est pas dans le résultat : il garde le chiffre du menu (comme P4).
+Map<String, double> consoDepuisReference({
+  required List<ProduitEvenement> produits,
+  required ReferenceImportee reference,
+}) {
+  final parNom = <String, double>{};
+  for (final l in reference.lignes) {
+    parNom.putIfAbsent(cleIngredient(l.nom), () => l.conso);
+  }
+  return {
+    for (final p in produits)
+      p.id: ?parNom[cleIngredient(p.nom)],
+  };
 }

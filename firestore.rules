@@ -17,6 +17,7 @@ rules_version = '2';
 //     restes/{r}                                  nomGymnase, nomProduit, quantite, evenementId, majLe : stock gardé à la clôture
 //                                                 d'un événement pour le suivant (écrit avec la clôture, lu et effacé par la gestion
 //                                                 à la création de l'événement suivant ; identifiant = gymnase__produit, sans accents)
+//     references/{r}                              nom, lignes[] {nom, conso}, creeLe : consommation par personne et par jour tirée de la feuille Historique d'un classeur Excel (gestion seulement)
 //     evenements/{e}                              nom, date, statut ('en_preparation' à la création, puis 'en_cours' à l'ouverture
 //                                                 (+ ouvertLe), puis 'cloture'), modes, menuNom, creeLe,
 //                                                 + à la clôture : clotureLe, cloturePar, clotureParPrenom,
@@ -240,6 +241,27 @@ service cloud.firestore {
     function texte(valeur, max) {
       return valeur is string && valeur.size() >= 1 && valeur.size() <= max;
     }
+    // Liste de 0 à 200 lignes {nom (1 à 40 caractères), conso (nombre 0 à 1000)}. Pas de boucle dans les
+    // règles et une requête ne peut pas évaluer plus de 1000 expressions : les 12 premières lignes sont
+    // vérifiées une à une, par position (un champ absent ou d'un mauvais type fait échouer le test, donc
+    // refuse l'écriture) ; l'application n'en écrit jamais d'invalide et ignore à la lecture celles
+    // qui ne respecteraient pas ce format.
+    function lignesReferenceValides(l) {
+      return l is list
+        && l.size() <= 200
+        && (l.size() <= 0 || (l[0].nom.size() >= 1 && l[0].nom.size() <= 40 && l[0].conso >= 0 && l[0].conso <= 1000))
+        && (l.size() <= 1 || (l[1].nom.size() >= 1 && l[1].nom.size() <= 40 && l[1].conso >= 0 && l[1].conso <= 1000))
+        && (l.size() <= 2 || (l[2].nom.size() >= 1 && l[2].nom.size() <= 40 && l[2].conso >= 0 && l[2].conso <= 1000))
+        && (l.size() <= 3 || (l[3].nom.size() >= 1 && l[3].nom.size() <= 40 && l[3].conso >= 0 && l[3].conso <= 1000))
+        && (l.size() <= 4 || (l[4].nom.size() >= 1 && l[4].nom.size() <= 40 && l[4].conso >= 0 && l[4].conso <= 1000))
+        && (l.size() <= 5 || (l[5].nom.size() >= 1 && l[5].nom.size() <= 40 && l[5].conso >= 0 && l[5].conso <= 1000))
+        && (l.size() <= 6 || (l[6].nom.size() >= 1 && l[6].nom.size() <= 40 && l[6].conso >= 0 && l[6].conso <= 1000))
+        && (l.size() <= 7 || (l[7].nom.size() >= 1 && l[7].nom.size() <= 40 && l[7].conso >= 0 && l[7].conso <= 1000))
+        && (l.size() <= 8 || (l[8].nom.size() >= 1 && l[8].nom.size() <= 40 && l[8].conso >= 0 && l[8].conso <= 1000))
+        && (l.size() <= 9 || (l[9].nom.size() >= 1 && l[9].nom.size() <= 40 && l[9].conso >= 0 && l[9].conso <= 1000))
+        && (l.size() <= 10 || (l[10].nom.size() >= 1 && l[10].nom.size() <= 40 && l[10].conso >= 0 && l[10].conso <= 1000))
+        && (l.size() <= 11 || (l[11].nom.size() >= 1 && l[11].nom.size() <= 40 && l[11].conso >= 0 && l[11].conso <= 1000));
+    }
 
     match /users/{uid} {
       allow read, write: if connecte() && request.auth.uid == uid;
@@ -308,6 +330,22 @@ service cloud.firestore {
           && gereTout(a, request.resource.data.evenementId)
           && get(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'en_cours'
           && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(request.resource.data.evenementId)).data.statut == 'cloture';
+      }
+
+      // Références de consommation importées d'un classeur Excel (P6) : nom (1 à 60), lignes[] {nom, conso}
+      // (0 à 200), creeLe. Identifiant = clé du nom (minuscules sans accents, 1 à 100 caractères) :
+      // réimporter le même nom remplace la référence. Lues, écrites et supprimées par la gestion de
+      // l'association ; supprimées aussi avec l'association.
+      match /references/{r} {
+        allow read: if estGestion(a);
+        allow delete: if estGestion(a) || suppressionEnCours(a);
+        allow create, update: if estGestion(a)
+          && r.matches('^[a-z0-9_-]{1,100}$')
+          && request.resource.data.keys().hasOnly(['nom', 'lignes', 'creeLe'])
+          && request.resource.data.keys().hasAll(['nom', 'lignes', 'creeLe'])
+          && texte(request.resource.data.nom, 60)
+          && request.resource.data.creeLe is timestamp
+          && lignesReferenceValides(request.resource.data.lignes);
       }
 
       match /evenements/{e} {

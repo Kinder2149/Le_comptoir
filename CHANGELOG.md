@@ -1,5 +1,11 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P6 : importer dans la Préparation
+- « Importer un classeur » : choix du fichier, résumé avant toute écriture (stocks appliqués, références créées, lignes ignorées avec leur raison), puis « Appliquer ». Le stock de départ du fichier s'applique (événement en préparation seulement) ; chaque événement de la feuille Historique devient une référence « nom (Excel) », réutilisable dans les sources de la prévision (étape 3). Fichier illisible ou d'un autre format : message clair, rien n'est écrit. Aucune vente créée.
+- Règles d'accès : collection `references` de l'association (gestion), effacée avec l'association. Déployées le 07/11/2026.
+- Dépendance ajoutée (accord de Kinder) : `file_picker` 11.0.3, version exacte.
+- Tests : 352 de logique et d'écrans, 230 de règles, parcours Android.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P5 : télécharger le modèle Excel
 - Préparation : carte « Classeur Excel » avec « Télécharger le modèle Excel » : un `.xlsx` à quatre feuilles (Menu, Stock de départ, Historique, Courses), chacune avec une ligne d'aide et ses en-têtes. Menu et Stock de départ contiennent déjà les produits et gymnases de l'événement ; le fichier part par la feuille de partage d'Android.
 - Dépendance ajoutée (accord de Kinder) : `excel` 4.0.6, version exacte. Aucun changement de règles.

@@ -7,6 +7,8 @@ import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_caisses.dart';
 import 'package:le_comptoir/gymnase.dart';
 import 'package:le_comptoir/evenement.dart';
+import 'package:le_comptoir/import_classeur.dart';
+import 'package:le_comptoir/previsions.dart';
 
 import 'outils.dart';
 
@@ -96,6 +98,22 @@ void main() {
     });
     await depotEv.definirRattachement(evt, leaUid, {gym}); // doit disparaître avec l'association
     await depotEv.definirPrevision(evt, cafeId, 1.5); // la prévision aussi (P4)
+    // Une référence importée d'un classeur (P6) : elle vit au niveau de l'association.
+    await depotEv.appliquerImport(
+        evt,
+        const PlanImport(
+          stocks: [],
+          references: [
+            ReferenceImportee(
+                id: 'tournoi-2025-excel',
+                nom: 'Tournoi 2025 (Excel)',
+                lignes: [LigneReference('Café', 1.5)]),
+          ],
+          ignorees: [],
+          erreurs: [],
+          menuIgnore: false,
+        ));
+    await db.waitForPendingWrites();
     await changerDeSession(tester, () async {
       await auth.createUserWithEmailAndPassword(email: 'max.param@test.fr', password: 'secret12');
     });
@@ -150,6 +168,7 @@ void main() {
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/ouvertes'), 1);
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/rattachements'), 1);
     expect(await restNbDocuments('associations/$assoId/evenements/$evt/previsions'), 1);
+    expect(await restNbDocuments('associations/$assoId/references'), 1);
 
     // Max, retiré, revient à l'écran d'accueil.
     await changerDeSession(tester, () async {
@@ -222,6 +241,7 @@ void main() {
       'associations/$assoId/evenements/$evt/ouvertes',
       'associations/$assoId/evenements/$evt/rattachements',
       'associations/$assoId/evenements/$evt/previsions',
+      'associations/$assoId/references',
     ]) {
       expect(await restNbDocuments(c), 0, reason: c);
     }

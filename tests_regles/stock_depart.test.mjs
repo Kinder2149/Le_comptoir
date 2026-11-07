@@ -105,3 +105,16 @@ test('repris : à la création de l’événement, le stock repris et le gymnase
     stock(c.stock('p1'), 24, vrai),
   ]), 200);
 });
+
+// P6 : l'import d'un classeur écrit les stocks de départ par groupes de 20, en création puis
+// en remplacement (rejouer l'import), par le responsable comme par un gestionnaire rattaché.
+test('import : 20 stocks dans le même lot, créés puis remplacés (rejouer est sans risque)', async () => {
+  const { chef, gestionnaire: gus, id, c } = await enPreparation();
+  const ids = Array.from({ length: 20 }, (_, i) => `q${i}`);
+  assert.equal(await lot(chef, ids.slice(0, 10).map((p) => produitEvenement(id, 'e1', p))), 200);
+  assert.equal(await lot(chef, ids.slice(10).map((p) => produitEvenement(id, 'e1', p))), 200);
+  assert.equal(await lot(chef, ids.map((p) => stock(c.stock(p), 5))), 200);
+  assert.equal(await lot(chef, ids.map((p) => stock(c.stock(p), 7))), 200);
+  assert.equal(await lot(gus, ids.map((p) => stock(c.stock(p), 9))), 200);
+  assert.equal(await lire(gus, c.stock('q19')), 200);
+});

@@ -9,6 +9,7 @@ import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'import_classeur.dart';
 import 'mesure.dart';
 import 'previsions.dart';
 import 'restes.dart';
@@ -560,6 +561,89 @@ class DepotEvenements {
       ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
       effacer: existantes.where((id) => !conso.containsKey(id)),
     );
+  }
+
+  // ---------- Références importées d'un classeur Excel (P6) ----------
+
+  /// Références de consommation nommées, au niveau de l'association (réutilisables d'un
+  /// événement à l'autre) : associations/{a}/references/{id}.
+  CollectionReference<Map<String, dynamic>> get _references =>
+      _db.collection('associations').doc(_assoId).collection('references');
+
+  /// Les références importées, par ordre alphabétique. Une ligne invalide est ignorée.
+  /// Nécessite le réseau ; illisibles (droits, réseau) : [LectureRefusee] ou l'erreur.
+  Future<List<ReferenceImportee>> lireReferences() async {
+    final s = await _references.get(const GetOptions(source: Source.server));
+    final res = <ReferenceImportee>[];
+    for (final d in s.docs) {
+      final nom = d.data()['nom'];
+      final lignes = d.data()['lignes'];
+      if (nom is! String || lignes is! List) continue;
+      res.add(ReferenceImportee(
+        id: d.id,
+        nom: nom,
+        lignes: [
+          for (final l in lignes)
+            // Les règles ne vérifient que les premières lignes : on écarte ici toute
+            // ligne hors format (nom de 1 à 40 caractères, chiffre de 0 à 1000).
+            if (l is Map &&
+                l['nom'] is String &&
+                (l['nom'] as String).isNotEmpty &&
+                (l['nom'] as String).length <= referenceProduitMax &&
+                l['conso'] is num &&
+                (l['conso'] as num) >= 0 &&
+                (l['conso'] as num) <= consoPrevisionMax)
+              LigneReference(l['nom'] as String, (l['conso'] as num).toDouble()),
+        ],
+      ));
+    }
+    res.sort((a, b) => a.nom.toLowerCase().compareTo(b.nom.toLowerCase()));
+    return res;
+  }
+
+  /// Applique d'un coup une référence importée : les produits retrouvés par leur nom
+  /// prennent son chiffre (source = son nom), les autres reviennent au menu (comme
+  /// [appliquerEvenementPasse]).
+  Future<void> appliquerReference(
+      String evenementId, ReferenceImportee reference) async {
+    final produits = await _lireProduits(evenementId);
+    final conso = consoDepuisReference(produits: produits, reference: reference);
+    final source = reference.nom.length <= sourceLongueurMax
+        ? reference.nom
+        : reference.nom.substring(0, sourceLongueurMax);
+    final existantes = await _idsPrevisions(evenementId);
+    await _appliquerPrevisions(
+      evenementId,
+      ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
+      effacer: existantes.where((id) => !conso.containsKey(id)),
+    );
+  }
+
+  /// Exécute un plan d'import : les références (une même clé est remplacée : rejouer est
+  /// sans risque) puis les stocks de départ, comme la saisie à la main (la marque
+  /// « repris » disparaît). Rien d'autre n'est écrit : aucune vente, aucun bilan.
+  /// Les stocks partent par groupes de 20 (limite d'évaluation des règles d'accès) ;
+  /// en cas d'échec au milieu, recommencer donne le même résultat.
+  Future<void> appliquerImport(String evenementId, PlanImport plan) async {
+    for (final r in plan.references) {
+      await _references.doc(r.id).set({
+        'nom': r.nom,
+        'lignes': [
+          for (final l in r.lignes) {'nom': l.nom, 'conso': l.conso},
+        ],
+        'creeLe': FieldValue.serverTimestamp(),
+      });
+    }
+    for (var i = 0; i < plan.stocks.length; i += 20) {
+      final lot = _db.batch();
+      for (final s in plan.stocks.skip(i).take(20)) {
+        lot.set(
+          _gymnase(evenementId, s.gymnaseId).collection('stocks').doc(s.produitId),
+          {'quantite': s.quantite, 'reference': s.quantite},
+        );
+      }
+      await lot.commit();
+    }
   }
 
   /// La liste de courses de l'événement (une seule, document « liste »), null

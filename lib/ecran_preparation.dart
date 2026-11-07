@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -8,8 +9,10 @@ import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
 import 'export_bilan.dart' show nomFichierModele;
 import 'gymnase.dart';
+import 'import_classeur.dart';
 import 'partage.dart';
 import 'previsions.dart';
+import 'selecteur.dart';
 import 'theme.dart';
 
 /// Préparation d'un événement (gestion). Étape 1 : le stock de départ, par gymnase et
@@ -33,7 +36,11 @@ class EcranPreparation extends StatelessWidget {
     required this.chargerPasses,
     required this.appliquerPasse,
     required this.revenirAuMenu,
+    required this.chargerReferences,
+    required this.appliquerReference,
+    required this.importer,
     this.partagerModele = partagerFichier,
+    this.choisirClasseur = choisirClasseurSysteme,
   });
 
   final Stream<Evenement?> evenement;
@@ -64,8 +71,20 @@ class EcranPreparation extends StatelessWidget {
   final Future<void> Function(ReferencePassee passe) appliquerPasse;
   final Future<void> Function() revenirAuMenu;
 
+  /// Références de consommation importées d'un classeur (au niveau de l'association) et
+  /// l'application de l'une d'elles à la prévision de l'événement.
+  final Future<List<ReferenceImportee>> Function() chargerReferences;
+  final Future<void> Function(ReferenceImportee reference) appliquerReference;
+
+  /// Exécute un plan d'import (stocks de départ et références), après le résumé.
+  final Future<void> Function(PlanImport plan) importer;
+
   /// Remet le modèle Excel à la feuille de partage (remplaçable dans les tests).
   final PartageurOctets partagerModele;
+
+  /// Choisit le classeur à importer : rend son contenu, ou null si on annule
+  /// (remplaçable dans les tests).
+  final SelecteurClasseur choisirClasseur;
 
   @override
   Widget build(BuildContext context) {
@@ -99,9 +118,13 @@ class EcranPreparation extends StatelessWidget {
                               for (final g in tous)
                                 if (portee.gere(g.id)) g
                             ],
+                            tousGymnases: tous,
+                            portee: portee,
                             produits: liste,
                             stocks: stock,
                             partager: partagerModele,
+                            choisir: choisirClasseur,
+                            importer: importer,
                           ),
                           const SizedBox(height: 16),
                           Text('Étape 1 · Stock de départ',
@@ -160,6 +183,8 @@ class EcranPreparation extends StatelessWidget {
                             chargerPasses: chargerPasses,
                             appliquerPasse: appliquerPasse,
                             revenirAuMenu: revenirAuMenu,
+                            chargerReferences: chargerReferences,
+                            appliquerReference: appliquerReference,
                           ),
                         ],
                       ),
@@ -172,22 +197,33 @@ class EcranPreparation extends StatelessWidget {
   }
 }
 
-/// Le modèle du classeur Excel de l'événement (menu et stock de départ remplis),
-/// remis à la feuille de partage d'Android.
+/// Le classeur Excel de l'événement : télécharger le modèle (menu et stock de départ
+/// remplis, remis à la feuille de partage d'Android) et importer un classeur rempli
+/// (stock de départ et références de consommation, après un résumé).
 class _CarteClasseur extends StatefulWidget {
   const _CarteClasseur({
     required this.evenement,
     required this.gymnases,
+    required this.tousGymnases,
+    required this.portee,
     required this.produits,
     required this.stocks,
     required this.partager,
+    required this.choisir,
+    required this.importer,
   });
 
   final Evenement evenement;
+
+  /// Les gymnases de la portée de la personne (modèle) et tous ceux de l'événement (import).
   final List<Gymnase> gymnases;
+  final List<Gymnase> tousGymnases;
+  final PorteeGestion portee;
   final List<ProduitEvenement> produits;
   final Map<String, Map<String, StockDepart>> stocks;
   final PartageurOctets partager;
+  final SelecteurClasseur choisir;
+  final Future<void> Function(PlanImport plan) importer;
 
   @override
   State<_CarteClasseur> createState() => _EtatCarteClasseur();
@@ -195,6 +231,11 @@ class _CarteClasseur extends StatefulWidget {
 
 class _EtatCarteClasseur extends State<_CarteClasseur> {
   bool _enCours = false;
+  bool _importEnCours = false;
+
+  /// Dernier résultat d'import : la phrase et si c'est une erreur.
+  String? _resultat;
+  bool _resultatErreur = false;
 
   Future<void> _telecharger() async {
     setState(() => _enCours = true);
@@ -215,6 +256,65 @@ class _EtatCarteClasseur extends State<_CarteClasseur> {
       }
     } finally {
       if (mounted) setState(() => _enCours = false);
+    }
+  }
+
+  void _dire(String phrase, {bool erreur = false}) {
+    if (!mounted) return;
+    setState(() {
+      _resultat = phrase;
+      _resultatErreur = erreur;
+    });
+  }
+
+  Future<void> _importer() async {
+    setState(() {
+      _importEnCours = true;
+      _resultat = null;
+    });
+    try {
+      final Uint8List? octets;
+      try {
+        octets = await widget.choisir();
+      } catch (_) {
+        _dire('Le choix du fichier n\'a pas pu s\'ouvrir. Réessayez.', erreur: true);
+        return;
+      }
+      if (octets == null) return; // annulé : rien ne change
+      final ClasseurLu lu;
+      try {
+        lu = lireClasseur(octets);
+      } on ClasseurIllisible {
+        _dire(messageClasseurIllisible, erreur: true);
+        return;
+      }
+      if (!lu.contenuUtile) {
+        _dire(messageClasseurIllisible, erreur: true);
+        return;
+      }
+      final plan = preparerImport(
+        lu,
+        tous: widget.tousGymnases,
+        produits: widget.produits,
+        portee: widget.portee,
+        stockModifiable: widget.evenement.enPreparation,
+      );
+      if (!mounted) return;
+      final accepte = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => _EcranResumeImport(plan: plan)),
+      );
+      if (accepte != true) return;
+      try {
+        await widget.importer(plan);
+        _dire(plan.phraseConfirmation);
+      } catch (_) {
+        _dire(
+            'L\'import n\'a pas pu être terminé. Vérifiez le réseau puis réessayez : '
+            'le rejouer est sans risque.',
+            erreur: true);
+      }
+    } finally {
+      if (mounted) setState(() => _importEnCours = false);
     }
   }
 
@@ -243,8 +343,127 @@ class _EtatCarteClasseur extends State<_CarteClasseur> {
               icon: const Icon(Icons.download),
               label: const Text('Télécharger le modèle Excel'),
             ),
+            if (!widget.evenement.cloture) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Importez le classeur rempli : son stock de départ s\'applique à '
+                'cet événement et son historique devient une source de prévision. '
+                'Un résumé s\'affiche avant toute écriture.',
+                key: Key('aide_import'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('importer_classeur'),
+                style: TypeAction.gerer.contour,
+                onPressed: _importEnCours ? null : _importer,
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Importer un classeur'),
+              ),
+            ],
+            if (_resultat != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _resultat!,
+                  key: Key(_resultatErreur ? 'erreur_import' : 'confirmation_import'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: _resultatErreur ? Palette.ocreFonce : Palette.anthracite,
+                  ),
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Le résumé d'un import, montré AVANT toute écriture : stocks appliqués, références
+/// créées, lignes ignorées avec leur raison, erreurs de lecture. « Appliquer » rend
+/// vrai ; « Annuler » (ou retour) rend faux : rien n'est écrit.
+class _EcranResumeImport extends StatelessWidget {
+  const _EcranResumeImport({required this.plan});
+
+  final PlanImport plan;
+
+  /// Au-delà de ce nombre, une liste est repliée.
+  static const _seuil = 10;
+
+  Widget _liste(BuildContext context, String titre, List<String> lignes, String cle) {
+    if (lignes.isEmpty) return const SizedBox.shrink();
+    final corps = [for (final l in lignes) Text('• $l')];
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: lignes.length <= _seuil
+          ? Column(
+              key: Key(cle),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titre, style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
+                ...corps,
+              ],
+            )
+          : ExpansionTile(
+              key: Key(cle),
+              tilePadding: EdgeInsets.zero,
+              title: Text('$titre (${lignes.length})',
+                  style: Theme.of(context).textTheme.titleSmall),
+              expandedCrossAxisAlignment: CrossAxisAlignment.start,
+              children: corps,
+            ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Résumé de l\'import')),
+      body: ListView(
+        key: const Key('resume_import'),
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text('Rien n\'est écrit tant que vous n\'avez pas touché « Appliquer ».'),
+          const SizedBox(height: 12),
+          Text(plan.phraseStocks,
+              key: const Key('resume_stocks'),
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (plan.references.isEmpty)
+            const Text('Aucune référence de consommation ne sera créée.',
+                key: Key('resume_aucune_reference'))
+          else
+            for (final (i, phrase) in plan.phrasesReferences.indexed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(phrase,
+                    key: Key('resume_reference_$i'),
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+          if (plan.menuIgnore)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: Text(
+                  'La feuille Menu est ignorée ici : elle s\'importe depuis l\'écran Menus.',
+                  key: Key('resume_menu_ignore')),
+            ),
+          _liste(context, 'Lignes ignorées', plan.ignorees, 'resume_ignorees'),
+          _liste(context, 'Problèmes de lecture', plan.erreurs, 'resume_erreurs'),
+          const SizedBox(height: 24),
+          FilledButton(
+            key: const Key('appliquer_import'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Appliquer'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            key: const Key('annuler_import'),
+            style: TypeAction.gerer.contour,
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+        ],
       ),
     );
   }
@@ -585,6 +804,8 @@ class _EtapePrevision extends StatelessWidget {
     required this.chargerPasses,
     required this.appliquerPasse,
     required this.revenirAuMenu,
+    required this.chargerReferences,
+    required this.appliquerReference,
   });
 
   final Evenement evenement;
@@ -598,6 +819,8 @@ class _EtapePrevision extends StatelessWidget {
   final Future<EvenementsPasses> Function() chargerPasses;
   final Future<void> Function(ReferencePassee passe) appliquerPasse;
   final Future<void> Function() revenirAuMenu;
+  final Future<List<ReferenceImportee>> Function() chargerReferences;
+  final Future<void> Function(ReferenceImportee reference) appliquerReference;
 
   @override
   Widget build(BuildContext context) {
@@ -694,7 +917,7 @@ class _EtapePrevision extends StatelessWidget {
         key: const Key('prevision_evenement_passe'),
         style: TypeAction.gerer.contour,
         onPressed: () => _choisirEvenementPasse(context, aLaMain),
-        child: const Text('D\'après un événement passé'),
+        child: const Text('D\'après une source'),
       ),
       const SizedBox(height: 8),
       OutlinedButton(
@@ -762,17 +985,23 @@ class _EtapePrevision extends StatelessWidget {
       }
       return;
     }
+    // Les références importées d'un classeur : illisibles, elles sont seulement absentes
+    // de la liste (les événements passés restent proposés).
+    var references = const <ReferenceImportee>[];
+    try {
+      references = await chargerReferences();
+    } catch (_) {}
     if (!context.mounted) return;
-    final choisi = await showDialog<ReferencePassee>(
+    final choisi = await showDialog<Object>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('D\'après un événement passé'),
+        title: const Text('D\'après une source'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (passes.utilisables.isEmpty)
+              if (passes.utilisables.isEmpty && references.isEmpty)
                 const Text('Aucun événement passé ne peut servir de référence.',
                     key: Key('aucun_evenement_passe')),
               for (final r in passes.utilisables)
@@ -784,6 +1013,16 @@ class _EtapePrevision extends StatelessWidget {
                   subtitle: Text('${dateAffichee(r.date)} · '
                       '${r.personnes} personne${r.personnes > 1 ? 's' : ''} · '
                       '${consoAffichee(r.jours)} jour${r.jours > 1 ? 's' : ''}'),
+                  onTap: () => Navigator.of(c).pop(r),
+                ),
+              for (final r in references)
+                ListTile(
+                  key: Key('choix_reference_${r.id}'),
+                  minVerticalPadding: 12,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(r.nom),
+                  subtitle: Text('Importée d\'un classeur Excel · '
+                      '${r.lignes.length} produit${r.lignes.length > 1 ? 's' : ''}'),
                   onTap: () => Navigator.of(c).pop(r),
                 ),
               if (passes.sansPersonnes > 0)
@@ -808,17 +1047,25 @@ class _EtapePrevision extends StatelessWidget {
     if (choisi == null || !context.mounted) return;
     if (aLaMain && !await _confirmer(context, _perteCorrections)) return;
     try {
-      await appliquerPasse(choisi);
-      if (context.mounted) {
-        _dire(context, 'Prévision calculée d\'après « ${choisi.nom} ».',
-            const Key('prevision_faite'));
+      if (choisi is ReferenceImportee) {
+        await appliquerReference(choisi);
+        if (context.mounted) {
+          _dire(context, 'Prévision calculée d\'après « ${choisi.nom} ».',
+              const Key('prevision_faite'));
+        }
+      } else if (choisi is ReferencePassee) {
+        await appliquerPasse(choisi);
+        if (context.mounted) {
+          _dire(context, 'Prévision calculée d\'après « ${choisi.nom} ».',
+              const Key('prevision_faite'));
+        }
       }
     } on LectureRefusee {
       if (context.mounted) {
         _dire(
             context,
-            'Les ventes de « ${choisi.nom} » ne peuvent pas être lues avec vos droits. '
-            'Rien n\'a été modifié.',
+            'Les ventes de « ${(choisi as ReferencePassee).nom} » ne peuvent pas être '
+            'lues avec vos droits. Rien n\'a été modifié.',
             const Key('erreur_prevision'));
       }
     } catch (_) {

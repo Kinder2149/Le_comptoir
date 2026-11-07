@@ -136,6 +136,14 @@ class ClasseurLu {
   final List<StockClasseur> stocks;
   final List<LigneHistorique> historique;
   final List<String> erreurs;
+
+  /// Y a-t-il de quoi importer dans la Préparation ? Des lignes de stock ou d'historique,
+  /// ou au moins une ligne invalide à signaler. Sinon le fichier n'est pas un classeur
+  /// Le Comptoir (feuilles absentes ou vides).
+  bool get contenuUtile =>
+      stocks.isNotEmpty ||
+      historique.isNotEmpty ||
+      erreurs.any((e) => e.contains(', ligne '));
 }
 
 // ------------------------------------------------------------------ écriture

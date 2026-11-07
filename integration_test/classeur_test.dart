@@ -93,6 +93,9 @@ void main() {
         chargerPasses: () => depotEv.evenementsPasses(sauf: evt),
         appliquerPasse: (r) => depotEv.appliquerEvenementPasse(evt, r),
         revenirAuMenu: () => depotEv.revenirAuMenu(evt),
+        chargerReferences: depotEv.lireReferences,
+        appliquerReference: (r) => depotEv.appliquerReference(evt, r),
+        importer: (plan) => depotEv.appliquerImport(evt, plan),
         partagerModele: (n, o, m) async {
           nomFichier = n;
           octets = o;

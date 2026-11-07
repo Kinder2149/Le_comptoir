@@ -588,6 +588,9 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             chargerPasses: () => widget.depot.evenementsPasses(sauf: ev.id),
             appliquerPasse: (r) => widget.depot.appliquerEvenementPasse(ev.id, r),
             revenirAuMenu: () => widget.depot.revenirAuMenu(ev.id),
+            chargerReferences: widget.depot.lireReferences,
+            appliquerReference: (r) => widget.depot.appliquerReference(ev.id, r),
+            importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
           ),
         ),
       );
