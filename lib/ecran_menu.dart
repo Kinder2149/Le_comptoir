@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'depot_menus.dart';
 import 'ecran_caisse.dart';
 import 'ecran_menus.dart';
+import 'liste_familles.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -139,40 +140,62 @@ class EcranMenu extends StatelessWidget {
                 return const Center(
                     child: Text('Aucun produit.', key: Key('aucun_produit')));
               }
-              return ListView(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Text(
-                      "Catalogue : le stock se règle dans l'événement.",
-                      key: Key('bandeau_menu'),
-                    ),
-                  ),
-                  for (final p in produits)
-                    ListTile(
-                      key: Key('produit_${p.id}'),
-                      leading: VignetteProduit(
-                          key: Key('vignette_${p.id}'),
-                          icone: p.icone,
-                          photo: p.photo),
-                      title: Text(p.nom),
-                      subtitle: Text(
-                        formaterEuros(p.prixCentimes) +
-                            (p.fiche.type == 'unite'
-                                ? ''
-                                : ' · ${libellesTypes[p.fiche.type]}') +
-                            (p.fiche.provenance == 'apporte'
-                                ? ' · Apporté par les bénévoles'
-                                : ''),
-                      ),
-                      onTap: () => _editerProduit(context, p),
-                    ),
-                ],
+              return ListeProduitsMenu(
+                produits: produits,
+                onTap: (p) => _editerProduit(context, p),
               );
             },
           ),
         );
       },
+    );
+  }
+}
+
+/// Produits d'un menu rangés par familles (décision 63). Sans accès à la base :
+/// testable seul. Image : photo, sinon icône juste, sinon pastille aux initiales.
+class ListeProduitsMenu extends StatelessWidget {
+  const ListeProduitsMenu({
+    super.key,
+    required this.produits,
+    required this.onTap,
+  });
+
+  final List<ProduitMenu> produits;
+  final void Function(ProduitMenu produit) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListeFamilles<ProduitMenu>(
+      elements: produits,
+      familleDe: (p) => p.fiche.famille,
+      nomDe: (p) => p.nom,
+      enTete: const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 8),
+        child: Text(
+          "Catalogue : le stock se règle dans l'événement.",
+          key: Key('bandeau_menu'),
+        ),
+      ),
+      ligne: (context, p, couleur) => ListTile(
+        key: Key('produit_${p.id}'),
+        leading: p.photo != null || p.icone != null
+            ? VignetteProduit(
+                key: Key('vignette_${p.id}'), icone: p.icone, photo: p.photo)
+            : PastilleProduit(
+                key: Key('pastille_${p.id}'), nom: p.nom, couleur: couleur),
+        title: Text(p.nom),
+        subtitle: Text(
+          formaterEuros(p.prixCentimes) +
+              (p.fiche.type == 'unite'
+                  ? ''
+                  : ' · ${libellesTypes[p.fiche.type]}') +
+              (p.fiche.provenance == 'apporte'
+                  ? ' · Apporté par les bénévoles'
+                  : ''),
+        ),
+        onTap: () => onTap(p),
+      ),
     );
   }
 }

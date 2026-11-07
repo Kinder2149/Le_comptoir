@@ -2,7 +2,7 @@
 
 ## 08/11/2026 — Mission « Ergonomie de la gestion », E1 : familles et rayons
 - Six familles de produits et six rayons de courses (listes fixes, décisions 63 et 64) : choix de la famille dans la fiche produit, rayon de chaque ingrédient, du produit acheté tel quel et d'une ligne libre ; le menu modèle est classé. Un produit d'avant est rangé dans « Autre ».
-- Règles d'accès : familles et rayons refusés hors liste, contrôle des ingrédients refait par blocs (marge des 1000 expressions conservée). Tests : 397 de logique et d'écrans, 241 de règles. Déploiement des règles en attente.
+- Règles d'accès : familles et rayons refusés hors liste, contrôle des ingrédients refait par blocs (marge des 1000 expressions conservée). Tests : 397 de logique et d'écrans, 241 de règles. Règles déployées le 08/11/2026.
 
 ## 07/11/2026 — Mission « Préparer l'événement » close
 - Test sur téléphone fait et validé par Kinder ; branche `claude/preparation-evenement` fusionnée dans `main`, avec le cadrage de la mission « Ergonomie de la gestion », dont la réalisation démarre (branche `claude/ergonomie-gestion`).

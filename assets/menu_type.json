@@ -217,7 +217,6 @@
     "nom": "Barre de céréales pomme",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
-    "icone": "barre",
     "conso": 0.02,
     "rayon": "epicerie"
   },
@@ -225,7 +224,6 @@
     "nom": "Barre de céréales chocolat",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
-    "icone": "barre",
     "conso": 0.02,
     "rayon": "epicerie"
   },
@@ -233,7 +231,6 @@
     "nom": "Barre de céréales fraise-framboise",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
-    "icone": "barre",
     "conso": 0.02,
     "rayon": "epicerie"
   },

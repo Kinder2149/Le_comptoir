@@ -780,13 +780,19 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 - Ce qu'on ne fait pas : aucun affichage par familles (E2), aucune liste par rayons (E6), aucun changement de calcul, pas de colonne Excel (E8), pas de famille ni de rayon libres.
 - Test : `flutter analyze`, `flutter test`, `tests_regles/lancer.ps1` (y compris 20 ingrédients avec rayon). Le déploiement des règles est fait par la session mère après les tests.
 
+*Cadrage E2 — Listes par familles et icônes, appliquées au Menu (08/11/2026)*
+- Stratégie : un seul composant réutilisable `lib/liste_familles.dart` (widget générique : reçoit des éléments avec leur famille, les range dans l'ordre fixe des six familles, un bloc par famille avec pastille de couleur, titre, compteur, repli/dépli, champ de recherche optionnel, et un constructeur de ligne fourni par l'écran). Couleur de chaque famille définie une fois dans ce fichier (reprendre la maquette `audit_front/ergonomie/maquette/project/Menu.dc.html` : Croques #D9B06F, Boissons chaudes #9A670F, Boissons fraîches #A04467, Snacks et fruits #5A7D4F, Fait maison #6C4F86, Autre gris). Pastille de produit : s'il a une icône juste, l'icône ; sinon une pastille à la couleur de sa famille avec ses initiales (ex. « CM », « Co »). Icônes fausses : on retire l'icône `barre` aux barres de céréales et aux bonbons dans `assets/menu_type.json` (Mars, Twix, Snickers gardent la leur) ; un produit sans icône montre la pastille, jamais une mauvaise image.
+- Fichiers touchés : nouveau `lib/liste_familles.dart` ; `lib/ecran_menu.dart` (la liste des produits du menu passe par le composant ; recherche par nom, sans accents ni casse ; familles repliées au départ sauf celles qui ont un résultat de recherche) ; `assets/menu_type.json` ; tests (`test/liste_familles_test.dart` + ajustement des tests d'écran du menu). Aucun changement de règles, aucun changement de données.
+- Ce qu'on ne fait pas : pas de liste par familles ailleurs (E4 à E7 réutiliseront le composant), pas de changement de la caisse des bénévoles (elle montre déjà la pastille ou l'icône actuelle), pas de glisser-déposer, pas de famille libre.
+- Test : `flutter analyze`, `flutter test`. Pas de test de règles à relancer (règles inchangées).
+
 **Arrêts prévus** : une contradiction avec une décision figée ; une dépendance nouvelle nécessaire (par exemple si les listes déroulantes ou les en-têtes figés de E8 ne peuvent pas s'écrire avec l'outil Excel actuel) ; deux échecs de suite à la vérification.
 
 **Suivi** (une ligne par étape close)
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
-| E1 Familles et rayons | Implémentée et testée (397 tests, 241 tests de règles) ; règles à déployer | 08/11/2026 | (1) à (5) réussis par test de code |
+| E1 Familles et rayons | Implémentée et testée (397 tests, 241 tests de règles) ; règles déployées le 08/11/2026 | 08/11/2026 | (1) à (5) réussis par test de code |
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
