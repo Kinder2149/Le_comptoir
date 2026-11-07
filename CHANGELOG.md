@@ -1,5 +1,11 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P11 : clôture (version 1.2.0)
+- Parcours automatique du critère de fin sur émulateur : créer, télécharger le modèle, le remplir, l'importer, retrouver le stock de départ, prévision d'après l'an passé, corriger un chiffre, lancer les courses, ouvrir, vendre, clôturer, exporter le même classeur.
+- Version 1.2.0 (build 3). Texte de vérification pour une autre IA dans PLAN_STOCK_COURSES.md.
+- **Résumé de la mission** : un événement naît « En préparation » (P1) avec son stock de départ (P2), ses personnes et sa durée (P3) et une prévision à sources — menu, événement passé, classeur Excel, correction à la main (P4) ; un classeur Excel se télécharge (P5), s'importe dans la Préparation (P6) et pour créer un menu (P7), et l'événement s'exporte en classeur complet (P8) ; le classeur de l'an passé est prêt à importer (P9) ; les apports nommés des bénévoles sont notés au stock, au bilan et à l'export (P10). Règles Firestore : `previsions`, `references`, `apports` et l'état « en préparation », déployées. Dépendances ajoutées : `excel` 4.0.6 et `file_picker` 11.0.3.
+- Tests : 380 de logique et d'écrans, 234 de règles, parcours Android de la mission réussis.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P10 : apports nommés
 - Caisse, écran Stock : « Ajouter un apport » (nom, nombre de parts) sur les produits « part » ou apportés : le stock monte du même nombre et l'apport est noté avec le prénom et le gymnase. Nom vide ou parts hors 1 à 1000 refusés.
 - Bilan : rubrique « Apports » (« Quiche, 8 parts, Léa, Gymnase A »), limitée aux gymnases visibles et à la vue ; export : même rubrique dans la feuille Bilan.

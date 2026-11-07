@@ -517,6 +517,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 | P8 | Close (testée par Claude) | 07/11/2026 | 1 à 4 réussis : `flutter test` 375/375 (calcul à la main du Bilan : 22,00 € en 5 ventes dont 1 annulée exclue, coût 35 = 25 + 10, résultat −13 ; réimport = mêmes consommations que la source « événement passé » ; plus aucune trace du CSV), analyse sans erreur, règles et dépendances inchangées, parcours Android LC2 6/6 (`export_test`, `chantier_complet_test`, `courses_test`, `bilan_test`, `recette_test`). Limites : le détail des séries de courses précédentes n'est pas conservé par l'application (cumul seulement) ; un gestionnaire partiel obtient une feuille Courses réduite à un message ; ouverture dans l'application Excel non testée (relu par la bibliothèque) |
 | P9 | Close (testée par Claude) | 07/11/2026 | 1 à 3 réussis : classeur `recette/historique-tournoi-an-passe.xlsx` produit d'après les estimations du fichier de Kinder (relevé repris / non repris ci-dessus) ; importé sur émulateur sans erreur (`import_an_passe_test`, 19 produits) ; consommations égales au calcul à la main à 0,0001 près ; `flutter test` 375/375, analyse sans erreur, règles inchangées. Limite : le classeur est écrit avec des liens internes relatifs (comme Excel) ; un fichier écrit avec des liens absolus (certains outils) est refusé comme « illisible » par la bibliothèque. Les chiffres du Coca et des boissons diffèrent beaucoup du menu type (unités à confirmer par Kinder). |
 | P10 | Close (testée par Claude) | 07/11/2026 | 1 à 4 réussis : « Ajouter un apport » dans le stock du bénévole (nom, parts) ; « Quiche, 8 parts » sur « Gâteau salé » (stock 4) → 12, réf. 12 ; vente du gâteau → 11 comme avant ; apport listé « Quiche, 8 parts, Lea, Principal » (bilan : rubrique « Apports » filtrée par vue et gymnases visibles ; export : rubrique dans la feuille Bilan) ; nom vide, parts 0 ou 1001 refusés (application et règles, nom d'espaces et 41 caractères aussi). `flutter test` 380/380, analyse sans erreur, règles 234/234 (4 nouveaux, `apports.test.mjs`) et déployées le 07/11/2026, 4 parcours Android (apports, stock_role, bilan, export). Choix : l'apport est écrit dans un lot avec la hausse du stock, les règles exigent la même hausse (`getAfter`) ; lecture réservée à la gestion ; le « + » simple de la caisse reste. |
+| P11 | Close (testée par Claude) | 07/11/2026 | 1 à 3 réussis : parcours automatique `parcours_mission_test` sur émulateur (créer, modèle téléchargé puis rempli, import, stock de départ retrouvé, prévision 2,0 / 1,0 d'après l'an passé, Croque corrigé à 2,5, courses 380, ouverture, ventes 11,00 €, clôture, export aux cinq feuilles relu sans erreur) ; texte de vérification pour une autre IA rédigé (section 13, « Texte de vérification… P11 ») ; APK de recette 1.2.0+3 reconstruit (`flutter build apk --release`, 72,8 Mo) et copié dans `recette/le-comptoir-recette.apk`. |
 
 ### Cadrage P1 — État « En préparation » (phase 5, 06/11/2026)
 
@@ -680,6 +681,47 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 **Calcul à la main** (consommation par personne et par jour = (gymnase 1 + gymnase 2) ÷ 113 personnes ÷ 2 jours) : Croque-monsieur 70 + 73 = 143 → 0,6327 ; Croque végé 44 + 46 = 90 → 0,3982 ; Croque tartiflette 61 + 64 = 125 → 0,5531 ; Coca 168 + 177 = 345 → 1,5265 ; Ice Tea 75 + 79 = 154 → 0,6814 ; Oasis 93 + 98 = 191 → 0,8451 ; Bière 75 + 79 = 154 → 0,6814 ; Thé 82 + 86 = 168 → 0,7434 ; Café 164 + 173 = 337 → 1,4912 ; Mars 7 + 8 = 15 → 0,0664 ; Twix 15 → 0,0664 ; Fruit 125 + 131 = 256 → 1,1327 ; Barre de céréales chocolat 17 + 18 = 35 → 0,1549 (et Croque Monsieur Chocolat 140 → 0,6195 ; Crêpe sucre 140 → 0,6195 ; Crêpe Nutella 281 → 1,2434 ; Orangina 76 → 0,3363 ; Infusion 56 → 0,2478 ; Barre de céréales fruit 35 → 0,1549). À titre de comparaison, le menu type donne 0,65 / 0,45 / 0,60 pour les trois croques, très proche ; pour les boissons il donne 0,32 pour le Coca (ici 1,53 : unités différentes, verres contre litres, à vérifier par Kinder avant de s'en servir).
 
 **Test** : parcours Android LC2 `integration_test/import_an_passe_test.dart` : le classeur (octets du fichier produit, embarqués dans `integration_test/an_passe_octets.dart`) est lu par l'import de la Préparation (sélecteur factice) → résumé sans erreur → « Appliquer » → référence « Tournoi de l'an passé (Excel) » dans « D'après une source » → chiffres égaux au tableau ci-dessus (à 0,0001 près) ; un événement dont le menu contient les produits repris les reçoit, ceux sans équivalent sont listés comme absents du menu sans erreur.
+
+### Texte de vérification pour une autre IA : mission « Préparer l'événement » (P11, 07/11/2026)
+À donner tel quel à une IA qui n'a pas écrit le code, dans une conversation neuve sur Sonnet, dans Claude Code, sur le PC. Son verdict ferme l'implémentation ; le test et la capture de Kinder ferment la mission.
+
+> Tu vérifies l'application Flutter « Le Comptoir » (dossier `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`, branche
+> `claude/preparation-evenement`), mission « Préparer l'événement » (étapes P1 à P11 de la section 13 de
+> `PLAN_STOCK_COURSES.md`, décisions 53 à 60). Tu ne corriges rien : tu rends un verdict réussi/échoué par critère, avec une
+> capture ou la sortie du test.
+>
+> **Lancer** : Java 21 (`C:\Program Files\Android\Android Studio\jbr`) ; `flutter analyze` ; `flutter test` (380 tests) ;
+> `powershell -File tests_regles/lancer.ps1` (234 tests de règles, 5 min) ; émulateur Android `LC2` (`-gpu swiftshader_indirect
+> -no-snapshot -no-audio`) puis `powershell -File tests_regles/lancer_integration.ps1` (tous les parcours de
+> `integration_test/` ; les nouveaux de la mission : `preparation`, `previsions`, `classeur`, `import`, `import_menu`,
+> `export`, `import_an_passe`, `apports`, `parcours_mission`). Si un parcours se fige (écran noir), `adb emu kill`, relancer
+> l'émulateur et ce parcours seul : ce n'est pas un défaut du code. Ne pas lancer deux émulateurs Firestore à la fois (port 8080).
+>
+> **Critère de fin de Kinder (06/11/2026)** : « Je crée un événement, je télécharge le modèle Excel, je le remplis avec les
+> chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après
+> l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli. »
+> Le parcours `integration_test/parcours_mission_test.dart` le déroule : stock de départ A Croque 20 / B Soda 6 ; historique
+> 160 croques et 80 sodas pour 40 personnes en 2 jours → prévision 2,0 et 1,0 par personne et par jour ; Croque corrigé à 2,5 ;
+> courses du gymnase A 80 × 2 × 2,5 − 20 = 380 ; ventes 3 croques + 2 sodas = 11,00 € ; export aux cinq feuilles.
+>
+> **À vérifier, critère par critère** (les critères de chaque étape sont dans le tableau de la section 13) :
+> 1. P1 : un événement neuf est « En préparation » ; aucune caisse ne s'y ouvre ; « Ouvrir l'événement » le passe « En cours ».
+> 2. P2 : le stock de départ se règle en préparation ; les restes de l'événement précédent y sont repris (marqués) ; en cours, il est en lecture seule.
+> 3. P3 : personnes par gymnase et durée réglées dans la Préparation et lues par les courses (plus de champ « personnes » aux courses).
+> 4. P4 : prévision par produit avec sa source (Menu, événement passé, classeur Excel, « Modifié à la main »).
+> 5. P5 : « Télécharger le modèle Excel » partage un `.xlsx` (Menu, Stock de départ, Historique, Courses) relisible.
+> 6. P6 : « Importer un classeur » : résumé AVANT toute écriture, lignes invalides listées et ignorées, fichier illisible refusé avec un message clair, aucune vente créée.
+> 7. P7 : « Importer un menu depuis Excel » crée un menu qui crée un événement sans erreur.
+> 8. P8 : « Exporter (Excel) » remplace le CSV ; chiffres du Bilan égaux à l'écran.
+> 9. P9 : `recette/historique-tournoi-an-passe.xlsx` (hors dépôt, régénérable depuis `integration_test/an_passe_octets.dart`) s'importe sans erreur ; consommations égales au calcul à la main du relevé P9 (ESTIMATIONS, pas des ventes réelles).
+> 10. P10 : « Ajouter un apport » (nom, parts 1 à 1000) : stock + parts, la caisse vend comme avant, le bilan et l'export listent « Quiche, 8 parts, prénom, gymnase » ; nom vide ou parts hors bornes refusés.
+>
+> **Limites connues (ne pas les compter comme défauts)** : les fichiers ne sont pas ouverts dans le vrai Excel (relus par la bibliothèque) ;
+> le sélecteur de fichiers du système n'est pas piloté par les tests (sélecteur factice) ; la bibliothèque Excel refuse un fichier dont
+> les liens internes sont absolus (écrit par certains outils) : message « illisible » ; le détail des séries de courses précédentes n'est pas
+> conservé (cumul seul) ; un gestionnaire d'une partie des gymnases a une feuille Courses réduite.
+>
+> **Rendu attendu** : un tableau critère / verdict / preuve, la liste des défauts classés par gravité, et UNE question.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
