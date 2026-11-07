@@ -1,5 +1,11 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P10 : apports nommés
+- Caisse, écran Stock : « Ajouter un apport » (nom, nombre de parts) sur les produits « part » ou apportés : le stock monte du même nombre et l'apport est noté avec le prénom et le gymnase. Nom vide ou parts hors 1 à 1000 refusés.
+- Bilan : rubrique « Apports » (« Quiche, 8 parts, Léa, Gymnase A »), limitée aux gymnases visibles et à la vue ; export : même rubrique dans la feuille Bilan.
+- Règles d'accès : collection `apports` (création par un membre à caisse ouverte, avec la hausse de stock correspondante ; lecture par la gestion). Déployées le 07/11/2026.
+- Tests : 380 de logique et d'écrans, 234 de règles, parcours Android.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P9 : import de l'an passé
 - Classeur `recette/historique-tournoi-an-passe.xlsx` produit d'après les quantités estimées du fichier d'organisation de l'an passé (relevé de ce qui est repris ou non dans PLAN_STOCK_COURSES.md). Il reste hors dépôt.
 - Test Android : import sans erreur, consommations égales au calcul à la main (113 personnes, 2 jours). Aucun changement de règles ni de dépendance.

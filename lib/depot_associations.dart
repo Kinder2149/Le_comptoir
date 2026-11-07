@@ -251,6 +251,7 @@ class DepotAssociations {
       }
       await _effacerCollection(e.reference.collection('courses'));
       await _effacerCollection(e.reference.collection('previsions'));
+      await _effacerCollection(e.reference.collection('apports'));
       await _effacerCollection(e.reference.collection('ouvertes'));
       await _effacerCollection(e.reference.collection('rattachements'));
       await _effacerCollection(e.reference.collection('produits'));

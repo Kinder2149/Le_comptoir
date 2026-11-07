@@ -69,6 +69,7 @@ class EcranBilan extends StatefulWidget {
     this.stocks,
     this.stocksReference,
     this.courses,
+    this.apports,
     this.commun = true,
     this.limite = false,
     this.partager = partagerFichier,
@@ -89,6 +90,10 @@ class EcranBilan extends StatefulWidget {
   /// La liste de courses de l'événement (pour le coût et le résultat). Sans elle
   /// (gestionnaire limité à ses gymnases), le bilan n'affiche pas de coût.
   final Stream<ListeCourses?>? courses;
+
+  /// Les apports nommés de l'événement (« Quiche, 8 parts, Léa, Gymnase A »). Seuls ceux des
+  /// gymnases visibles, et de la vue affichée, sont listés.
+  final Stream<List<Apport>>? apports;
 
   /// La vue commune est-elle offerte (responsable, ou gestionnaire de tous) ?
   final bool commun;
@@ -161,6 +166,7 @@ class _EtatBilan extends State<EcranBilan> {
     List<Gymnase> gymnases,
     Map<String, Map<String, int>>? stocks,
     ListeCourses? courses,
+    List<Apport> apports,
   ) async {
     try {
       final actuels = stocks ?? const <String, Map<String, int>>{};
@@ -175,6 +181,7 @@ class _EtatBilan extends State<EcranBilan> {
         courses: courses,
         coursesVisibles: widget.courses != null,
         limite: limite,
+        apports: apports,
       );
       await widget.partager(nomFichierExport(evenement), octets, typeMimeClasseur);
       if (mounted) setState(() => _erreurExport = null);
@@ -232,6 +239,33 @@ class _EtatBilan extends State<EcranBilan> {
       _vue = vueParDefaut(commun: widget.commun, gymnases: gymnases);
     }
     final vue = _vue;
+    return StreamBuilder<List<Apport>>(
+      stream: widget.apports,
+      initialData: const <Apport>[],
+      builder: (context, ap) => _corpsAvecApports(context, gymnases, stocks,
+          courses, vue, multiple, choix, ap.data ?? const <Apport>[]),
+    );
+  }
+
+  Widget _corpsAvecApports(
+      BuildContext context,
+      List<Gymnase> gymnases,
+      Map<String, Map<String, int>>? stocks,
+      ListeCourses? courses,
+      String? vue,
+      bool multiple,
+      int choix,
+      List<Apport> tousApports) {
+    // Les gymnases visibles par cette personne ; en vue d'un gymnase, celui-là seul.
+    final visibles = {for (final g in gymnases) g.id};
+    final apports = [
+      for (final a in tousApports)
+        if (visibles.contains(a.gymnaseId) && (vue == null || vue == a.gymnaseId)) a,
+    ];
+    final apportsExport = [
+      for (final a in tousApports)
+        if (visibles.contains(a.gymnaseId)) a,
+    ];
     return StreamBuilder<TableauDeBord>(
         stream: widget.tableau,
         builder: (context, t) => StreamBuilder<List<ProduitEvenement>>(
@@ -320,7 +354,7 @@ class _EtatBilan extends State<EcranBilan> {
                     child: OutlinedButton.icon(
                       key: const Key('exporter_excel'),
                       onPressed: () =>
-                          _exporter(tab, prods, gymnases, stocks, courses),
+                          _exporter(tab, prods, gymnases, stocks, courses, apportsExport),
                       icon: const Icon(Icons.ios_share),
                       label: const Text('Exporter (Excel)'),
                     ),
@@ -398,6 +432,21 @@ class _EtatBilan extends State<EcranBilan> {
                           nom: b.moinsVendus[i].nom,
                           quantite: b.moinsVendus[i].quantite,
                           couleur: Palette.ocre,
+                        ),
+                    ],
+                  ),
+                if (apports.isNotEmpty)
+                  _Section(
+                    titre: 'Apports',
+                    icone: Icons.volunteer_activism_outlined,
+                    enfants: [
+                      for (final a in apports)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            '${a.ligne} (${a.produitNom})',
+                            key: Key('bilan_apport_${a.id}'),
+                          ),
                         ),
                     ],
                   ),

@@ -783,6 +783,75 @@ class DepotEvenements {
     });
   }
 
+  // ---------- Apports nommés (mission « Préparer l'événement », P10, décision 59) ----------
+
+  CollectionReference<Map<String, dynamic>> _apports(String evenementId) =>
+      _evenements.doc(evenementId).collection('apports');
+
+  /// Un bénévole dont la caisse est ouverte dans ce gymnase déclare un apport : le stock du
+  /// produit monte de [parts] (comme « ajouter au stock ») et l'apport est noté (nom, parts,
+  /// prénom, gymnase), le tout dans un même lot. Les contrôles sont aussi dans les règles.
+  Future<void> ajouterApport(
+    String evenementId, {
+    required String gymnaseId,
+    required String gymnaseNom,
+    required String produitId,
+    required String produitNom,
+    required String nom,
+    required int parts,
+    required String prenom,
+    required String uid,
+  }) async {
+    final erreur = erreurApport(nom, parts);
+    if (erreur != null) throw ArgumentError(erreur);
+    final stock =
+        _gymnase(evenementId, gymnaseId).collection('stocks').doc(produitId);
+    final actuel = (await stock.get()).data();
+    final reference = actuel != null && actuel['reference'] != null
+        ? FieldValue.increment(parts)
+        : ((actuel?['quantite'] as int?) ?? 0) + parts;
+    final lot = _db.batch();
+    lot.update(stock, {
+      'quantite': FieldValue.increment(parts),
+      'reference': reference,
+    });
+    lot.set(_apports(evenementId).doc(), {
+      'produitId': produitId,
+      'produitNom': produitNom,
+      'nom': nom.trim(),
+      'parts': parts,
+      'prenom': prenom,
+      'gymnaseId': gymnaseId,
+      'gymnaseNom': gymnaseNom,
+      'uid': uid,
+      'creeLe': FieldValue.serverTimestamp(),
+    });
+    await lot.commit();
+  }
+
+  /// Les apports de l'événement, du plus ancien au plus récent (gestion).
+  Stream<List<Apport>> suivreApports(String evenementId) =>
+      _apports(evenementId).snapshots().compte('apports').map((s) {
+        final docs = [...s.docs];
+        int ordre(QueryDocumentSnapshot<Map<String, dynamic>> d) =>
+            (d.data()['creeLe'] as Timestamp?)?.millisecondsSinceEpoch ?? 1 << 50;
+        docs.sort((a, b) => ordre(a).compareTo(ordre(b)));
+        return [
+          for (final d in docs)
+            if (d.data()['nom'] is String && d.data()['parts'] is int)
+              Apport(
+                id: d.id,
+                produitId: '${d.data()['produitId']}',
+                produitNom: '${d.data()['produitNom']}',
+                nom: d.data()['nom'] as String,
+                parts: d.data()['parts'] as int,
+                prenom: '${d.data()['prenom']}',
+                gymnaseId: '${d.data()['gymnaseId']}',
+                gymnaseNom: '${d.data()['gymnaseNom']}',
+              ),
+        ];
+      });
+
   /// Les produits signalés « vides » dans un gymnase.
   Stream<Set<String>> suivreVides(String evenementId, String gymnaseId) =>
       _gymnase(evenementId, gymnaseId)

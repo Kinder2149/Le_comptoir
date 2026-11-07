@@ -158,3 +158,49 @@ List<Evenement> trierEvenements(Iterable<Evenement> evenements) {
   });
   return liste;
 }
+
+/// Limites d'un apport nommé (mission « Préparer l'événement », P10, décision 59).
+const apportPartsMax = 1000;
+const apportNomMax = 40;
+
+/// Ce qui ne va pas dans un apport (nom vide ou trop long, parts hors 1 à 1000), ou null.
+/// La même règle est dans `firestore.rules`.
+String? erreurApport(String nom, int? parts) {
+  final n = nom.trim();
+  if (n.isEmpty) return 'Donnez un nom à l\'apport (par exemple « Quiche »).';
+  if (n.length > apportNomMax) {
+    return 'Le nom est trop long ($apportNomMax caractères au plus).';
+  }
+  if (parts == null || parts < 1 || parts > apportPartsMax) {
+    return 'Entrez un nombre entier de parts, de 1 à $apportPartsMax.';
+  }
+  return null;
+}
+
+/// Un apport nommé : ce qu'un bénévole a apporté dans un gymnase pour un produit
+/// (« Quiche, 8 parts » pour « Gâteau salé »). Le stock du produit a monté du même nombre.
+class Apport {
+  const Apport({
+    required this.id,
+    required this.produitId,
+    required this.produitNom,
+    required this.nom,
+    required this.parts,
+    required this.prenom,
+    required this.gymnaseId,
+    required this.gymnaseNom,
+  });
+
+  final String id;
+  final String produitId;
+  final String produitNom;
+  final String nom;
+  final int parts;
+  final String prenom;
+  final String gymnaseId;
+  final String gymnaseNom;
+
+  /// « Quiche, 8 parts, Léa, Gymnase A » (produit entre parenthèses si utile ailleurs).
+  String get ligne =>
+      '$nom, ${parts == 1 ? '1 part' : '$parts parts'}, $prenom, $gymnaseNom';
+}

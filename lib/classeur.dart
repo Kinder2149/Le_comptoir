@@ -289,6 +289,7 @@ Uint8List construireExport({
   ListeCourses? courses,
   bool coursesVisibles = true,
   bool limite = false,
+  List<Apport> apports = const [],
 }) {
   final classeur = Excel.createExcel();
   final defaut = classeur.getDefaultSheet() ?? 'Sheet1';
@@ -330,7 +331,7 @@ Uint8List construireExport({
       _lignesCourses(evenement, produits, courses, coursesVisibles),
       aide: _aidesExport[feuilleCourses]);
   _ecrireBilan(classeur, evenement, produits, gymnases, stocksActuels, tableau,
-      courses, coursesVisibles, limite);
+      courses, coursesVisibles, limite, apports);
   return _octets(classeur);
 }
 
@@ -402,6 +403,7 @@ void _ecrireBilan(
   ListeCourses? courses,
   bool coursesVisibles,
   bool limite,
+  List<Apport> apports,
 ) {
   final b = Bilan.depuis(tableau, produits, evenement.modes, stocks: stocksActuels);
   final f = classeur[feuilleBilan];
@@ -507,6 +509,21 @@ void _ecrireBilan(
   ligne([t('Heure'), t('Ventes'), t('Montant')]);
   for (final h in b.heures) {
     ligne([t(trancheAffichee(h.heure)), _nombre(h.nbVentes), euros(h.totalCentimes)]);
+  }
+
+  if (apports.isNotEmpty) {
+    vide();
+    ligne([t('Apports')]);
+    ligne([t('Apport'), t('Parts'), t('Prénom'), t('Gymnase'), t('Produit')]);
+    for (final a in apports) {
+      ligne([
+        t(a.nom),
+        _nombre(a.parts),
+        t(a.prenom),
+        t(a.gymnaseNom),
+        t(a.produitNom),
+      ]);
+    }
   }
 
   if (b.annulations.isNotEmpty) {

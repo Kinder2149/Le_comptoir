@@ -628,6 +628,35 @@ service cloud.firestore {
             && texte(request.resource.data.source, 80);
         }
 
+        // Apports nommés (mission « Préparer l'événement », P10, décision 59) : « Quiche,
+        // 8 parts » déclaré par un membre dont la caisse ouverte est dans ce gymnase, dans le
+        // même lot que la hausse du stock du produit (même nombre de parts). Lus par la gestion
+        // pour le bilan et l'export ; jamais modifiés ; supprimés avec l'association.
+        match /apports/{id} {
+          allow read: if estGestion(a);
+          allow delete: if suppressionEnCours(a);
+          allow create: if estMembre(a)
+            && enCours(a, e)
+            && request.resource.data.keys().hasOnly(['produitId', 'produitNom', 'nom', 'parts', 'prenom', 'gymnaseId', 'gymnaseNom', 'uid', 'creeLe'])
+            && request.resource.data.keys().hasAll(['produitId', 'produitNom', 'nom', 'parts', 'prenom', 'gymnaseId', 'gymnaseNom', 'uid', 'creeLe'])
+            && request.resource.data.uid == request.auth.uid
+            && request.resource.data.creeLe is timestamp
+            && texte(request.resource.data.nom, 40)
+            && request.resource.data.nom.matches('.*[^ ].*')
+            && request.resource.data.parts is int
+            && request.resource.data.parts >= 1
+            && request.resource.data.parts <= 1000
+            && texte(request.resource.data.prenom, 40)
+            && texte(request.resource.data.produitNom, 80)
+            && texte(request.resource.data.gymnaseNom, 40)
+            && texte(request.resource.data.produitId, 40)
+            && texte(request.resource.data.gymnaseId, 40)
+            && caisseOuverteDans(a, e, request.resource.data.gymnaseId)
+            && exists(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/produits/$(request.resource.data.produitId))
+            && getAfter(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.gymnaseId)/stocks/$(request.resource.data.produitId)).data.quantite
+               == get(/databases/$(database)/documents/associations/$(a)/evenements/$(e)/gymnases/$(request.resource.data.gymnaseId)/stocks/$(request.resource.data.produitId)).data.quantite + request.resource.data.parts;
+        }
+
         // Gymnases d'un gestionnaire : écrits par le responsable seul, lus par lui et par
         // l'intéressé. Jamais supprimés (on les vide), sauf avec l'association.
         match /rattachements/{u} {
