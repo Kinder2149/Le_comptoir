@@ -446,7 +446,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('bilan_cout')));
     expect(texte(tester, 'bilan_cout'), 'Coût des courses : 492,50 €');
     expect(texte(tester, 'bilan_resultat'), 'Résultat : -492,50 €');
-    expect(find.byKey(const Key('exporter_csv')), findsOneWidget);
+    expect(find.byKey(const Key('exporter_excel')), findsOneWidget);
     // En vue d'un gymnase : la mention, pas de coût.
     await toucher(tester, find.byKey(Key('vue_$gA')));
     expect(find.byKey(const Key('bilan_cout_commun')), findsOneWidget);

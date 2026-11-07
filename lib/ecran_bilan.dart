@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'classeur.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
 import 'ecran_caisse.dart' show VignetteProduit;
@@ -66,10 +67,11 @@ class EcranBilan extends StatefulWidget {
     required this.produits,
     this.gymnases,
     this.stocks,
+    this.stocksReference,
     this.courses,
     this.commun = true,
     this.limite = false,
-    this.partager = partagerFichierTexte,
+    this.partager = partagerFichier,
   });
 
   final Evenement evenement;
@@ -80,6 +82,10 @@ class EcranBilan extends StatefulWidget {
   final Stream<List<Gymnase>>? gymnases;
   final Stream<Map<String, Map<String, int>>>? stocks;
 
+  /// Le total de référence du stock de chaque gymnase (pour la feuille « Stock de
+  /// départ » de l'export). Sans lui, l'export prend la quantité actuelle.
+  final Stream<Map<String, Map<String, int>>>? stocksReference;
+
   /// La liste de courses de l'événement (pour le coût et le résultat). Sans elle
   /// (gestionnaire limité à ses gymnases), le bilan n'affiche pas de coût.
   final Stream<ListeCourses?>? courses;
@@ -87,8 +93,8 @@ class EcranBilan extends StatefulWidget {
   /// La vue commune est-elle offerte (responsable, ou gestionnaire de tous) ?
   final bool commun;
 
-  /// Remise du fichier CSV (remplaçable dans les tests).
-  final Partageur partager;
+  /// Remise du classeur Excel (remplaçable dans les tests).
+  final PartageurOctets partager;
 
   /// Vue limitée aux gymnases du gestionnaire (pas celle de tout l'événement).
   final bool limite;
@@ -147,17 +153,30 @@ class _EtatBilan extends State<EcranBilan> {
     ];
   }
 
+  /// Exporte le classeur complet du tournoi. Il part toujours de la vue COMMUNE de la
+  /// personne (tous les gymnases qu'elle voit), quelle que soit la vue affichée.
   Future<void> _exporter(
-      Bilan b, String vue, List<Gymnase> gymnases, CoutBilan? cout) async {
-    final csv = bilanEnCsv(
-      evenement: evenement,
-      bilan: b,
-      vue: vue,
-      gymnases: gymnases,
-      cout: cout,
-    );
+    TableauDeBord tableau,
+    List<ProduitEvenement> produits,
+    List<Gymnase> gymnases,
+    Map<String, Map<String, int>>? stocks,
+    ListeCourses? courses,
+  ) async {
     try {
-      await widget.partager(nomFichierBilan(evenement), csv);
+      final actuels = stocks ?? const <String, Map<String, int>>{};
+      final reference = await widget.stocksReference?.first ?? actuels;
+      final octets = construireExport(
+        evenement: evenement,
+        produits: produits,
+        gymnases: gymnases,
+        stocksReference: reference,
+        stocksActuels: actuels,
+        tableau: tableau,
+        courses: courses,
+        coursesVisibles: widget.courses != null,
+        limite: limite,
+      );
+      await widget.partager(nomFichierExport(evenement), octets, typeMimeClasseur);
       if (mounted) setState(() => _erreurExport = null);
     } catch (_) {
       if (mounted) {
@@ -299,20 +318,21 @@ class _EtatBilan extends State<EcranBilan> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: OutlinedButton.icon(
-                      key: const Key('exporter_csv'),
-                      onPressed: () => _exporter(
-                        b,
-                        vue == null
-                            ? 'Commun'
-                            : nomGymnase(vue),
-                        gymnases,
-                        vue == null && widget.courses != null
-                            ? CoutBilan.depuis(courses, b.totalCentimes)
-                            : null,
-                      ),
+                      key: const Key('exporter_excel'),
+                      onPressed: () =>
+                          _exporter(tab, prods, gymnases, stocks, courses),
                       icon: const Icon(Icons.ios_share),
-                      label: const Text('Exporter (CSV)'),
+                      label: const Text('Exporter (Excel)'),
                     ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(
+                    "Le classeur contient tout l'événement (menu, stock de départ, "
+                    "ventes, courses, bilan) pour tous vos gymnases, quelle que soit "
+                    "la vue affichée.",
+                    key: Key('aide_export'),
                   ),
                 ),
                 if (_erreurExport != null)

@@ -12,7 +12,7 @@ Future<void> partagerFichierTexte(String nomFichier, String contenu) async {
   await Share.shareXFiles(
     [
       XFile.fromData(octets,
-          mimeType: nomFichier.endsWith('.csv') ? 'text/csv' : 'text/plain',
+          mimeType: 'text/plain',
           name: nomFichier)
     ],
     fileNameOverrides: [nomFichier],

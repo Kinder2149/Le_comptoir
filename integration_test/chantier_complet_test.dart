@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:excel/excel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:le_comptoir/classeur.dart';
 import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_caisses.dart';
 import 'package:le_comptoir/depot_menus.dart';
@@ -63,7 +67,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  testWidgets('chantier complet : menu, courses, validation, ventes, signaux, bilan, CSV',
+  testWidgets('chantier complet : menu, courses, validation, ventes, signaux, bilan, export Excel',
       (tester) async {
     final db = FirebaseFirestore.instance;
     final auth = FirebaseAuth.instance;
@@ -216,9 +220,10 @@ void main() {
     expect(texte(tester, 'direct_signal_$crepe'), 'Vide : Gymnase A');
     expect(find.byKey(Key('direct_signal_$croque')), findsNothing);
 
-    // ---------- 5. Bilan et CSV : les chiffres de l'écran sont ceux du fichier.
+    // ---------- 5. Bilan et export Excel : les chiffres de l'écran sont ceux du classeur.
     final evenement = (await depotEv.suivreEvenement(evtId).first)!;
-    String? nomFichier, csv;
+    String? nomFichier;
+    Uint8List? classeur;
     await tester.pumpWidget(MaterialApp(
       home: EcranBilan(
         evenement: evenement,
@@ -226,10 +231,11 @@ void main() {
         produits: depotEv.suivreProduits(evtId),
         gymnases: depotEv.suivreGymnases(evtId),
         stocks: depotEv.suivreStocksParGymnase(evtId),
+        stocksReference: depotEv.suivreStocksReference(evtId),
         courses: depotEv.suivreListeCourses(evtId),
-        partager: (n, c) async {
+        partager: (n, o, m) async {
           nomFichier = n;
-          csv = c;
+          classeur = o;
         },
       ),
     ));
@@ -241,15 +247,22 @@ void main() {
         'Total des ventes | 83,50 € | 3 ventes');
     expect(texte(tester, 'bilan_cout'), 'Coût des courses : 40,00 €');
     expect(texte(tester, 'bilan_resultat'), 'Résultat : 43,50 €');
-    await toucher(tester, find.byKey(const Key('exporter_csv')));
-    expect(nomFichier, 'bilan-tournoi-${dateIso(DateTime.now())}.csv');
-    expect(csv, contains('Total des ventes;83,50'));
-    expect(csv, contains('Coût des courses;40,00\r\nRésultat;43,50'));
-    expect(csv, contains('Vue;Commun'));
-    expect(csv, contains('Espèces;7,50')); // 2,50 + 5,00
-    expect(csv, contains('Carte;76,00'));
-    expect(csv, contains('Tarte;81;81,00;'));
-    expect(csv, contains('Croque-monsieur;2;2,00;89'));
-    expect(csv, contains('Lea;Gymnase A;Ouverte;3;0;83,50'));
+    await toucher(tester, find.byKey(const Key('exporter_excel')));
+    expect(nomFichier, 'tournoi-tournoi-${dateIso(DateTime.now())}.xlsx');
+    final x = Excel.decodeBytes(classeur!);
+    expect(x.tables.keys.toList(), feuillesExport);
+    // Les lignes de la feuille Bilan, « cellule | cellule ».
+    final bilan = [
+      for (final l in x.tables['Bilan']!.rows)
+        l.where((d) => d?.value != null).map((d) => d!.value.toString()).join(' | '),
+    ];
+    expect(bilan, contains('Total des ventes | 83.5'));
+    expect(bilan, contains('Coût des courses | 40'));
+    expect(bilan, contains('Résultat | 43.5'));
+    expect(bilan, contains('Espèces | 7.5')); // 2,50 + 5,00
+    expect(bilan, contains('Carte | 76'));
+    expect(bilan, contains('Tarte | 81 | 81 | -1'));
+    expect(bilan, contains('Croque-monsieur | 2 | 2 | 89'));
+    expect(bilan, contains('Lea | Gymnase A | Ouverte | 3 | 0 | 83.5'));
   });
 }

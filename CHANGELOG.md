@@ -1,5 +1,9 @@
 # CHANGELOG — Le Comptoir
 
+## 07/11/2026 — Mission « Préparer l'événement », P8 : export complet du tournoi
+- Bilan : « Exporter (Excel) » remplace « Exporter (CSV) » (supprimé). Le classeur contient les cinq feuilles : Menu, Stock de départ, Historique (personnes, jours, quantités vendues non annulées par gymnase et produit), Courses (achats de la série validée, total de série, cumul des séries précédentes, lignes libres) et Bilan (les rubriques de l'ancien CSV). Réimporté dans la Préparation d'un autre événement, son Historique donne la même consommation que la source « événement passé ».
+- Aucun changement de règles ni de dépendance. Tests : 375 de logique et d'écrans, 6 parcours Android.
+
 ## 07/11/2026 — Mission « Préparer l'événement », P7 : importer un menu
 - Écran Menus : « Importer un menu depuis Excel » : lit la feuille Menu d'un classeur, affiche un résumé avant écriture (produits à créer, lignes invalides ou en double listées et ignorées), demande le nom, puis crée un NOUVEAU menu (types, prix, recettes, ratios, consommations). Fichier illisible ou sans produit lisible : message clair, rien de créé.
 - Écran de résumé partagé avec l'import de la Préparation. Aucun changement de règles ni de dépendance.

@@ -154,6 +154,19 @@ class DepotEvenements {
               },
           });
 
+  /// Le total de référence du stock de chaque gymnase (stock de départ plus
+  /// réapprovisionnements par les courses ; à défaut, la quantité), pour l'export du
+  /// tournoi. Mêmes lectures partagées que les autres : aucune écoute de plus.
+  Stream<Map<String, Map<String, int>>> suivreStocksReference(String id,
+          {Set<String>? gymnases}) =>
+      _detailStocks(id, gymnases).map((d) => {
+            for (final g in d.entries)
+              g.key: {
+                for (final e in g.value.stocks.entries)
+                  e.key: e.value.reference ?? e.value.quantite,
+              },
+          });
+
   /// État du stock de chaque produit, gymnase par gymnase (gymnase -> produit ->
   /// état) : rupture, stock bas, vide. [gymnases] limite aux gymnases voulus.
   Stream<Map<String, Map<String, EtatStock>>> suivreEtats(String id,

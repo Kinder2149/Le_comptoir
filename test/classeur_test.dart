@@ -333,7 +333,7 @@ void main() {
         modes: const ['carte'],
         menuNom: 'M');
     expect(nomFichierModele(ev), 'modele-tournoi-d-ete-2026-2026-10-03.xlsx');
-    expect(nomFichierBilan(ev), 'bilan-tournoi-d-ete-2026-2026-10-03.csv');
+    expect(nomFichierExport(ev), 'tournoi-tournoi-d-ete-2026-2026-10-03.xlsx');
     expect(typeMimeClasseur,
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   });
