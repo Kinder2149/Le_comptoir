@@ -4,7 +4,7 @@
 - Audit des écrans de gestion sur émulateur avec le menu modèle (captures `audit_front/ergonomie/avant/`) : pas de repère du moment du tournoi, Préparation en une page d'une dizaine d'écrans, liste de 27 produits répétée sans regroupement, courses sans rayons, icônes fausses, classeur Excel sans mise en forme.
 - Maquette de 7 écrans (https://claude.ai/artifact/Nq98zwiUFctzRs43fcaa4S) et classeur prototype rempli avec le menu modèle (`audit_front/ergonomie/classeur_propose.xlsx`).
 - Décisions 61 à 67 validées par Kinder : tableau de bord en trois temps, familles et rayons en listes fixes, cases cochées partagées, classeur mis en forme, icônes corrigées ; caisse, bilan et calculs inchangés.
-- Critère de fin écrit et validé par Kinder ; plan E1 à E9 proposé (PLAN_STOCK_COURSES.md, section 14), avec le prompt de lancement de la session mère.
+- Critère de fin écrit et validé par Kinder ; plan E1 à E9 et préalables validés par Kinder (PLAN_STOCK_COURSES.md, section 14), avec le prompt de lancement de la session mère.
 
 ## 07/11/2026 — Mission « Préparer l'événement », P11 : clôture (version 1.2.0)
 - Parcours automatique du critère de fin sur émulateur : créer, télécharger le modèle, le remplir, l'importer, retrouver le stock de départ, prévision d'après l'an passé, corriger un chiffre, lancer les courses, ouvrir, vendre, clôturer, exporter le même classeur.

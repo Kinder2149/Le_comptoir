@@ -745,7 +745,7 @@ Tu es la session mère de la mission « Préparer l'événement » de Le Comptoi
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
 
-## 14. Mission « Ergonomie de la gestion » (décisions 61 à 67, plan proposé le 07/11/2026)
+## 14. Mission « Ergonomie de la gestion » (décisions 61 à 67, plan, critères et préalables validés par Kinder le 07/11/2026)
 
 **Critère de fin de mission (Kinder, 07/11/2026)** : « J'ouvre un tournoi et je vois tout de suite où j'en suis : Avant, Pendant ou Après, et ce qu'il me reste à faire. Je saisis mon stock de départ gymnase par gymnase, produits rangés par familles ; je vérifie la prévision en une page ; je fais les courses en magasin avec une liste rangée par rayons que je coche. Je télécharge l'Excel : il est propre, expliqué et aux couleurs de l'application, et je peux le remplir puis le réimporter. »
 
