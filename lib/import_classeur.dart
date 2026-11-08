@@ -143,10 +143,13 @@ PlanImport preparerImport(
     stocks: stocks,
     references: calcul.references,
     ignorees: ignorees,
-    // La feuille Menu n'est pas lue par cet import : ses problèmes ne concernent pas ici.
+    // Les feuilles Menu et Recettes ne sont pas lues par cet import : leurs problèmes
+    // ne concernent pas ici.
     erreurs: [
       for (final e in lu.erreurs)
-        if (!e.startsWith('Feuille « $feuilleMenu »')) e,
+        if (!e.startsWith('Feuille « $feuilleMenu »') &&
+            !e.startsWith('Feuille « $feuilleRecettes »'))
+          e,
       ...calcul.erreurs,
     ],
     menuIgnore: lu.produits.isNotEmpty,

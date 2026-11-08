@@ -134,7 +134,7 @@ void main() {
     // ---------- 3. Le remplir avec les chiffres de l'an passé (stock de départ et historique).
     final x = Excel.decodeBytes(modele!);
     final stock = x.tables[feuilleStock]!;
-    for (var r = 2; r < stock.rows.length; r++) {
+    for (var r = 6; r < stock.rows.length; r++) {
       final ligne = stock.rows[r];
       final cle = '${ligne[0]?.value}|${ligne[1]?.value}';
       final qte = switch (cle) {
@@ -288,9 +288,9 @@ void main() {
     final f = Excel.decodeBytes(exporte!);
     expect(f.tables.keys.toList(), feuillesExport);
     List<String> lignes(String feuille) => [
-          for (final l in f.tables[feuille]!.rows.skip(2))
+          for (final l in f.tables[feuille]!.rows.skip(6))
             l
-                .where((d) => d?.value != null)
+                .where((d) => d?.value != null && d!.value is! FormulaCellValue)
                 .map((d) => d!.value.toString())
                 .join(' | '),
         ];
