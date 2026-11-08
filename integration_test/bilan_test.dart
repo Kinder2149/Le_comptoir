@@ -165,6 +165,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('voir_bilan')));
     await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 6 · 26,50 €');
+    await finTransition(tester);
     await tester.pageBack();
     await finTransition(tester);
     await toucher(tester, find.byKey(const Key('voir_bilan')));
