@@ -14,7 +14,9 @@ import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
-import 'ecran_preparation.dart';
+import 'ecran_classeur.dart';
+import 'ecran_personnes_duree.dart';
+import 'ecran_prevision.dart';
 import 'ecran_restes.dart';
 import 'ecran_stock_depart.dart';
 import 'evenement.dart';
@@ -570,21 +572,30 @@ class _EtatBlocGestion extends State<_BlocGestion> {
         _suivi = _creerFlux();
       });
 
-  Future<void> _ouvrirPreparation(
-          BuildContext context, Evenement ev, PorteeGestion portee) =>
+  /// Personnes et durée : son écran court, ouvert par la tâche d'Avant (et par les courses).
+  void _ouvrirPersonnes(BuildContext context, Evenement ev, PorteeGestion portee) =>
       Navigator.of(context).push<void>(
         MaterialPageRoute(
-          builder: (_) => EcranPreparation(
+          builder: (_) => EcranPersonnesDuree(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            definirJours: (j) => widget.depot.definirJours(ev.id, j),
+            definirPersonnes: (g, n) =>
+                widget.depot.definirPersonnes(ev.id, g, n),
+          ),
+        ),
+      );
+
+  /// Prévision : son écran, ouvert par la tâche d'Avant.
+  void _ouvrirPrevision(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranPrevision(
             evenement: widget.depot.suivreEvenement(ev.id),
             portee: portee,
             gymnases: widget.depot.suivreGymnases(ev.id),
             produits: widget.depot.suivreProduits(ev.id),
-            stocks:
-                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
-            definirJours: (j) => widget.depot.definirJours(ev.id, j),
-            definirPersonnes: (g, n) =>
-                widget.depot.definirPersonnes(ev.id, g, n),
-            onVoirStockDepart: () => _ouvrirStockDepart(context, ev, portee),
             previsions: widget.depot.suivrePrevisions(ev.id),
             definirPrevision: (p, c) => widget.depot.definirPrevision(ev.id, p, c),
             chargerPasses: () => widget.depot.evenementsPasses(sauf: ev.id),
@@ -592,9 +603,27 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             revenirAuMenu: () => widget.depot.revenirAuMenu(ev.id),
             chargerReferences: widget.depot.lireReferences,
             appliquerReference: (r) => widget.depot.appliquerReference(ev.id, r),
-            importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
             definirPrevisionVerifiee: (v) =>
                 widget.depot.definirPrevisionVerifiee(ev.id, v),
+            onVoirCourses: portee.toutVoir
+                ? () => _ouvrirCourses(context, ev, portee)
+                : null,
+          ),
+        ),
+      );
+
+  /// Classeur Excel : le modèle à télécharger et le classeur rempli à importer.
+  void _ouvrirClasseur(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranClasseur(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            produits: widget.depot.suivreProduits(ev.id),
+            stocks:
+                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
+            importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
           ),
         ),
       );
@@ -648,7 +677,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
           builder: (_) => EcranCourses(
             depot: widget.depot,
             evenementId: ev.id,
-            onAllerPreparation: () => _ouvrirPreparation(context, ev, portee),
+            onAllerPreparation: () async => _ouvrirPersonnes(context, ev, portee),
           ),
         ),
       );
@@ -878,12 +907,12 @@ class _EtatBlocGestion extends State<_BlocGestion> {
         _ligneTache(
           par['personnes']!,
           cle: const Key('tache_personnes'),
-          surClic: () => _ouvrirPreparation(context, ev, portee),
+          surClic: () => _ouvrirPersonnes(context, ev, portee),
         ),
         _ligneTache(
           par['prevision']!,
           cle: const Key('tache_prevision'),
-          surClic: () => _ouvrirPreparation(context, ev, portee),
+          surClic: () => _ouvrirPrevision(context, ev, portee),
         ),
         _ligneTache(
           par['courses']!,
@@ -912,6 +941,14 @@ class _EtatBlocGestion extends State<_BlocGestion> {
           style: TypeAction.gerer.contour,
           onPressed: () => _voirGymnases(context, ev, portee),
           child: const Text('Gymnases et stocks'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('ouvrir_classeur'),
+          style: TypeAction.gerer.contour,
+          onPressed: () => _ouvrirClasseur(context, ev, portee),
+          icon: const Icon(Icons.table_chart_outlined),
+          label: const Text('Excel'),
         ),
         if (peutOuvrirEvenement(ev, portee)) ...[
           const SizedBox(height: 20),

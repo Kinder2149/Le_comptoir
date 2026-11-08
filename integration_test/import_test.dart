@@ -9,7 +9,8 @@ import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_caisses.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/ecran_courses.dart';
-import 'package:le_comptoir/ecran_preparation.dart';
+import 'package:le_comptoir/ecran_classeur.dart';
+import 'package:le_comptoir/ecran_prevision.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
 import 'package:le_comptoir/import_classeur.dart';
@@ -101,22 +102,13 @@ void main() {
 
     Future<void> afficherPreparation(String evenementId) async {
       await tester.pumpWidget(MaterialApp(
-        home: EcranPreparation(
+        home: EcranClasseur(
           evenement: depotEv.suivreEvenement(evenementId),
           portee:
               const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
           gymnases: depotEv.suivreGymnases(evenementId),
           produits: depotEv.suivreProduits(evenementId),
           stocks: depotEv.suivreStocksDepart(evenementId),
-          definirJours: (j) => depotEv.definirJours(evenementId, j),
-          definirPersonnes: (g, n) => depotEv.definirPersonnes(evenementId, g, n),
-          previsions: depotEv.suivrePrevisions(evenementId),
-          definirPrevision: (p, c) => depotEv.definirPrevision(evenementId, p, c),
-          chargerPasses: () => depotEv.evenementsPasses(sauf: evenementId),
-          appliquerPasse: (r) => depotEv.appliquerEvenementPasse(evenementId, r),
-          revenirAuMenu: () => depotEv.revenirAuMenu(evenementId),
-          chargerReferences: depotEv.lireReferences,
-          appliquerReference: (r) => depotEv.appliquerReference(evenementId, r),
           importer: (plan) => depotEv.appliquerImport(evenementId, plan),
           choisirClasseur: () async => aChoisir,
         ),
@@ -226,6 +218,30 @@ void main() {
     await db.waitForPendingWrites();
     expect(await nbReferences(), 1);
     expect((await stocksDepart(evt))[gA]![croque]!.quantite, 20);
+
+    Future<void> afficherPrevision() async {
+      await tester.pumpWidget(MaterialApp(
+        home: EcranPrevision(
+          evenement: depotEv.suivreEvenement(evt),
+          portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
+          gymnases: depotEv.suivreGymnases(evt),
+          produits: depotEv.suivreProduits(evt),
+          previsions: depotEv.suivrePrevisions(evt),
+          definirPrevision: (p, c) => depotEv.definirPrevision(evt, p, c),
+          chargerPasses: () => depotEv.evenementsPasses(sauf: evt),
+          appliquerPasse: (r) => depotEv.appliquerEvenementPasse(evt, r),
+          revenirAuMenu: () => depotEv.revenirAuMenu(evt),
+          chargerReferences: depotEv.lireReferences,
+          appliquerReference: (r) => depotEv.appliquerReference(evt, r),
+          definirPrevisionVerifiee: (v) => depotEv.definirPrevisionVerifiee(evt, v),
+        ),
+      ));
+      await attendre(tester, find.byKey(const Key('bandeau_prevision')));
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+    await afficherPrevision();
 
     // ---------- 3. La référence est dans les sources de la prévision : 160 ÷ 40 ÷ 2 = 2,0.
     for (final p in [croque, soda, salade]) {

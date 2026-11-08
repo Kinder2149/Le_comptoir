@@ -6,7 +6,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:le_comptoir/classeur.dart';
 import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_menus.dart';
-import 'package:le_comptoir/ecran_preparation.dart';
+import 'package:le_comptoir/ecran_classeur.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
 
@@ -78,21 +78,12 @@ void main() {
     String? nomFichier, typeMime;
     List<int>? octets;
     await tester.pumpWidget(MaterialApp(
-      home: EcranPreparation(
+      home: EcranClasseur(
         evenement: depotEv.suivreEvenement(evt),
         portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
         gymnases: depotEv.suivreGymnases(evt),
         produits: depotEv.suivreProduits(evt),
         stocks: depotEv.suivreStocksDepart(evt),
-        definirJours: (j) => depotEv.definirJours(evt, j),
-        definirPersonnes: (g, n) => depotEv.definirPersonnes(evt, g, n),
-        previsions: depotEv.suivrePrevisions(evt),
-        definirPrevision: (p, c) => depotEv.definirPrevision(evt, p, c),
-        chargerPasses: () => depotEv.evenementsPasses(sauf: evt),
-        appliquerPasse: (r) => depotEv.appliquerEvenementPasse(evt, r),
-        revenirAuMenu: () => depotEv.revenirAuMenu(evt),
-        chargerReferences: depotEv.lireReferences,
-        appliquerReference: (r) => depotEv.appliquerReference(evt, r),
         importer: (plan) => depotEv.appliquerImport(evt, plan),
         partagerModele: (n, o, m) async {
           nomFichier = n;

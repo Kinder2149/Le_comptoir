@@ -297,10 +297,17 @@ void main() {
     await attendre(tester, find.byKey(const Key('tache_personnes')));
     await finTransition(tester);
     await toucher(tester, find.byKey(const Key('tache_personnes')));
-    await attendre(tester, find.byKey(const Key('titre_etape_personnes')));
+    await attendre(tester, find.byKey(const Key('aide_personnes_duree')));
     await finTransition(tester);
-    // Mission P5 : le bouton du modèle Excel est dans la Préparation.
+    // Mission P5 : le bouton du modèle Excel est sur l'écran Classeur (bouton Excel d'Avant).
+    await retour(tester);
+    await toucher(tester, find.byKey(const Key('ouvrir_classeur')));
+    await attendre(tester, find.byKey(const Key('telecharger_modele')));
     expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+    await retour(tester);
+    await toucher(tester, find.byKey(const Key('tache_personnes')));
+    await attendre(tester, find.byKey(const Key('aide_personnes_duree')));
+    await finTransition(tester);
     expect(champ('champ_duree'), '2');
     expect(champ('champ_personnes_$gA'), '0');
 

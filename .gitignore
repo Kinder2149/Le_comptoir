@@ -66,3 +66,6 @@ graphify-out/.graphify_python
 
 # Classeurs de recette (donnees du club, hors depot)
 recette/*.xlsx
+
+# Réglages locaux de Claude Code
+.claude/settings.local.json

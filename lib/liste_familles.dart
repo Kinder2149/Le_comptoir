@@ -95,6 +95,7 @@ class ListeFamilles<T> extends StatefulWidget {
     this.avecRecherche = true,
     this.compteurDe,
     this.mentions = const {},
+    this.ouvertesAuDepart = false,
   });
 
   final List<T> elements;
@@ -120,6 +121,9 @@ class ListeFamilles<T> extends StatefulWidget {
   /// Mention affichée à la place du compteur pour une famille (ex. « Apporté le jour
   /// même »). Une famille avec mention reste repliée tant qu'on ne la déplie pas.
   final Map<String, String> mentions;
+
+  /// Toutes les familles dépliées au départ (sauf celles qui ont une mention).
+  final bool ouvertesAuDepart;
 
   @override
   State<ListeFamilles<T>> createState() => _EtatListeFamilles<T>();
@@ -185,7 +189,7 @@ class _EtatListeFamilles<T> extends State<ListeFamilles<T>> {
 
   Widget _section(String f, List<T> items, bool recherche) {
     final couleur = widget.couleurs[f] ?? Palette.gris;
-    final ouvert = _ouvert[f] ?? recherche;
+    final ouvert = _ouvert[f] ?? (recherche || (widget.ouvertesAuDepart && !widget.mentions.containsKey(f)));
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(

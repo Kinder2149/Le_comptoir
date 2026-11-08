@@ -182,7 +182,7 @@ void main() {
       await attendre(tester, find.byKey(const Key('tache_prevision')));
       await finTransition(tester);
       await toucher(tester, find.byKey(const Key('tache_prevision')));
-      await attendre(tester, find.byKey(const Key('titre_etape_prevision')));
+      await attendre(tester, find.byKey(const Key('bandeau_prevision')));
       await finTransition(tester);
     }
 

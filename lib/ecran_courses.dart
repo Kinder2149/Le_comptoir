@@ -526,7 +526,7 @@ class _EtatCourses extends State<EcranCourses> {
               key: Key('lecture_personnes_${g.id}'),
             ),
           ),
-        const Text('Réglé dans la Préparation.', key: Key('mention_preparation')),
+        const Text('Réglé dans « Personnes et durée ».', key: Key('mention_preparation')),
         if (aucunePersonne)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -534,7 +534,7 @@ class _EtatCourses extends State<EcranCourses> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Aucune personne attendue : réglez-les dans la Préparation, '
+                  'Aucune personne attendue : réglez-les dans « Personnes et durée », '
                   'puis « Recalculer » : les quantités se remplissent.',
                   key: Key('aide_personnes'),
                 ),
@@ -542,7 +542,7 @@ class _EtatCourses extends State<EcranCourses> {
                   OutlinedButton(
                     key: const Key('aller_preparation'),
                     onPressed: _allerPreparation,
-                    child: const Text('Aller à la Préparation'),
+                    child: const Text('Aller à Personnes et durée'),
                   ),
               ],
             ),
