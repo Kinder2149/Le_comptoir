@@ -58,11 +58,11 @@ const _stocks = {
 PorteeGestion _tout() =>
     const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2);
 
-Future<List<(String, String, int)>> _afficher(
+Future<void> _afficher(
   WidgetTester tester, {
   String statut = 'en_preparation',
   PorteeGestion? portee,
-  VoidCallback? voirGymnases,
+  VoidCallback? voirStockDepart,
   Map<String, Prevision> previsions = const {},
   EvenementsPasses passes = const EvenementsPasses([], 0),
   bool refus = false,
@@ -86,7 +86,6 @@ Future<List<(String, String, int)>> _afficher(
   _plansImportes.clear();
   _classeurChoisi = classeur;
   _echecImport = echecImport;
-  final ecrits = <(String, String, int)>[];
   await tester.pumpWidget(MaterialApp(
     home: EcranPreparation(
       evenement: Stream.value(_ev(statut, verifiee: verifiee)),
@@ -94,10 +93,9 @@ Future<List<(String, String, int)>> _afficher(
       gymnases: Stream.value(_gymnases),
       produits: Stream.value(_produits),
       stocks: Stream.value(_stocks),
-      definirStock: (g, p, q) async => ecrits.add((g, p, q)),
       definirJours: (j) async => _joursEcrits.add(j),
       definirPersonnes: (g, n) async => _personnesEcrites.add((g, n)),
-      onVoirGymnases: voirGymnases ?? () {},
+      onVoirStockDepart: voirStockDepart,
       previsions: Stream.value(previsions),
       definirPrevision: (p, c) async => _previsionsEcrites.add((p, c)),
       definirPrevisionVerifiee: (v) async => _verifieesEcrites.add(v),
@@ -119,7 +117,6 @@ Future<List<(String, String, int)>> _afficher(
   ));
   await tester.pump();
   await tester.pump();
-  return ecrits;
 }
 
 void main() {
@@ -181,105 +178,15 @@ void main() {
     await _afficher(tester, statut: 'en_cours');
     expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
   });
-  testWidgets('en préparation : une carte par gymnase, les produits finis seulement, '
-      'le stock repris est pré-rempli et marqué', (tester) async {
-    await _afficher(tester);
-    expect(find.byKey(const Key('titre_etape_stock')), findsOneWidget);
-    expect(find.text('Gymnase A'), findsOneWidget);
-    expect(find.text('Gymnase B'), findsOneWidget);
-    // Soda et Croque dans chaque gymnase (étape 1) et une fois dans la prévision (étape 3).
-    expect(find.text('Soda'), findsNWidgets(3));
-    expect(find.text('Croque'), findsNWidgets(3));
-    // 4 quantités de stock + 3 réglages de l'étape 2 (durée, personnes de A et de B)
-    // + 2 consommations de l'étape 3 (une par produit).
-    expect(find.byType(TextField), findsNWidgets(9));
-    String champ(String cle) =>
-        tester.widget<TextField>(find.byKey(Key(cle))).controller!.text;
-    expect(champ('depart_gA_soda'), '6');
-    expect(champ('depart_gA_croque'), '10');
-    expect(champ('depart_gB_soda'), '');
-    // La marque n'apparaît que sur le stock repris.
-    expect(find.text("Repris de l'événement précédent"), findsOneWidget);
-    expect(find.byKey(const Key('repris_gA_soda')), findsOneWidget);
-    expect(find.byKey(const Key('repris_gA_croque')), findsNothing);
-    // Saisie modifiable : pas de renvoi vers « Gymnases et stocks ».
-    expect(find.byKey(const Key('aller_gymnases_stocks')), findsNothing);
-  });
-
-  testWidgets('saisir 24 sodas au gymnase B enregistre 24 pour ce gymnase et ce produit',
+  testWidgets("étape 1 : un lien ouvre l'écran « Stock de départ », pas de saisie ici",
       (tester) async {
-    final ecrits = await _afficher(tester);
-    await tester.enterText(find.byKey(const Key('depart_gB_soda')), '24');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    expect(ecrits, [('gB', 'soda', 24)]);
-  });
-
-  testWidgets('une valeur invalide est refusée avec un message, sans écriture',
-      (tester) async {
-    final ecrits = await _afficher(tester);
-    await tester.enterText(find.byKey(const Key('depart_gB_soda')), '100001');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    expect(find.text('Entrez un nombre entier de 0 à 100 000.'), findsOneWidget);
-    expect(ecrits, isEmpty);
-  });
-
-  testWidgets('une saisie laissée un instant est enregistrée sans valider', (tester) async {
-    final ecrits = await _afficher(tester);
-    await tester.enterText(find.byKey(const Key('depart_gA_croque')), '12');
-    await tester.pump(const Duration(seconds: 2));
-    expect(ecrits, [('gA', 'croque', 12)]);
-  });
-
-  testWidgets('une quantité identique à celle enregistrée n\'écrit rien', (tester) async {
-    final ecrits = await _afficher(tester);
-    await tester.enterText(find.byKey(const Key('depart_gA_croque')), '10');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    expect(ecrits, isEmpty);
-  });
-
-  testWidgets('« Suivre tous » met à zéro les produits non suivis du gymnase',
-      (tester) async {
-    final ecrits = await _afficher(tester);
-    // Gymnase A suit déjà tout : pas de bouton ; gymnase B : deux produits à suivre.
-    expect(find.byKey(const Key('suivre_tous_depart_gA')), findsNothing);
-    await tester.tap(find.byKey(const Key('suivre_tous_depart_gB')));
-    await tester.pump();
-    expect(ecrits.toSet(), {('gB', 'soda', 0), ('gB', 'croque', 0)});
-  });
-
-  testWidgets('un gestionnaire ne voit que ses gymnases', (tester) async {
-    await _afficher(tester,
-        portee: const PorteeGestion(
-            responsable: false, gymnases: {'gB'}, nbGymnases: 2));
-    expect(find.text('Gymnase B'), findsOneWidget);
-    expect(find.text('Gymnase A'), findsNothing);
+    var ouvert = 0;
+    await _afficher(tester, voirStockDepart: () => ouvert++);
+    expect(find.byType(TextField), findsNWidgets(5));
     expect(find.byKey(const Key('depart_gA_soda')), findsNothing);
-    expect(find.byKey(const Key('depart_gB_soda')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('voir_stock_depart')));
+    expect(ouvert, 1);
   });
-
-  for (final statut in ['en_cours', 'cloture']) {
-    testWidgets('événement $statut : lecture seule et renvoi vers « Gymnases et stocks »',
-        (tester) async {
-      var renvoi = 0;
-      await _afficher(tester, statut: statut, voirGymnases: () => renvoi++);
-      // Plus de quantité de stock à saisir : seuls restent les 3 réglages de l'étape 2 et
-      // les 2 consommations de l'étape 3 (lisibles seulement une fois l'événement clôturé).
-      expect(find.byType(TextField), statut == 'cloture' ? findsNothing : findsNWidgets(5));
-      expect(find.byKey(const Key('depart_gA_soda')), findsNothing);
-      expect(find.byKey(const Key('suivre_tous_depart_gB')), findsNothing);
-      expect(
-          tester.widget<Text>(find.byKey(const Key('lecture_depart_gA_soda'))).data,
-          'Stock : 6');
-      expect(
-          tester.widget<Text>(find.byKey(const Key('lecture_depart_gB_soda'))).data,
-          'Stock non suivi');
-      await tester.tap(find.byKey(const Key('aller_gymnases_stocks')));
-      expect(renvoi, 1);
-    });
-  }
 
   // ---------- Étape 2 : personnes et durée.
   Future<void> saisirEtValider(WidgetTester tester, String cle, String valeur) async {

@@ -16,6 +16,7 @@ import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPho
 import 'ecran_nouvel_evenement.dart';
 import 'ecran_preparation.dart';
 import 'ecran_restes.dart';
+import 'ecran_stock_depart.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'restes.dart';
@@ -580,11 +581,10 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             produits: widget.depot.suivreProduits(ev.id),
             stocks:
                 widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
-            definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
             definirJours: (j) => widget.depot.definirJours(ev.id, j),
             definirPersonnes: (g, n) =>
                 widget.depot.definirPersonnes(ev.id, g, n),
-            onVoirGymnases: () => _voirGymnases(context, ev, portee),
+            onVoirStockDepart: () => _ouvrirStockDepart(context, ev, portee),
             previsions: widget.depot.suivrePrevisions(ev.id),
             definirPrevision: (p, c) => widget.depot.definirPrevision(ev.id, p, c),
             chargerPasses: () => widget.depot.evenementsPasses(sauf: ev.id),
@@ -595,6 +595,23 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
             definirPrevisionVerifiee: (v) =>
                 widget.depot.definirPrevisionVerifiee(ev.id, v),
+          ),
+        ),
+      );
+
+  /// Stock de départ : son écran (un onglet par gymnase), ouvert par la tâche d'Avant.
+  void _ouvrirStockDepart(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranStockDepart(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            produits: widget.depot.suivreProduits(ev.id),
+            stocks:
+                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
+            definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
+            onVoirGymnases: () => _voirGymnases(context, ev, portee),
           ),
         ),
       );
@@ -856,7 +873,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
         _ligneTache(
           par['stock']!,
           cle: const Key('voir_preparation'),
-          surClic: () => _ouvrirPreparation(context, ev, portee),
+          surClic: () => _ouvrirStockDepart(context, ev, portee),
         ),
         _ligneTache(
           par['personnes']!,

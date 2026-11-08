@@ -93,6 +93,8 @@ class ListeFamilles<T> extends StatefulWidget {
     this.libelles = libellesFamilles,
     this.couleurs = couleursFamilles,
     this.avecRecherche = true,
+    this.compteurDe,
+    this.mentions = const {},
   });
 
   final List<T> elements;
@@ -111,6 +113,13 @@ class ListeFamilles<T> extends StatefulWidget {
   final Map<String, String> libelles;
   final Map<String, Color> couleurs;
   final bool avecRecherche;
+
+  /// Texte du compteur d'une famille (par défaut : son nombre d'éléments affichés).
+  final String Function(List<T> items, String famille)? compteurDe;
+
+  /// Mention affichée à la place du compteur pour une famille (ex. « Apporté le jour
+  /// même »). Une famille avec mention reste repliée tant qu'on ne la déplie pas.
+  final Map<String, String> mentions;
 
   @override
   State<ListeFamilles<T>> createState() => _EtatListeFamilles<T>();
@@ -210,8 +219,12 @@ class _EtatListeFamilles<T> extends State<ListeFamilles<T>> {
                       ),
                     ),
                     Text(
-                      '${items.length}',
-                      key: Key('compteur_famille_$f'),
+                      widget.mentions[f] ??
+                          (widget.compteurDe?.call(items, f) ??
+                              '${items.length}'),
+                      key: widget.mentions.containsKey(f)
+                          ? Key('mention_famille_$f')
+                          : Key('compteur_famille_$f'),
                       style: const TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 13,

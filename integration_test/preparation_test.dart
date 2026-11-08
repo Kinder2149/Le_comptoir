@@ -126,21 +126,21 @@ void main() {
     await toucher(tester, find.text('Tournoi 2'));
     await attendre(tester, find.byKey(const Key('voir_preparation')));
     await finTransition(tester);
+    // La tâche « Stock de départ » ouvre son écran (E4) ; Soda et Croque sont dans « Autre ».
     await toucher(tester, find.byKey(const Key('voir_preparation')));
-    await attendre(tester, find.byKey(const Key('titre_etape_stock')));
+    await attendre(tester, find.byKey(const Key('aide_stock_depart')));
     await finTransition(tester);
-    // Mission P5 : le bouton du modèle Excel est dans la Préparation.
-    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+    await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+    await finTransition(tester);
 
     // Aucun ingrédient dans la liste : seulement Soda et Croque.
     expect(find.text('Pain de mie'), findsNothing);
     expect(find.text('Jambon'), findsNothing);
     expect(find.byKey(Key('depart_${gA}_$soda')), findsOneWidget);
-    expect(find.byKey(Key('depart_${gB}_$croque')), findsOneWidget);
 
     // ---------- 2. Le reste repris est pré-rempli et marqué.
     await attendre(tester, find.byKey(Key('repris_${gA}_$soda')));
-    expect(find.text("Repris de l'événement précédent"), findsOneWidget);
+    expect(find.text('Repris'), findsOneWidget);
     expect(
         tester
             .widget<TextField>(find.byKey(Key('depart_${gA}_$soda')))
@@ -162,6 +162,14 @@ void main() {
     expect((apres['quantite'], apres['reference']), (24, 24));
     expect(apres.containsKey('repris'), isFalse);
 
+    // Un onglet par gymnase (E4) : on passe au Gymnase B.
+    await toucher(tester, find.byKey(Key('onglet_gymnase_$gB')));
+    await finTransition(tester);
+    if (find.byKey(Key('depart_${gB}_$croque')).evaluate().isEmpty) {
+      await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+      await finTransition(tester);
+    }
+    expect(find.byKey(Key('depart_${gB}_$croque')), findsOneWidget);
     // Un croque au Gymnase B (saisie sans marque).
     await tester.enterText(find.byKey(Key('depart_${gB}_$croque')), '15');
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -195,8 +203,16 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_preparation')));
     await attendre(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await finTransition(tester);
+    await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+    await finTransition(tester);
     expect(find.byKey(Key('depart_${gA}_$soda')), findsNothing); // plus de saisie de stock
     await attendreTexte(tester, 'lecture_depart_${gA}_$soda', 'Stock : 24');
+    await toucher(tester, find.byKey(Key('onglet_gymnase_$gB')));
+    await finTransition(tester);
+    if (find.byKey(Key('lecture_depart_${gB}_$croque')).evaluate().isEmpty) {
+      await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+      await finTransition(tester);
+    }
     expect(texte(tester, 'lecture_depart_${gB}_$croque'), 'Stock : 15');
     await toucher(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await attendre(tester, find.byKey(const Key('titre_stock_evenement')));
@@ -278,11 +294,13 @@ void main() {
     await toucher(tester, find.text('Tournoi P3'));
     await attendre(tester, find.byKey(const Key('onglet_avant')));
     await toucher(tester, find.byKey(const Key('onglet_avant')));
-    await attendre(tester, find.byKey(const Key('voir_preparation')));
+    await attendre(tester, find.byKey(const Key('tache_personnes')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(const Key('voir_preparation')));
+    await toucher(tester, find.byKey(const Key('tache_personnes')));
     await attendre(tester, find.byKey(const Key('titre_etape_personnes')));
     await finTransition(tester);
+    // Mission P5 : le bouton du modèle Excel est dans la Préparation.
+    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
     expect(champ('champ_duree'), '2');
     expect(champ('champ_personnes_$gA'), '0');
 

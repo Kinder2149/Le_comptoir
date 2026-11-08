@@ -179,9 +179,9 @@ void main() {
     Future<void> ouvrirPreparation() async {
       await attendre(tester, find.byKey(const Key('onglet_avant')));
       await toucher(tester, find.byKey(const Key('onglet_avant')));
-      await attendre(tester, find.byKey(const Key('voir_preparation')));
+      await attendre(tester, find.byKey(const Key('tache_prevision')));
       await finTransition(tester);
-      await toucher(tester, find.byKey(const Key('voir_preparation')));
+      await toucher(tester, find.byKey(const Key('tache_prevision')));
       await attendre(tester, find.byKey(const Key('titre_etape_prevision')));
       await finTransition(tester);
     }
