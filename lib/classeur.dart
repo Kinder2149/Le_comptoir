@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:archive/archive.dart' show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
 
 import 'package:excel/excel.dart';
 
@@ -602,7 +605,143 @@ Uint8List _octets(Excel classeur) {
   if (octets == null) {
     throw const ClasseurIllisible('Le classeur n\'a pas pu être construit.');
   }
-  return Uint8List.fromList(octets);
+  return _avecVolets(Uint8List.fromList(octets));
+}
+
+// ------------------------------------- volets figés et listes déroulantes (E8)
+// Le paquet excel 4.0.6 n'écrit ni volets figés ni listes : on ajoute ces éléments au
+// XML des feuilles après l'écriture (les feuilles restent des feuilles Excel ordinaires).
+
+/// Feuilles dont les en-têtes restent visibles : volets figés sous la ligne 6.
+const _voletsFiges = {
+  feuilleMenu: 6,
+  feuilleRecettes: 6,
+  feuilleStock: 6,
+  feuilleHistorique: 6,
+  feuilleCourses: 6,
+};
+
+/// Lignes Excel couvertes par les listes déroulantes (de la première donnée à la 500e).
+const _ligneListeDebut = 7;
+const _ligneListeFin = 500;
+
+/// Une liste déroulante : colonne (lettre) et valeurs fixes.
+typedef _Liste = ({String colonne, List<String> valeurs});
+
+/// Les listes déroulantes de chaque feuille, avec les libellés des listes fixes.
+Map<String, List<_Liste>> get _listesDeroulantes => {
+      feuilleMenu: [
+        (colonne: 'A', valeurs: [for (final k in famillesProduit) libellesFamilles[k]!]),
+        (colonne: 'D', valeurs: libellesTypes.values.toList()),
+        (colonne: 'E', valeurs: libellesProvenances.values.toList()),
+        (colonne: 'H', valeurs: [for (final k in rayonsCourses) libellesRayons[k]!]),
+      ],
+      feuilleRecettes: [
+        (colonne: 'D', valeurs: [for (final u in unitesIngredient) libellesUnites[u]!]),
+        (colonne: 'E', valeurs: [for (final k in rayonsCourses) libellesRayons[k]!]),
+      ],
+    };
+
+String _echapper(String s) => s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+/// Chemin, dans le zip, de la feuille XML de chaque feuille (nom -> « xl/worksheets/… »).
+Map<String, String> _cheminsFeuilles(Archive archive) {
+  String texteDe(String chemin) {
+    for (final f in archive.files) {
+      if (f.name == chemin) return utf8.decode(f.content as List<int>);
+    }
+    return '';
+  }
+
+  final cibles = <String, String>{};
+  for (final m in RegExp(r'<Relationship\b[^>]*>')
+      .allMatches(texteDe('xl/_rels/workbook.xml.rels'))) {
+    final tag = m.group(0)!;
+    final id = RegExp(r'\bId="([^"]+)"').firstMatch(tag)?.group(1);
+    final cible = RegExp(r'\bTarget="([^"]+)"').firstMatch(tag)?.group(1);
+    if (id != null && cible != null) {
+      cibles[id] = cible.startsWith('/') ? cible.substring(1) : 'xl/$cible';
+    }
+  }
+  final chemins = <String, String>{};
+  for (final m in RegExp(r'<sheet\b[^>]*>').allMatches(texteDe('xl/workbook.xml'))) {
+    final tag = m.group(0)!;
+    final nom = RegExp(r'\bname="([^"]+)"').firstMatch(tag)?.group(1);
+    final id = RegExp(r'\br:id="([^"]+)"').firstMatch(tag)?.group(1);
+    if (nom != null && id != null && cibles[id] != null) {
+      chemins[nom] = cibles[id]!;
+    }
+  }
+  return chemins;
+}
+
+/// Le XML d'une feuille du classeur (pour contrôle) ; vide si la feuille n'existe pas.
+String xmlDeFeuille(List<int> octets, String nom) {
+  final archive = ZipDecoder().decodeBytes(octets);
+  final chemin = _cheminsFeuilles(archive)[nom];
+  if (chemin == null) return '';
+  for (final f in archive.files) {
+    if (f.name == chemin) return utf8.decode(f.content as List<int>);
+  }
+  return '';
+}
+
+/// Ajoute volets figés et listes déroulantes aux feuilles concernées du classeur.
+Uint8List _avecVolets(Uint8List octets) {
+  final archive = ZipDecoder().decodeBytes(octets);
+  final parChemin = {for (final e in _cheminsFeuilles(archive).entries) e.value: e.key};
+  final sortie = Archive();
+  for (final f in archive.files) {
+    var contenu = f.content as List<int>;
+    final nom = parChemin[f.name];
+    if (nom != null) {
+      var xml = utf8.decode(contenu);
+      final ligne = _voletsFiges[nom];
+      if (ligne != null) xml = _insererVolets(xml, ligne);
+      final listes = _listesDeroulantes[nom];
+      if (listes != null) xml = _insererListes(xml, listes);
+      contenu = utf8.encode(xml);
+    }
+    sortie.addFile(ArchiveFile(f.name, contenu.length, contenu));
+  }
+  return Uint8List.fromList(ZipEncoder().encode(sortie)!);
+}
+
+/// Volets figés sous la ligne [ligne] (les lignes au-dessus ne défilent pas).
+String _insererVolets(String xml, int ligne) {
+  final vue = '<sheetViews><sheetView workbookViewId="0">'
+      '<pane ySplit="$ligne" topLeftCell="A${ligne + 1}" activePane="bottomLeft" state="frozen"/>'
+      '<selection pane="bottomLeft" activeCell="A${ligne + 1}" sqref="A${ligne + 1}"/>'
+      '</sheetView></sheetViews>';
+  final existant = RegExp(r'<sheetViews>[\s\S]*?</sheetViews>');
+  if (existant.hasMatch(xml)) return xml.replaceFirst(existant, vue);
+  for (final balise in ['<sheetFormatPr', '<cols>', '<sheetData']) {
+    final i = xml.indexOf(balise);
+    if (i >= 0) return xml.substring(0, i) + vue + xml.substring(i);
+  }
+  return xml;
+}
+
+/// Listes déroulantes (validation de données) sur les colonnes de données.
+String _insererListes(String xml, List<_Liste> listes) {
+  final buf = StringBuffer('<dataValidations count="${listes.length}">');
+  for (final l in listes) {
+    final formule = _echapper('"${l.valeurs.join(',')}"');
+    buf.write('<dataValidation type="list" allowBlank="1" showErrorMessage="1" '
+        'errorTitle="Valeur inconnue" error="Choisissez une valeur dans la liste." '
+        'sqref="${l.colonne}$_ligneListeDebut:${l.colonne}$_ligneListeFin">'
+        '<formula1>$formule</formula1></dataValidation>');
+  }
+  buf.write('</dataValidations>');
+  for (final balise in ['<pageMargins', '</worksheet>']) {
+    final i = xml.indexOf(balise);
+    if (i >= 0) return xml.substring(0, i) + buf.toString() + xml.substring(i);
+  }
+  return xml;
 }
 
 void _feuilleMenu(Excel classeur, List<ProduitEvenement> produits, String aide) =>

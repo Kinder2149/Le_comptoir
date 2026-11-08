@@ -154,6 +154,29 @@ void main() {
       expect(menu.getColumnWidth(1), closeTo(32, 1));
     });
 
+    test('volets figés (sous la ligne 6) et listes déroulantes, lus dans le XML des feuilles',
+        () {
+      final octets = _modele();
+      final menu = xmlDeFeuille(octets, 'Menu');
+      expect(menu, contains('<pane ySplit="6" topLeftCell="A7" activePane="bottomLeft" state="frozen"/>'));
+      for (final col in ['A', 'D', 'E', 'H']) {
+        expect(menu, contains('sqref="${col}7:${col}500"'), reason: 'Menu $col');
+      }
+      expect(menu, contains('Croques,Boissons chaudes,Boissons fraîches,Snacks et fruits,Fait maison,Autre'));
+      expect(menu, contains("Composé (recette),À l'unité,À la part,Au litre"));
+      final recettes = xmlDeFeuille(octets, 'Recettes');
+      expect(recettes, contains('<pane ySplit="6"'));
+      expect(recettes, contains('sqref="D7:D500"'));
+      expect(recettes, contains('sqref="E7:E500"'));
+      expect(recettes, contains('unité,tranche,g,kg,cl,L'));
+      // Stock et Historique : volets figés, pas de liste ; Accueil : ni l'un ni l'autre.
+      final stock = xmlDeFeuille(octets, 'Stock de départ');
+      expect(stock, contains('<pane ySplit="6"'));
+      expect(stock, isNot(contains('<dataValidation ')));
+      expect(xmlDeFeuille(octets, 'Historique'), contains('<pane ySplit="6"'));
+      expect(xmlDeFeuille(octets, 'Accueil'), isNot(contains('<pane')));
+    });
+
     test('la ligne d\'aide est étirée (fusion) et la feuille est sans quadrillage', () {
       final x = Excel.decodeBytes(_modele());
       final stock = x.tables['Stock de départ']!;
