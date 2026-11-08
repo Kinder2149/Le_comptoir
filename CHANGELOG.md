@@ -1,5 +1,28 @@
 # CHANGELOG — Le Comptoir
 
+## 08/11/2026 — Mission « Ergonomie de la gestion », E8 : classeur Excel
+- Six feuilles dans l'ordre : Accueil, Menu, Recettes, Stock de départ, Historique, Courses (et Bilan à l'export), aux couleurs de l'application (bandeau, en-têtes, cases à remplir et cases calculées, largeurs), avec Famille et Rayon, un ingrédient par ligne dans Recettes, colonne calculée de consommation par personne et par jour dans l'Historique, volets figés et listes déroulantes (famille, type, provenance, rayon, unité). Les anciens classeurs restent importables ; le modèle relu redonne les mêmes produits, familles, recettes et rayons.
+- Dépendance ajoutée avec l'accord de Kinder : `archive` 3.6.1 (version exacte, déjà présente par `excel`). Tests : 439 de logique et d'écrans, 6 parcours Android.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E7 : stock pendant le tournoi
+- « Gymnases et stocks » : produits suivis rangés par urgence (épuisé, vide, stock bas, puis le reste), « + » direct, menu de ligne avec « Vide » et « Suivre / Ne plus suivre le stock », produits non suivis repliés sous une ligne qui les compte. Écran du bénévole inchangé. Tests : 434, 7 parcours Android.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E6 : courses par rayons
+- Écran Courses refait pour le magasin : onglets « À acheter » / « Déjà acheté », articles par rayon, cases à cocher partagées en direct (ni stock ni coût touchés), réglages repliés, texte partagé par rayons ; « Saisir ce que j'ai acheté » ouvre la validation inchangée. Quantités inchangées.
+- Règles : `articles` et `coches` de la liste (case pour un article absent refusée), déployées. Limite : vérification des articles réduite pour que 60 lignes libres passent sous 1000 expressions. Tests : 425, 254 de règles, 6 parcours Android.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E5 : Personnes et durée, Prévision
+- Deux écrans courts remplacent la page Préparation (supprimée) : Personnes et durée ; Prévision (bandeau « 120 personnes × 2 jours », source modifiable, produits par familles, source colorée et total du tournoi, phrase sur le fait maison, « C'est vérifié »). Modèle et import Excel derrière le bouton « Excel » de l'onglet Avant. Tests : 417, 6 parcours Android.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E4 : écran Stock de départ
+- Un onglet par gymnase avec compteur, familles repliables, − / + / clavier, « Repris », « Copier vers … » (sans écraser un produit rempli), « C'est fait ». Une quantité copiée perd la marque « Repris ». Tests : 430, parcours Android concernés.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E3 : tableau de bord en trois temps
+- Pour la gestion : onglets Avant (4 tâches, « n sur 4 », case Matériel « bientôt »), Pendant (chiffres du jour, à surveiller avec ajout, accès stock, courses, caisses, bilan provisoire), Après (clôture, bilan, export) ; liste des produits sur « Produits et images » ; bénévole inchangé. Donnée `previsionVerifiee` (règle déployée). Tests : 424, 247 de règles, 19 parcours Android.
+
+## 08/11/2026 — Mission « Ergonomie de la gestion », E2 : listes par familles et icônes
+- Composant `lib/liste_familles.dart` (familles repliables, compteur, recherche) appliqué au Menu ; pastille de la couleur de la famille avec initiales quand l'icône n'est pas juste ; icône retirée aux barres de céréales. Tests : 408.
+
 ## 08/11/2026 — Mission « Ergonomie de la gestion », E1 : familles et rayons
 - Six familles de produits et six rayons de courses (listes fixes, décisions 63 et 64) : choix de la famille dans la fiche produit, rayon de chaque ingrédient, du produit acheté tel quel et d'une ligne libre ; le menu modèle est classé. Un produit d'avant est rangé dans « Autre ».
 - Règles d'accès : familles et rayons refusés hors liste, contrôle des ingrédients refait par blocs (marge des 1000 expressions conservée). Tests : 397 de logique et d'écrans, 241 de règles. Règles déployées le 08/11/2026.
