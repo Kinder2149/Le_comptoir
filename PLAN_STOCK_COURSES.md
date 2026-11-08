@@ -839,6 +839,11 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 - Ce qu'on ne fait pas : pas de macro, pas de protection par mot de passe, pas de nouvelle dépendance sans accord de Kinder, pas de changement des calculs de prévision.
 - Test : `flutter analyze`, `flutter test` ; ouverture du fichier produit par un lecteur xlsx externe (par exemple un petit script Python `openpyxl` avec `python -I`) pour constater en-têtes figés, listes déroulantes et couleurs ; la session mère relance les parcours Android.
 
+*Cadrage E9 — Clôture de mission (08/11/2026)*
+- Parcours automatique du critère de fin sur émulateur (`integration_test/parcours_ergonomie_test.dart`, sur le modèle de `parcours_mission_test.dart` et de `integration_test/captures.dart` / `audit_front/lancer.ps1` pour les captures) : créer un tournoi, ouvrir Avant et lire « n sur 4 », saisir le stock de départ de deux gymnases par familles, régler personnes et durée, vérifier la prévision (« C'est vérifié »), faire les courses (cocher des articles rangés par rayons, saisir les achats), télécharger le modèle Excel et le réimporter, ouvrir le tournoi, vérifier Pendant (à surveiller), clôturer et ouvrir Après. Captures « après » de chaque écran dans `audit_front/ergonomie/apres/` avec les mêmes noms que celles de `avant/` quand l'écran existait.
+- Texte de vérification pour une autre IA (Sonnet, conversation neuve) : critères de fin de mission, ce qui est fait et testé, nouveautés prioritaires ; rangé dans la section 14 du plan sous « Texte de vérification E9 ».
+- Version 1.3.0 (build 4), APK de recette reconstruit et copié dans `recette/le-comptoir-recette.apk` (non suivi par git). Documentation : bloc de statut et section 12 de `PROJET_CONTEXTE.md`, `RECETTE.md` si les étapes de test changent.
+
 **Arrêts prévus** : une contradiction avec une décision figée ; une dépendance nouvelle nécessaire (par exemple si les listes déroulantes ou les en-têtes figés de E8 ne peuvent pas s'écrire avec l'outil Excel actuel) ; deux échecs de suite à la vérification.
 
 **Suivi** (une ligne par étape close)
@@ -853,6 +858,20 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 | E6 Courses par rayons, cases partagées | Implémentée et testée (425 tests, 254 tests de règles, 6 parcours Android réussis) ; règles déployées le 08/11/2026 | 08/11/2026 | (1) à (6) réussis ; limite : vérification des articles réduite pour tenir 60 lignes libres sous 1000 expressions |
 | E7 Stock pendant le tournoi | Implémentée et testée (434 tests, 7 parcours Android réussis) ; règles inchangées | 08/11/2026 | (1) à (5) réussis par test de code |
 | E8 Classeur Excel | Implémentée et testée (439 tests, 6 parcours Android réussis) ; dépendance `archive` 3.6.1 ajoutée avec l'accord de Kinder le 08/11/2026 ; règles inchangées | 08/11/2026 | (1) à (6) réussis |
+| E9 Clôture de mission | Parcours complet `parcours_ergonomie_test.dart` réussi sur LC2 (12 captures « après » dans `audit_front/ergonomie/apres/`), APK de recette 1.3.0 reconstruit ; 439 tests, analyse sans erreur | 08/11/2026 | (1) à (3) réussis |
+
+
+**Texte de vérification E9** (à donner à une IA neuve, sur Sonnet, dans Claude Code, sur le PC ; elle n'a pas écrit le code)
+
+> Tu vérifies la mission « Ergonomie de la gestion » de l'application Le Comptoir (Flutter + Firebase, Android), dossier `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`, branche `claude/ergonomie-gestion`. Tu ne modifies aucun code. Lance l'application selon `PROJET_CONTEXTE.md` section 12 (émulateurs Firebase `auth,firestore` avec Java 21 ou plus ; émulateur Android LC2 ; une suite de parcours à la fois ; `adb shell wm size 1080x2160` pour les captures, `wm size reset` ensuite) et utilise-la en conditions réelles. Rends une capture et un verdict réussi/échoué par critère.
+>
+> **Critère de fin de Kinder** : « J'ouvre un tournoi et je vois tout de suite où j'en suis : Avant, Pendant ou Après, et ce qu'il me reste à faire. Je saisis mon stock de départ gymnase par gymnase, produits rangés par familles ; je vérifie la prévision en une page ; je fais les courses en magasin avec une liste rangée par rayons que je coche. Je télécharge l'Excel : il est propre, expliqué et aux couleurs de l'application, et je peux le remplir puis le réimporter. »
+>
+> **Fait et testé** : analyse sans erreur ; `flutter test` 439 ; règles 254 (`tests_regles/lancer.ps1`) ; parcours Android dont `integration_test/parcours_ergonomie_test.dart` (le critère de bout en bout, 12 captures dans `audit_front/ergonomie/apres/`, à comparer à `audit_front/ergonomie/avant/`).
+>
+> **À vérifier en priorité** : (1) l'écran de l'événement s'ouvre sur l'onglet juste (en préparation : Avant ; en cours : Pendant ; clôturé : Après) et Avant affiche « n sur 4 faits » avec les quatre tâches ; (2) le stock de départ est rangé par familles dépliables, avec la copie d'un gymnase vers l'autre ; (3) personnes et durée, puis la prévision se vérifient en une page (« C'est vérifié ») ; (4) les courses sont rangées par rayons, les cases se cochent et se partagent en direct, la validation ajoute les achats au stock ; (5) Pendant liste en tête ce qui est épuisé (« + » pour ajouter) et « Gymnases et stocks » range les produits par urgence ; (6) le modèle Excel téléchargé a six feuilles (Accueil, Menu, Recettes, Stock de départ, Historique, Courses), couleurs, volets figés, listes déroulantes, et se réimporte avec les mêmes chiffres ; (7) la caisse des bénévoles, le bilan et les calculs sont inchangés.
+>
+> **Limites connues** : règles limitées pour tenir 1000 expressions (60 articles libres de courses) ; copier une quantité fait perdre « Repris » ; le bouton Excel n'est offert que dans Avant (événement en préparation).
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

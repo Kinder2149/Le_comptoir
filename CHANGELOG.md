@@ -1,5 +1,9 @@
 # CHANGELOG — Le Comptoir
 
+## 08/11/2026 — Mission « Ergonomie de la gestion », E9 : clôture, version 1.3.0
+- Parcours automatique du critère de fin sur émulateur (`parcours_ergonomie_test.dart`) : tournoi, Avant « n sur 4 », stock par familles, personnes et durée, prévision vérifiée, courses par rayons, classeur Excel téléchargé et réimporté, ouverture, Pendant (épuisé à surveiller), clôture, Après. 12 captures « après » dans `audit_front/ergonomie/apres/`. Texte de vérification rangé dans le plan (section 14). APK de recette 1.3.0 reconstruit.
+- **Résumé de la mission (E1 à E9)** : écran de l'événement en trois temps (Avant, Pendant, Après), produits rangés par familles, stock de départ par gymnase, personnes/durée et prévision en une page, courses par rayons avec cases partagées, stock pendant le tournoi rangé par urgence, classeur Excel mis en forme (six feuilles, volets figés, listes déroulantes). Règles d'accès déployées. Dépendance ajoutée : `archive` 3.6.1 (accord de Kinder).
+
 ## 08/11/2026 — Mission « Ergonomie de la gestion », E8 : classeur Excel
 - Six feuilles dans l'ordre : Accueil, Menu, Recettes, Stock de départ, Historique, Courses (et Bilan à l'export), aux couleurs de l'application (bandeau, en-têtes, cases à remplir et cases calculées, largeurs), avec Famille et Rayon, un ingrédient par ligne dans Recettes, colonne calculée de consommation par personne et par jour dans l'Historique, volets figés et listes déroulantes (famille, type, provenance, rayon, unité). Les anciens classeurs restent importables ; le modèle relu redonne les mêmes produits, familles, recettes et rayons.
 - Dépendance ajoutée avec l'accord de Kinder : `archive` 3.6.1 (version exacte, déjà présente par `excel`). Tests : 439 de logique et d'écrans, 6 parcours Android.
