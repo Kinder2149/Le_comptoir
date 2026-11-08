@@ -8,6 +8,7 @@ import 'ecran_courses.dart';
 import 'ecran_qr.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'tableau_bord.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -360,6 +361,10 @@ class _CarteGymnase extends StatelessWidget {
                 }
                 final aucunSuivi = produits.every((p) => p.stock == null);
                 final tousSuivis = produits.every((p) => p.stock != null);
+                final etatsGymnase = {
+                  for (final p in produits)
+                    p.id: etats[p.id] ?? etatStock(quantite: p.stock),
+                };
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Column(
@@ -390,12 +395,15 @@ class _CarteGymnase extends StatelessWidget {
                             child: const Text('Suivre tous les produits'),
                           ),
                         ),
-                      for (final p in produits)
-                        _LigneStock(
+                      ListeStocks(
+                        gymnaseId: g,
+                        produits: produits,
+                        etats: etatsGymnase,
+                        ligne: (p, etat) => LigneStock(
                           key: Key('ligne_${g}_${p.id}'),
                           produit: p,
                           gymnaseId: g,
-                          etat: etats[p.id] ?? etatStock(quantite: p.stock),
+                          etat: etat,
                           vendu: tableau?.vendus(p.id),
                           onAjouter: () async {
                             final n = await _demanderNombre(
@@ -420,6 +428,7 @@ class _CarteGymnase extends StatelessWidget {
                           onVide: (v) => _essayer(
                               () => depot.signalerVide(evenementId, g, p.id, v)),
                         ),
+                      ),
                     ],
                   ),
                 );
@@ -436,8 +445,8 @@ class _CarteGymnase extends StatelessWidget {
 
 /// Un produit dans le stock d'un gymnase : image, état coloré (comme en caisse),
 /// quantité, vendu, et des actions nommées (zones d'appui de 48 px).
-class _LigneStock extends StatelessWidget {
-  const _LigneStock({
+class LigneStock extends StatelessWidget {
+  const LigneStock({
     super.key,
     required this.produit,
     required this.gymnaseId,
@@ -511,50 +520,114 @@ class _LigneStock extends StatelessWidget {
                     key: Key('etat_${g}_${p.id}'),
                     style: TextStyle(
                         fontWeight: FontWeight.w700, color: couleurEtat(etat))),
-            ],
-          ),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (suivi) ...[
-                TextButton.icon(
+              if (suivi)
+                IconButton.filledTonal(
                   key: Key('reappro_${g}_${p.id}'),
-                  style: TypeAction.gerer.texte,
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Ajouter'),
+                  tooltip: 'Ajouter au stock',
+                  icon: const Icon(Icons.add),
                   onPressed: onAjouter,
                 ),
-                TextButton.icon(
-                  key: Key('modifier_stock_${g}_${p.id}'),
-                  style: TypeAction.gerer.texte,
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Corriger'),
-                  onPressed: onCorriger,
-                ),
-              ],
-              if (!suivi) ...[
-                const Text('Vide'),
-                Switch(
-                  key: Key('vide_${g}_${p.id}'),
-                  value: etat == EtatStock.vide,
-                  onChanged: onVide,
-                ),
-              ],
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Suivre le stock'),
-                  Switch(
+              PopupMenuButton<String>(
+                key: Key('menu_${g}_${p.id}'),
+                tooltip: 'Actions',
+                onSelected: (choix) => choix == 'vide'
+                    ? onVide(etat != EtatStock.vide)
+                    : onSuivre(!suivi),
+                itemBuilder: (_) => [
+                  if (!suivi)
+                    PopupMenuItem<String>(
+                      key: Key('vide_${g}_${p.id}'),
+                      value: 'vide',
+                      child: Row(
+                        children: [
+                          Icon(etat == EtatStock.vide
+                              ? Icons.check_box_outlined
+                              : Icons.check_box_outline_blank),
+                          const SizedBox(width: 8),
+                          const Text('Vide'),
+                        ],
+                      ),
+                    ),
+                  PopupMenuItem<String>(
                     key: Key('suivi_${g}_${p.id}'),
-                    value: suivi,
-                    onChanged: onSuivre,
+                    value: 'suivi',
+                    child: Text(suivi ? 'Ne plus suivre le stock'
+                        : 'Suivre le stock'),
                   ),
                 ],
               ),
             ],
           ),
+          if (suivi)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: Key('modifier_stock_${g}_${p.id}'),
+                style: TypeAction.gerer.texte,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Corriger'),
+                onPressed: onCorriger,
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// Les produits d'un gymnase pour le tournoi (E7) : les produits suivis, classes
+/// par urgence (épuisé, vide, stock bas, puis le reste) ; les produits non suivis
+/// sont repliés sous une ligne qui les compte. [ligne] construit une ligne.
+class ListeStocks extends StatefulWidget {
+  const ListeStocks({
+    super.key,
+    required this.gymnaseId,
+    required this.produits,
+    required this.etats,
+    required this.ligne,
+  });
+
+  final String gymnaseId;
+  final List<ProduitEvenement> produits;
+
+  /// Produit -> état du stock dans ce gymnase.
+  final Map<String, EtatStock> etats;
+  final Widget Function(ProduitEvenement produit, EtatStock etat) ligne;
+
+  @override
+  State<ListeStocks> createState() => _EtatListeStocks();
+}
+
+class _EtatListeStocks extends State<ListeStocks> {
+  bool _depliee = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final classes = rangerStocks(produits: widget.produits, etats: widget.etats);
+    EtatStock etatDe(ProduitEvenement p) =>
+        widget.etats[p.id] ?? etatStock(quantite: p.stock);
+    final vides =
+        classes.nonSuivis.where((p) => etatDe(p) == EtatStock.vide).length;
+    final n = classes.nonSuivis.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final p in classes.suivis) widget.ligne(p, etatDe(p)),
+        if (n > 0) ...[
+          TextButton.icon(
+            key: Key('non_suivis_${widget.gymnaseId}'),
+            style: TypeAction.gerer.texte,
+            icon: Icon(_depliee ? Icons.expand_less : Icons.expand_more),
+            label: Text(
+              '$n produit${n > 1 ? 's' : ''} non suivi${n > 1 ? 's' : ''}'
+              '${vides > 0 ? ' · $vides signalé${vides > 1 ? 's' : ''} vide' : ''}',
+            ),
+            onPressed: () => setState(() => _depliee = !_depliee),
+          ),
+          if (_depliee)
+            for (final p in classes.nonSuivis) widget.ligne(p, etatDe(p)),
+        ],
+      ],
     );
   }
 }

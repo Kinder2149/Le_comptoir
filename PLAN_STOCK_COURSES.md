@@ -525,6 +525,13 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 - Ce qu'on ne fait pas : aucun changement de formule, de stock, de coût ou de validation ; pas d'écran de courses d'appoint spécifique (c'est le même écran) ; pas de rayon libre.
 - Test : `flutter analyze`, `flutter test`, `tests_regles/lancer.ps1` ; la session mère déploie les règles et lance les parcours Android.
 
+*Cadrage E7 — Stock pendant le tournoi (08/11/2026)*
+- Stratégie : l'écran « Gymnases et stocks » (`lib/ecran_gymnases.dart`, titre `titre_stock_evenement`) est refait pour l'usage pendant le tournoi, côté gestion seulement. Pour chaque gymnase, les produits SUIVIS sont rangés par urgence : épuisé, puis vide (signalé « vide » par un bénévole), puis stock bas, puis le reste (ordre alphabétique ou ordre des familles à l'intérieur d'un même niveau) ; chaque ligne montre le stock, l'état coloré (même vocabulaire et mêmes seuils qu'aujourd'hui, ne rien changer à la logique d'état), un bouton « + » direct qui ajoute au stock exactement comme l'action « Ajouter » actuelle (même boîte de quantité, mêmes écritures), et un menu de ligne (⋮) qui contient « Vide » (signalement) et « Suivre le stock » / « Ne plus suivre » (selon l'état), sans autre changement de comportement. Les produits NON suivis sont repliés sous une ligne qui les compte (« 5 produits non suivis ») ; les déplier permet de les suivre. Maquette de référence pour l'état coloré et le « + » : `audit_front/ergonomie/maquette/project/Pendant.dc.html` (bloc « À surveiller ») ; captures de l'existant : `audit_front/ergonomie/avant/04_gymnases_et_stocks_*.png`.
+- Le bénévole garde son écran actuel (ajout de parts, apports, signal « vide ») : ne pas toucher à `lib/ecran_caisse.dart` ni aux écrans bénévole. Les droits de la gestion (vue limitée aux gymnases gérés) restent ceux d'aujourd'hui. Le composant `ListeFamilles` n'est pas obligatoire ici : le critère est le rangement par urgence.
+- Fichiers touchés : `lib/ecran_gymnases.dart` (et un éventuel nouveau fichier pour la logique de tri, par exemple dans `lib/tableau_bord.dart` ou `lib/gymnase.dart`, testable sans écran), tests de logique et d'écran, parcours Android concernés ajustés (`gymnases_test`, `rupture_test`, `stock_role_test`, `suivi_test`, `vues_test`, `restes_test`…). Pas de règles ni de donnée nouvelles.
+- Ce qu'on ne fait pas : pas de changement des seuils, des états, du calcul du stock, du report des restes ; pas de nouvelle vue pour le bénévole.
+- Test : `flutter analyze`, `flutter test` ; la session mère relance les parcours Android.
+
 **Arrêts prévus** : P9 si le fichier de Kinder manque ; toute contradiction avec une décision figée ; deux échecs de suite à la vérification.
 
 **Suivi** (une ligne par étape close)

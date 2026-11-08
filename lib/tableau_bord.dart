@@ -146,3 +146,34 @@ List<ASurveiller> aSurveiller({
   });
   return liste;
 }
+
+/// Rang d'urgence d'un produit suivi (E7) : épuisé, puis vide, puis stock bas,
+/// puis le reste.
+int rangUrgenceStock(EtatStock e) => switch (e) {
+      EtatStock.epuise => 0,
+      EtatStock.vide => 1,
+      EtatStock.bas => 2,
+      _ => 3,
+    };
+
+/// Les produits d'un gymnase pour l'écran de stock pendant le tournoi (E7) : les
+/// produits suivis, rangés par urgence puis par nom ; les produits non suivis à part
+/// (à replier). [etats] : produit -> état ; absent = déduit du stock.
+({List<ProduitEvenement> suivis, List<ProduitEvenement> nonSuivis}) rangerStocks({
+  required List<ProduitEvenement> produits,
+  required Map<String, EtatStock> etats,
+}) {
+  EtatStock etatDe(ProduitEvenement p) =>
+      etats[p.id] ?? etatStock(quantite: p.stock);
+  int parNom(ProduitEvenement a, ProduitEvenement b) =>
+      a.nom.toLowerCase().compareTo(b.nom.toLowerCase());
+
+  final suivis = produits.where((p) => p.stock != null).toList()
+    ..sort((a, b) {
+      final c = rangUrgenceStock(etatDe(a)).compareTo(rangUrgenceStock(etatDe(b)));
+      return c != 0 ? c : parNom(a, b);
+    });
+  final nonSuivis = produits.where((p) => p.stock == null).toList()
+    ..sort(parNom);
+  return (suivis: suivis, nonSuivis: nonSuivis);
+}
