@@ -192,6 +192,7 @@ void main() {
       await toucher(tester, find.byKey(const Key('voir_courses')));
       await attendre(tester, find.byKey(const Key('etat_courses')));
       await finTransition(tester);
+      await ouvrirReglagesCourses(tester);
       await toucher(tester, find.byKey(const Key('recalculer')));
       await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
       for (var i = 0; i < 100 && champQte('qte_${gA}_$croque') != attendu; i++) {

@@ -267,3 +267,32 @@ Future<void> neRienGarderSiDemande(WidgetTester tester) async {
     }
   }
 }
+
+/// Courses (Ergonomie E6) : ouvre la ligne « Réglages » si elle est repliée. Sans effet
+/// si elle est déjà ouverte.
+Future<void> ouvrirReglagesCourses(WidgetTester tester) async {
+  if (find.byKey(const Key('duree_courses')).evaluate().isNotEmpty) return;
+  await _hautDesCourses(tester, 'reglages_courses');
+  await tester.tap(find.byKey(const Key('reglages_courses')));
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+/// Courses (Ergonomie E6) : passe à l'onglet « Déjà acheté » (dejaAchete) ou « À acheter ».
+Future<void> ongletCourses(WidgetTester tester, {required bool dejaAchete}) async {
+  await _hautDesCourses(tester, 'onglet_acheter');
+  await tester.tap(find.byKey(Key(dejaAchete ? 'onglet_achete' : 'onglet_acheter')));
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+/// La liste des courses ne construit que ce qui est visible : on remonte en haut tant que
+/// l'élément [cle] (en haut de l'écran) n'est pas dans l'arbre.
+Future<void> _hautDesCourses(WidgetTester tester, String cle) async {
+  // Après une validation, l'écran se recharge : on attend qu'il soit affiché.
+  for (var i = 0; i < 150 && find.byKey(const Key('onglet_acheter')).evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  for (var i = 0; i < 4 && find.byKey(Key(cle)).evaluate().isEmpty; i++) {
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1500));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+}

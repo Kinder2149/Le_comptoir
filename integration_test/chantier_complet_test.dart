@@ -124,6 +124,7 @@ void main() {
     await depotEv.definirPersonnes(evtId, gB, 30);
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     // 80 et 60 personnes-jours : croques 52 + 36 + 48 = 136 (A), 39 + 27 + 36 = 102 (B) = 238.
@@ -134,6 +135,7 @@ void main() {
     expect(texte(tester, 'achat_buche de chevre|g'), 'Bûche de chèvre : 1,57 kg'); // 63 x 25 g = 1 575 g (1,575 s'affiche 1,57 : arrondi binaire)
     expect(texte(tester, 'achat_produit:$cafe'), 'Café : 45,5 L'); // (104 + 78) verres / 4
     expect(texte(tester, 'achat_produit:$coca'), 'Coca : 11,5 L'); // (26 + 20) verres / 4
+    await ongletCourses(tester, dejaAchete: false);
     await attendreTexte(tester, 'etat_courses', 'Enregistré');
 
     // Avec 27 produits la liste est longue : on descend jusqu'au bouton (liste paresseuse).
@@ -145,6 +147,7 @@ void main() {
         'Croque-monsieur : +91 (Gymnase A +52 · Gymnase B +39)');
     await saisir(tester, 'cout_courses', '40');
     await toucher(tester, find.byKey(const Key('confirmer_validation')));
+    await ongletCourses(tester, dejaAchete: true);
     await attendre(tester, find.byKey(const Key('courses_validee')));
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 100));

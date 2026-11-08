@@ -68,6 +68,16 @@ void main() {
         '« ${f.evaluate().isEmpty ? '(absent)' : valeurChamp(tester, cle)} »');
   }
 
+  /// Attend que la case [cle] soit (ou ne soit pas) cochée.
+  Future<void> attendreCase(WidgetTester tester, String cle, bool attendu) async {
+    for (var i = 0; i < 150; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      final f = find.byKey(Key(cle));
+      if (f.evaluate().isNotEmpty && tester.widget<Checkbox>(f).value == attendu) return;
+    }
+    throw TestFailure('« $cle » : attendu coché = $attendu');
+  }
+
   testWidgets('courses : pré-remplissage, achats, reste, lignes libres, reprise',
       (tester) async {
     final db = FirebaseFirestore.instance;
@@ -150,6 +160,7 @@ void main() {
 
     // Courses n'a plus de champ « personnes » : elles se règlent dans la Préparation.
     expect(find.byKey(Key('personnes_$gA')), findsNothing);
+    await ouvrirReglagesCourses(tester);
     expect(find.byKey(Key('lecture_personnes_$gA')), findsOneWidget);
 
     // --- 80 et 60 personnes (réglées hors de Courses), 2 jours : 320 et 240 croques.
@@ -159,6 +170,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await toucher(tester, find.byKey(const Key('preparer_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '320');
@@ -170,24 +182,32 @@ void main() {
     expect(find.byKey(Key('suggere_${gB}_$tarte')), findsNothing);
 
     // --- B4 : demi-journée, jour complet, stock déduit, puis retour à 2 jours.
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_demi')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendreChamp(tester, 'qte_${gA}_$croque', '80');
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_jour')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendreChamp(tester, 'qte_${gA}_$croque', '160');
     await depotEv.definirStock(evtId, gA, croque, 100);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendreChamp(tester, 'qte_${gA}_$croque', '60'); // 160 - 100 en stock
     await attendreTexte(tester, 'info_${gA}_$croque', 'En stock : 100 · Vendu : 0');
     await depotEv.definirStock(evtId, gA, croque, 200);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     for (var i = 0; i < 50 && find.byKey(Key('qte_${gA}_$croque')).evaluate().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byKey(Key('qte_${gA}_$croque')), findsNothing); // le stock couvre le besoin
     await depotEv.arreterSuivi(evtId, gA, croque);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_plus')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendreChamp(tester, 'qte_${gA}_$croque', '320');
 
@@ -216,6 +236,17 @@ void main() {
     await tester.enterText(find.byKey(const Key('quantite_libre')), '2');
     await toucher(tester, find.byKey(const Key('valider_libre')));
     await attendreTexte(tester, 'libre_0', 'Liquide vaisselle × 2');
+
+    // --- Cases partagées (décision 65) : cochée ici, puis par un autre téléphone (même
+    // flux), et une case pour un article absent de la liste est refusée.
+    await toucher(tester, find.byKey(Key('case_p:$cafe')));
+    await attendreCase(tester, 'case_p:$cafe', true);
+    await depotEv.cocherArticle(evtId, 'l:Liquide vaisselle', true);
+    await attendreCase(tester, 'case_l:Liquide vaisselle', true);
+    await expectLater(depotEv.cocherArticle(evtId, 'p:absent', true),
+        throwsA(isA<FirebaseException>()));
+    await toucher(tester, find.byKey(Key('case_p:$cafe')));
+    await attendreCase(tester, 'case_p:$cafe', false);
 
     // --- Tout s'enregistre.
     await attendreTexte(tester, 'etat_courses', 'Enregistré');
@@ -260,6 +291,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '300');
     expect(valeurChamp(tester, 'qte_${gB}_$croque'), '240');
+    await ouvrirReglagesCourses(tester);
     expect(texte(tester, 'lecture_personnes_$gA'),
         'Personnes attendues (Gymnase A) : 80');
     expect(valeurChamp(tester, 'reste_pain de mie|tranche'), '100');
@@ -346,6 +378,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
 
     // --- La liste : 320/240 croques (A passe à 300), 320/240 verres, 12 tartes à A.
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     await saisir(tester, 'qte_${gA}_$croque', '300');
@@ -376,6 +409,7 @@ void main() {
     // --- Coût saisi : validation.
     await saisir(tester, 'cout_courses', '412,50');
     await toucher(tester, find.byKey(const Key('confirmer_validation')));
+    await ongletCourses(tester, dejaAchete: true);
     await attendre(tester, find.byKey(const Key('courses_validee')));
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -394,15 +428,19 @@ void main() {
     // --- Liste figée : bandeau, coût, ajouts, plus de bouton de validation.
     expect(texte(tester, 'cout_valide'), 'Coût : 412,50 €');
     expect(texte(tester, 'ajout_$croque'), 'Croque +270');
+    await ongletCourses(tester, dejaAchete: false);
     expect(find.byKey(const Key('valider_courses')), findsNothing);
     expect(find.byKey(const Key('partager_liste')), findsOneWidget); // mission C1
 
     // --- Mission C1 : nouvelle série, le stock n'est pas compté deux fois.
+    await ongletCourses(tester, dejaAchete: true);
     await toucher(tester, find.byKey(const Key('nouvelle_serie')));
+    await ongletCourses(tester, dejaAchete: true);
     await attendre(tester, find.byKey(const Key('series_validees')));
     expect(texte(tester, 'series_validees'), '1 série déjà validée');
     expect(texte(tester, 'cout_cumule'), 'Coût cumulé : 412,50 €');
     expect(texte(tester, 'ajout_$croque'), 'Croque +270');
+    await ongletCourses(tester, dejaAchete: false);
     expect(find.byKey(const Key('courses_validee')), findsNothing);
     expect(find.byKey(const Key('valider_courses')), findsOneWidget);
     expect((await stock(gA, croque))!['quantite'], 150); // inchangé
@@ -415,6 +453,7 @@ void main() {
     expect(texte(tester, 'rendement_$croque'), 'Croque : +40');
     await saisir(tester, 'cout_courses', '80');
     await toucher(tester, find.byKey(const Key('confirmer_validation')));
+    await ongletCourses(tester, dejaAchete: true);
     await attendre(tester, find.byKey(const Key('courses_validee')));
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 100));

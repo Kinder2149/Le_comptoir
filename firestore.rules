@@ -227,10 +227,24 @@ service cloud.firestore {
       return l is list
         && (n < 10 ? ((n <= 0 || libreValide(l[0])) && (n <= 1 || libreValide(l[1])) && (n <= 2 || libreValide(l[2])) && (n <= 3 || libreValide(l[3])) && (n <= 4 || libreValide(l[4])) && (n <= 5 || libreValide(l[5])) && (n <= 6 || libreValide(l[6])) && (n <= 7 || libreValide(l[7])) && (n <= 8 || libreValide(l[8])) && (n <= 9 || libreValide(l[9]))) : (libreValide(l[0]) && libreValide(l[1]) && libreValide(l[2]) && libreValide(l[3]) && libreValide(l[4]) && libreValide(l[5]) && libreValide(l[6]) && libreValide(l[7]) && libreValide(l[8]) && libreValide(l[9]) && (n < 20 ? ((n <= 10 || libreValide(l[10])) && (n <= 11 || libreValide(l[11])) && (n <= 12 || libreValide(l[12])) && (n <= 13 || libreValide(l[13])) && (n <= 14 || libreValide(l[14])) && (n <= 15 || libreValide(l[15])) && (n <= 16 || libreValide(l[16])) && (n <= 17 || libreValide(l[17])) && (n <= 18 || libreValide(l[18])) && (n <= 19 || libreValide(l[19]))) : (libreValide(l[10]) && libreValide(l[11]) && libreValide(l[12]) && libreValide(l[13]) && libreValide(l[14]) && libreValide(l[15]) && libreValide(l[16]) && libreValide(l[17]) && libreValide(l[18]) && libreValide(l[19]) && (n < 30 ? ((n <= 20 || libreValide(l[20])) && (n <= 21 || libreValide(l[21])) && (n <= 22 || libreValide(l[22])) && (n <= 23 || libreValide(l[23])) && (n <= 24 || libreValide(l[24])) && (n <= 25 || libreValide(l[25])) && (n <= 26 || libreValide(l[26])) && (n <= 27 || libreValide(l[27])) && (n <= 28 || libreValide(l[28])) && (n <= 29 || libreValide(l[29]))) : (libreValide(l[20]) && libreValide(l[21]) && libreValide(l[22]) && libreValide(l[23]) && libreValide(l[24]) && libreValide(l[25]) && libreValide(l[26]) && libreValide(l[27]) && libreValide(l[28]) && libreValide(l[29]) && (n < 40 ? ((n <= 30 || libreValide(l[30])) && (n <= 31 || libreValide(l[31])) && (n <= 32 || libreValide(l[32])) && (n <= 33 || libreValide(l[33])) && (n <= 34 || libreValide(l[34])) && (n <= 35 || libreValide(l[35])) && (n <= 36 || libreValide(l[36])) && (n <= 37 || libreValide(l[37])) && (n <= 38 || libreValide(l[38])) && (n <= 39 || libreValide(l[39]))) : (libreValide(l[30]) && libreValide(l[31]) && libreValide(l[32]) && libreValide(l[33]) && libreValide(l[34]) && libreValide(l[35]) && libreValide(l[36]) && libreValide(l[37]) && libreValide(l[38]) && libreValide(l[39]) && (n < 50 ? ((n <= 40 || libreValide(l[40])) && (n <= 41 || libreValide(l[41])) && (n <= 42 || libreValide(l[42])) && (n <= 43 || libreValide(l[43])) && (n <= 44 || libreValide(l[44])) && (n <= 45 || libreValide(l[45])) && (n <= 46 || libreValide(l[46])) && (n <= 47 || libreValide(l[47])) && (n <= 48 || libreValide(l[48])) && (n <= 49 || libreValide(l[49]))) : (libreValide(l[40]) && libreValide(l[41]) && libreValide(l[42]) && libreValide(l[43]) && libreValide(l[44]) && libreValide(l[45]) && libreValide(l[46]) && libreValide(l[47]) && libreValide(l[48]) && libreValide(l[49]) && (n < 60 ? ((n <= 50 || libreValide(l[50])) && (n <= 51 || libreValide(l[51])) && (n <= 52 || libreValide(l[52])) && (n <= 53 || libreValide(l[53])) && (n <= 54 || libreValide(l[54])) && (n <= 55 || libreValide(l[55])) && (n <= 56 || libreValide(l[56])) && (n <= 57 || libreValide(l[57])) && (n <= 58 || libreValide(l[58])) && (n <= 59 || libreValide(l[59]))) : (libreValide(l[50]) && libreValide(l[51]) && libreValide(l[52]) && libreValide(l[53]) && libreValide(l[54]) && libreValide(l[55]) && libreValide(l[56]) && libreValide(l[57]) && libreValide(l[58]) && libreValide(l[59])))))))))))));
     }
+    // Cases cochées en magasin (décision 65) : « articles » = clés des articles affichés
+    // (150 au plus), « coches » = map clé -> true. Une case ne peut viser qu'un article
+    // de la liste : les clés de « coches » sont un sous-ensemble de « articles ».
+    // Sans « articles » ni « coches » (écritures d'avant E6), rien à vérifier : court-circuit
+    // qui garde la liste de 60 lignes libres sous la limite de 1000 expressions.
+    function articlesValides(d) {
+      // Les cases sont un sous-ensemble des articles, donc bornées par eux. Un « coches »
+      // qui n'est pas une map fait échouer keys().
+      return !d.keys().hasAny(['articles', 'coches'])
+        || (d.get('articles', []) is list
+            && d.get('articles', []).size() <= 150
+            && d.get('coches', {}).keys().hasOnly(d.get('articles', [])));
+    }
     function listePreparationValide(d) {
-      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'cumulSeries', 'cumulCout', 'cumulAjouts'])
+      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'cumulSeries', 'cumulCout', 'cumulAjouts', 'articles', 'coches'])
         && d.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
         && cumulValide(d)
+        && articlesValides(d)
         && d.statut == 'preparation'
         && d.lignes is list
         && d.lignes.size() <= 400

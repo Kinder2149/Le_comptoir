@@ -227,6 +227,7 @@ void main() {
     ));
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await finTransition(tester);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     final cleQte = Key('qte_${gA}_$croque');
     await attendre(tester, find.byKey(cleQte));

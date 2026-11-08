@@ -346,11 +346,13 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await finTransition(tester);
     expect(find.byKey(Key('personnes_$gA')), findsNothing);
+    await ouvrirReglagesCourses(tester);
     expect(texte(tester, 'lecture_personnes_$gA'), 'Personnes attendues : 80');
     expect(find.text('Tout l’événement (2 j)'), findsOneWidget);
     expect(
         tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
         isTrue);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     for (var i = 0;
@@ -361,7 +363,9 @@ void main() {
     expect(champQte('qte_${gA}_$croque'), '320'); // 80 x 2 jours x 2
 
     // Un jour complet : choix local, la durée de l'événement ne bouge pas.
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_jour')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     for (var i = 0;
         i < 100 && champQte('qte_${gA}_$croque') != '160';
@@ -378,6 +382,7 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await finTransition(tester);
+    await ouvrirReglagesCourses(tester);
     expect(
         tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
         isTrue);
