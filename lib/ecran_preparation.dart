@@ -42,6 +42,7 @@ class EcranPreparation extends StatelessWidget {
     required this.importer,
     this.partagerModele = partagerFichier,
     this.choisirClasseur = choisirClasseurSysteme,
+    this.definirPrevisionVerifiee,
   });
 
   final Stream<Evenement?> evenement;
@@ -86,6 +87,10 @@ class EcranPreparation extends StatelessWidget {
   /// Choisit le classeur à importer : rend son contenu, ou null si on annule
   /// (remplaçable dans les tests).
   final SelecteurClasseur choisirClasseur;
+
+  /// « C'est vérifié » (étape 3) : écrit la case « prévision vérifiée » de l'événement
+  /// (absent = pas de bouton, comme dans les tests sans réseau).
+  final Future<void> Function(bool verifiee)? definirPrevisionVerifiee;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +191,7 @@ class EcranPreparation extends StatelessWidget {
                             revenirAuMenu: revenirAuMenu,
                             chargerReferences: chargerReferences,
                             appliquerReference: appliquerReference,
+                            definirVerifiee: definirPrevisionVerifiee,
                           ),
                         ],
                       ),
@@ -760,10 +766,14 @@ class _EtapePrevision extends StatelessWidget {
     required this.revenirAuMenu,
     required this.chargerReferences,
     required this.appliquerReference,
+    this.definirVerifiee,
   });
 
   final Evenement evenement;
   final List<ProduitEvenement> produits;
+
+  /// « C'est vérifié » : null = pas de bouton.
+  final Future<void> Function(bool verifiee)? definirVerifiee;
 
   /// Peut lire les prévisions (accès à tout l'événement) ; [reglable] = peut aussi les écrire.
   final bool voit;
@@ -813,6 +823,14 @@ class _EtapePrevision extends StatelessWidget {
               key: const Key('aide_prevision'),
             ),
             const SizedBox(height: 12),
+            if (reglable && definirVerifiee != null) ...[
+              _verification(),
+              const SizedBox(height: 12),
+            ] else if (evenement.previsionVerifiee) ...[
+              const Text('Prévision vérifiée',
+                  key: Key('prevision_verifiee_ok')),
+              const SizedBox(height: 12),
+            ],
             if (s.hasError)
               const Text('Impossible de lire la prévision. Vérifiez le réseau.',
                   key: Key('erreur_lecture_prevision'))
@@ -861,6 +879,35 @@ class _EtapePrevision extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  /// « C'est vérifié » : coche la tâche Prévision du tableau de bord. Une fois cochée,
+  /// on peut la remettre à vérifier (si le menu ou une source change).
+  Widget _verification() {
+    final definir = definirVerifiee!;
+    if (evenement.previsionVerifiee) {
+      return Row(
+        children: [
+          const Icon(Icons.check_circle, color: Palette.saugeFonce),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text('Prévision vérifiée', key: Key('prevision_verifiee_ok')),
+          ),
+          OutlinedButton(
+            key: const Key('prevision_a_revoir'),
+            style: TypeAction.gerer.contour,
+            onPressed: () => definir(false),
+            child: const Text('Revoir'),
+          ),
+        ],
+      );
+    }
+    return FilledButton(
+      key: const Key('prevision_verifiee'),
+      style: TypeAction.reussir.plein,
+      onPressed: () => definir(true),
+      child: const Text("C'est vérifié"),
     );
   }
 

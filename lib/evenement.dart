@@ -48,6 +48,7 @@ class Evenement {
     this.nbCaissesOuvertes = 0,
     this.nbGymnases = 1,
     this.nbJours = 2.0,
+    this.previsionVerifiee = false,
   });
 
   final String id;
@@ -71,6 +72,10 @@ class Evenement {
 
   /// Durée de l'événement en jours (réglage des courses).
   final double nbJours;
+
+  /// La gestion a vérifié la prévision de consommation (« C'est vérifié »,
+  /// décision 62) : c'est la tâche Prévision du tableau de bord.
+  final bool previsionVerifiee;
 
   /// Créé mais pas encore ouvert : seule la gestion le voit, aucune caisse ne s'y ouvre.
   bool get enPreparation => statut == 'en_preparation';

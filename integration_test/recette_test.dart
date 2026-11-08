@@ -475,10 +475,13 @@ void main() {
     await attendre(tester, find.text('Tournoi du week-end'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi du week-end'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 4 · 16,00 €');
     expect(texte(tester, 'statut_caisse_$caisseLea'), 'Clôturée · 4 ventes · 16,00 €');
     expect(texte(tester, 'direct_annulees'), 'Ventes annulées : 2');
     expect(find.byKey(Key('caisse_$caisseZoe')), findsNothing); // gymnase B : pas le sien
+    await retour(tester);
     expect(find.byKey(const Key('vue_limitee')), findsOneWidget);
     expect(find.byKey(const Key('cloture_reservee')), findsOneWidget);
 
@@ -493,6 +496,8 @@ void main() {
     await attendre(tester, find.text('Tournoi du week-end'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi du week-end'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 4 · 12,50 €');
     expect(texte(tester, 'statut_caisse_$caisseZoe'), 'Ouverte · 4 ventes · 12,50 €');
     expect(find.byKey(const Key('direct_annulees')), findsNothing);
@@ -519,9 +524,12 @@ void main() {
     await attendre(tester, find.text('Tournoi du week-end'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi du week-end'));
-    await attendre(tester, find.byKey(const Key('cloturer_evenement')));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 7 · 23,50 €'); // vue commune
     expect(find.byKey(const Key('vue_commune')), findsOneWidget);
+    await retour(tester);
+    await attendre(tester, find.byKey(const Key('cloturer_evenement')));
     await finTransition(tester);
     expect(find.text('Forcer la clôture'), findsOneWidget); // la caisse de Zoé (B) est ouverte
     await toucher(tester, find.byKey(const Key('cloturer_evenement')));

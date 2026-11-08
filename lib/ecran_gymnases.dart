@@ -298,7 +298,7 @@ class _CarteGymnase extends StatelessWidget {
       {int? initial}) {
     return showDialog<int>(
       context: context,
-      builder: (_) => _DialogueNombre(titre: titre, initial: initial),
+      builder: (_) => DialogueNombre(titre: titre, initial: initial),
     );
   }
 
@@ -622,17 +622,17 @@ class _EtatDialogueNom extends State<_DialogueNom> {
 }
 
 /// Saisie d'une quantité entière de 0 à 100 000.
-class _DialogueNombre extends StatefulWidget {
-  const _DialogueNombre({required this.titre, this.initial});
+class DialogueNombre extends StatefulWidget {
+  const DialogueNombre({super.key, required this.titre, this.initial});
 
   final String titre;
   final int? initial;
 
   @override
-  State<_DialogueNombre> createState() => _EtatDialogueNombre();
+  State<DialogueNombre> createState() => _EtatDialogueNombre();
 }
 
-class _EtatDialogueNombre extends State<_DialogueNombre> {
+class _EtatDialogueNombre extends State<DialogueNombre> {
   late final _texte =
       TextEditingController(text: widget.initial?.toString() ?? '');
   String? _erreur;

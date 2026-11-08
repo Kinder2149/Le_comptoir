@@ -215,6 +215,8 @@ void main() {
     await ouvrir(tester, 'chef2', googleAnnule);
     await attendre(tester, find.text('Tournoi'));
     await toucher(tester, find.text('Tournoi'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendre(tester, find.byKey(const Key('suivi_en_direct')));
     await attendreTexte(tester, 'direct_signal_$tarte', 'Épuisé : Gymnase A');
     expect(texte(tester, 'direct_signal_$crepe'), 'Vide : Gymnase A');

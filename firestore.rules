@@ -30,7 +30,7 @@ rules_version = '2';
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
 //                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
 //                                                 + cumul des séries déjà validées (C1) : cumulSeries, cumulCout, cumulAjouts[] {produitId, quantite} ; une liste validée repart vide en « preparation » avec le cumul augmenté de sa série
-//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
+//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses ; evenements/{e}.previsionVerifiee (booléen) : tableau de bord
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
@@ -392,6 +392,14 @@ service cloud.firestore {
           && request.resource.data.nbJours is number
           && request.resource.data.nbJours >= 0.5
           && request.resource.data.nbJours <= 30;
+
+        // Prévision vérifiée (décision 62, « C'est vérifié ») : un booléen seul, réglé par la
+        // gestion qui règle la durée (responsable, ou gestionnaire rattaché à tous les gymnases),
+        // tant que l'événement n'est pas clôturé.
+        allow update: if gereTout(a, e)
+          && resource.data.statut in ['en_preparation', 'en_cours']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['previsionVerifiee'])
+          && request.resource.data.previsionVerifiee is bool;
 
         // Un gymnase de plus : le compteur monte de 1 ET le gymnase `dernierGymnase` naît
         // dans le même lot (le compteur ne se monte jamais seul : il décide qui est

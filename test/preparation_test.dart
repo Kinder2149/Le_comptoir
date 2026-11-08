@@ -16,14 +16,15 @@ import 'classeur_aides.dart';
 // « Personnes et durée ».
 //   Gymnases A et B ; produits finis Soda et Croque (jamais d'ingrédient dans la liste).
 //   Stock au départ : A : Soda 6 (repris), Croque 10 ; B : rien.
-Evenement _ev(String statut) => Evenement(
+Evenement _ev(String statut, {bool verifiee = false}) => Evenement(
     id: 'e',
     nom: 'Tournoi',
     date: '2026-10-03',
     statut: statut,
     modes: const ['carte'],
     menuNom: 'M',
-    nbJours: 3);
+    nbJours: 3,
+    previsionVerifiee: verifiee);
 
 const _gymnases = [Gymnase('gA', 'Gymnase A', 40), Gymnase('gB', 'Gymnase B')];
 
@@ -33,6 +34,8 @@ final _personnesEcrites = <(String, int)>[];
 
 // Étape 3 : prévisions écrites, événements passés appliqués, retours au menu.
 final _previsionsEcrites = <(String, double)>[];
+// « C'est vérifié » (E3) : valeurs écrites dans la case de l'événement.
+final _verifieesEcrites = <bool>[];
 final _passesAppliquees = <String>[];
 var _retoursAuMenu = 0;
 
@@ -67,6 +70,7 @@ Future<List<(String, String, int)>> _afficher(
   List<ReferenceImportee> references = const [],
   Uint8List? classeur,
   Object? echecImport,
+  bool verifiee = false,
 }) async {
   tester.view.physicalSize = const Size(1080, 9000);
   tester.view.devicePixelRatio = 2.5;
@@ -74,6 +78,7 @@ Future<List<(String, String, int)>> _afficher(
   _joursEcrits.clear();
   _personnesEcrites.clear();
   _previsionsEcrites.clear();
+  _verifieesEcrites.clear();
   _passesAppliquees.clear();
   _retoursAuMenu = 0;
   _references = references;
@@ -84,7 +89,7 @@ Future<List<(String, String, int)>> _afficher(
   final ecrits = <(String, String, int)>[];
   await tester.pumpWidget(MaterialApp(
     home: EcranPreparation(
-      evenement: Stream.value(_ev(statut)),
+      evenement: Stream.value(_ev(statut, verifiee: verifiee)),
       portee: portee ?? _tout(),
       gymnases: Stream.value(_gymnases),
       produits: Stream.value(_produits),
@@ -95,6 +100,7 @@ Future<List<(String, String, int)>> _afficher(
       onVoirGymnases: voirGymnases ?? () {},
       previsions: Stream.value(previsions),
       definirPrevision: (p, c) async => _previsionsEcrites.add((p, c)),
+      definirPrevisionVerifiee: (v) async => _verifieesEcrites.add(v),
       chargerPasses: () async => passes,
       appliquerPasse: (r) async {
         if (refus) throw const LectureRefusee();
@@ -747,6 +753,30 @@ void main() {
       expect(texte(tester, 'prevision_faite'),
           'Prévision calculée d\'après « Tournoi 2025 (Excel) ».');
     });
+  });
+  // Mission « Ergonomie de la gestion », E3 : « C'est vérifié » dans l'étape Prévision.
+  testWidgets("étape 3 : « C'est vérifié » écrit la case ; « Revoir » la remet à vérifier", (tester) async {
+    await _afficher(tester);
+    expect(find.byKey(const Key('prevision_verifiee')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('prevision_verifiee')));
+    await tester.pump();
+    expect(_verifieesEcrites, [true]);
+  });
+
+  testWidgets("étape 3 : une prévision déjà vérifiée l'affiche et propose de la revoir", (tester) async {
+    await _afficher(tester, verifiee: true);
+    expect(find.byKey(const Key('prevision_verifiee')), findsNothing);
+    expect(find.byKey(const Key('prevision_verifiee_ok')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('prevision_a_revoir')));
+    await tester.pump();
+    expect(_verifieesEcrites, [false]);
+  });
+
+  testWidgets("étape 3 : événement clôturé, pas de « C'est vérifié »", (tester) async {
+    await _afficher(tester, statut: 'cloture', verifiee: true);
+    expect(find.byKey(const Key('prevision_verifiee')), findsNothing);
+    expect(find.byKey(const Key('prevision_a_revoir')), findsNothing);
+    expect(find.byKey(const Key('prevision_verifiee_ok')), findsOneWidget);
   });
 }
 

@@ -177,6 +177,8 @@ void main() {
     }
 
     Future<void> ouvrirPreparation() async {
+      await attendre(tester, find.byKey(const Key('onglet_avant')));
+      await toucher(tester, find.byKey(const Key('onglet_avant')));
       await attendre(tester, find.byKey(const Key('voir_preparation')));
       await finTransition(tester);
       await toucher(tester, find.byKey(const Key('voir_preparation')));

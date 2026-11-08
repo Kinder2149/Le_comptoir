@@ -189,6 +189,9 @@ void main() {
         find.descendant(
             of: find.byKey(const Key('etat_evenement')),
             matching: find.text('En cours')));
+    await attendre(tester, find.byKey(const Key('onglet_avant')));
+    await toucher(tester, find.byKey(const Key('onglet_avant')));
+    await attendre(tester, find.byKey(const Key('voir_preparation')));
     await toucher(tester, find.byKey(const Key('voir_preparation')));
     await attendre(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await finTransition(tester);
@@ -273,6 +276,8 @@ void main() {
     await attendre(tester, find.text('Tournoi P3'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi P3'));
+    await attendre(tester, find.byKey(const Key('onglet_avant')));
+    await toucher(tester, find.byKey(const Key('onglet_avant')));
     await attendre(tester, find.byKey(const Key('voir_preparation')));
     await finTransition(tester);
     await toucher(tester, find.byKey(const Key('voir_preparation')));

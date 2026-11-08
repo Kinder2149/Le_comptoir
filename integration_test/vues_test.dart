@@ -185,6 +185,8 @@ void main() {
     await attendre(tester, find.text('Tournoi'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendre(tester, find.byKey(const Key('vue_commune')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 5 · 22,00 €');
     await attendreTexte(tester, 'direct_produit_$croque',
@@ -207,6 +209,10 @@ void main() {
 
     await choisirVue(tester, 'vue_commune');
     await attendreTexte(tester, 'direct_total', 'Ventes : 5 · 22,00 €');
+
+    // Retour au tableau de bord (Pendant) : le bilan s'y ouvre.
+    await tester.pageBack();
+    await finTransition(tester);
 
     // --- Bilan : commun, A, B (chiffres écrits à la main).
     await toucher(tester, find.byKey(const Key('voir_bilan')));

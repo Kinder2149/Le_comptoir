@@ -78,6 +78,7 @@ class DepotEvenements {
       nbCaissesOuvertes: (data['nbCaissesOuvertes'] as int?) ?? 0,
       nbGymnases: (data['nbGymnases'] as int?) ?? 1,
       nbJours: (data['nbJours'] as num?)?.toDouble() ?? 2.0,
+      previsionVerifiee: data['previsionVerifiee'] == true,
     );
   }
 
@@ -447,6 +448,10 @@ class DepotEvenements {
   /// Réglages des courses : durée de l'événement et personnes attendues par gymnase.
   Future<void> definirJours(String evenementId, double jours) =>
       _evenements.doc(evenementId).update({'nbJours': jours});
+
+  /// « C'est vérifié » : la gestion a relu la prévision (ou la remet à vérifier).
+  Future<void> definirPrevisionVerifiee(String evenementId, bool verifiee) =>
+      _evenements.doc(evenementId).update({'previsionVerifiee': verifiee});
 
   Future<void> definirPersonnes(
           String evenementId, String gymnaseId, int personnes) =>

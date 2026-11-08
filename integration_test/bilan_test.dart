@@ -163,7 +163,10 @@ void main() {
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi'));
     await attendre(tester, find.byKey(const Key('voir_bilan')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 6 · 26,50 €');
+    await tester.pageBack();
+    await finTransition(tester);
     await toucher(tester, find.byKey(const Key('voir_bilan')));
     await attendre(tester, find.byKey(const Key('bilan_total')));
     await finTransition(tester);

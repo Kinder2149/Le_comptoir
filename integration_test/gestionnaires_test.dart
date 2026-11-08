@@ -235,9 +235,11 @@ void main() {
     await attendre(tester, find.text('Tournoi'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi'));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 1 · 6,00 €');
     expect(find.byKey(Key('caisse_$caisseLea')), findsOneWidget);
     expect(find.byKey(Key('caisse_$caisseMax')), findsNothing);
+    await retour(tester);
     expect(find.byKey(const Key('vue_limitee')), findsOneWidget);
     expect(find.byKey(const Key('cloturer_evenement')), findsNothing);
     expect(find.byKey(const Key('cloture_reservee')), findsOneWidget);
@@ -303,9 +305,11 @@ void main() {
     await attendre(tester, find.text('Tournoi'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi'));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 1 · 3,00 €');
     expect(find.byKey(Key('caisse_$caisseMax')), findsOneWidget);
     expect(find.byKey(Key('caisse_$caisseLea')), findsNothing);
+    await retour(tester);
 
     // --- Rattaché aux deux gymnases : vue complète et clôture possible.
     await changerDeSession(tester, () async {
@@ -320,7 +324,9 @@ void main() {
     await attendre(tester, find.text('Tournoi'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi'));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendreTexte(tester, 'direct_total', 'Ventes : 2 · 9,00 €');
+    await retour(tester);
     expect(find.byKey(const Key('vue_limitee')), findsNothing);
     expect(find.byKey(const Key('cloturer_evenement')), findsOneWidget);
     expect(find.byKey(const Key('cloture_reservee')), findsNothing);
