@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 10/11/2026 — Tri des projets (lot 6)
+- Missions rangées : « Ergonomie de la gestion » seule active ; « Stock et courses » et « C1 » restent « En attente de ma capture » (checklist visuelle de Kinder, CONSTAT_T2.md §6.4) ; « Plan initial » (1), « Publication Play Store » (2) et « Menu, événement et courses » (3) « En attente (n°) » ; « Préparer l'événement » était déjà Close. Aucune branche touchée : `claude/ergonomie-gestion` (12 commits non fusionnés dans `main`) et `claude/comptoir-app-refinement-cnuyb4` (16 commits non envoyés) laissées telles quelles.
+
 ## 08/11/2026 — Mission « Ergonomie de la gestion », E9 : clôture, version 1.3.0
 - Parcours automatique du critère de fin sur émulateur (`parcours_ergonomie_test.dart`) : tournoi, Avant « n sur 4 », stock par familles, personnes et durée, prévision vérifiée, courses par rayons, classeur Excel téléchargé et réimporté, ouverture, Pendant (épuisé à surveiller), clôture, Après. 12 captures « après » dans `audit_front/ergonomie/apres/`. Texte de vérification rangé dans le plan (section 14). APK de recette 1.3.0 reconstruit.
 - **Résumé de la mission (E1 à E9)** : écran de l'événement en trois temps (Avant, Pendant, Après), produits rangés par familles, stock de départ par gymnase, personnes/durée et prévision en une page, courses par rayons avec cases partagées, stock pendant le tournoi rangé par urgence, classeur Excel mis en forme (six feuilles, volets figés, listes déroulantes). Règles d'accès déployées. Dépendance ajoutée : `archive` 3.6.1 (accord de Kinder).
