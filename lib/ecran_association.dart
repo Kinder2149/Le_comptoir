@@ -8,6 +8,7 @@ import 'connexion.dart';
 import 'depot_associations.dart';
 import 'depot_evenements.dart' show ResultatLien;
 import 'ecran_evenement.dart';
+import 'ecran_extraction.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, selecteurPhotoReel;
 import 'ecran_menus.dart';
 import 'ecran_nouvel_evenement.dart';
@@ -265,18 +266,39 @@ class EcranAssociation extends StatelessWidget {
                   if (moi != null && moi.role != 'benevole')
                     Padding(
                       padding: const EdgeInsets.only(top: 8, bottom: 8),
-                      child: OutlinedButton(
-                        key: const Key('menus'),
-                        style: TypeAction.gerer.contour,
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => EcranMenus(
-                              depot: depot.menus(assoId),
-                              selecteurPhoto: selecteurPhoto,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton(
+                            key: const Key('menus'),
+                            style: TypeAction.gerer.contour,
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => EcranMenus(
+                                  depot: depot.menus(assoId),
+                                  selecteurPhoto: selecteurPhoto,
+                                ),
+                              ),
                             ),
+                            child: const Text('Menus'),
                           ),
-                        ),
-                        child: const Text('Menus'),
+                          OutlinedButton(
+                            key: const Key('extraction'),
+                            style: TypeAction.gerer.contour,
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => EcranExtraction(
+                                  depot: depot,
+                                  uid: uid,
+                                  assoId: assoId,
+                                  responsable: moi.estResponsable,
+                                ),
+                              ),
+                            ),
+                            child: const Text('Extraction et modèle'),
+                          ),
+                        ],
                       ),
                     ),
                   moi == null

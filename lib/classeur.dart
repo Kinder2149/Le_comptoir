@@ -889,6 +889,20 @@ Uint8List construireModele({
   return _octets(classeur);
 }
 
+// ------------------------------------- extraction « Données de l'association » (F5)
+
+/// Le classeur d'un menu de l'association (écran « Extraction et modèle ») : l'accueil, la
+/// feuille Menu (la consommation par personne et par jour de chaque produit est la
+/// prévision du menu) et la feuille Recettes (la composition). Pas de stock, pas de
+/// ventes : seulement ce qui décrit le menu.
+Uint8List construireDonneesMenu({required List<ProduitEvenement> produits}) {
+  final classeur = _nouveauClasseur();
+  _feuilleAccueil(classeur);
+  _feuilleMenu(classeur, produits, _aides[feuilleMenu]!);
+  _feuilleRecettes(classeur, produits, _aides[feuilleRecettes]!);
+  return _octets(classeur);
+}
+
 // ------------------------------------------------------- export du tournoi (P8)
 
 /// Le classeur complet d'un tournoi (décision 57), à relire ou à réimporter : les

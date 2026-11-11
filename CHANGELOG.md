@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F5 : écran « Extraction et modèle »
+- Nouveau bouton « Extraction et modèle » à côté de « Menus » (responsable et gestionnaires seulement). Quatre cartes : modèle vierge, données de l'association (menu, recettes, prévision d'un menu choisi), export d'un tournoi clôturé (même classeur que l'onglet Après, limité aux gymnases de la personne), comparateur (désactivé jusqu'à F6). Aucune dépendance ajoutée. Tests : 456, 2 parcours Android verts.
+
 ## 11/11/2026 — Mission « Retours du terrain », F4 : modèle générique
 - Plus aucune marque dans le modèle de menu ni dans le modèle Excel : Coca→Cola, Coca Zéro→Cola zéro, Fanta→Soda à l'orange, Ice Tea→Thé glacé, Oasis→Boisson fruitée, Mars/Twix/Snickers→Barre caramel / biscuitée / cacahuète. Prix, consommations, recettes, rayons et familles inchangés (testé). Chaque feuille du modèle vierge a une explication et un exemple rempli, jamais importé. Menus et événements existants inchangés. Tests : 452.
 
