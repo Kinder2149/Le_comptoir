@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T8 : page Courses en cartes
+- Page Courses : bandeau résumé (durée, personnes, coût cumulé), réglages, rayons (repliables, compteur cochés/total) et quantités en cartes, actions (Ajouter une ligne, Enregistrer ou partager, Saisir ce que j'ai acheté) fixées en bas. Présentation seulement : calculs, règles, boutons inchangés. Captures avant/après dans `audit_front/tournoi/`. Tests : 520.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T7 : Paramètres en cartes
 - Paramètres rangés en cartes (Mon compte, Association et code, Membres, Qui peut quoi repliable, Zone dangereuse) ; badge de statut par membre ; pour le responsable, « Changer le statut » (bénévole, gestionnaire, retirer de l'association) avec confirmation ; gestionnaire : liste sans action ; bénévole : pas de liste. Droits et règles inchangés. Tests : 513.
 

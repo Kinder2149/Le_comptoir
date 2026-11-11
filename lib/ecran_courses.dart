@@ -12,6 +12,7 @@ import 'evenement.dart';
 import 'gymnase.dart';
 import 'partage.dart';
 import 'previsions.dart';
+import 'theme.dart';
 import 'ticket.dart';
 
 /// Courses d'un événement, en préparation (Ergonomie de la gestion, E6). Deux onglets :
@@ -395,6 +396,114 @@ class _EtatCourses extends State<EcranCourses> {
           : !_charge
               ? const Center(child: CircularProgressIndicator())
               : _contenu(context),
+      // Les actions restent en bas, hors de la liste qui défile ; le clavier les masque
+      // pour laisser la place aux champs « Il reste » et aux quantités.
+      bottomNavigationBar: (_erreurChargement == null &&
+              _charge &&
+              _onglet == 0 &&
+              MediaQuery.viewInsetsOf(context).bottom == 0)
+          ? _barreActions(context)
+          : null,
+    );
+  }
+
+  /// Barre fixée en bas : ajouter une ligne, enregistrer ou partager la liste, saisir
+  /// ce qui a été acheté (valider). Les boutons font ce qu'ils faisaient avant.
+  Widget _barreActions(BuildContext context) {
+    final validee = _liste.validation != null;
+    const serre = EdgeInsets.symmetric(horizontal: 8);
+    return DecoratedBox(
+      key: const Key('barre_actions'),
+      decoration: const BoxDecoration(
+        color: Palette.papier,
+        border: Border(top: BorderSide(color: Palette.filet)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const Key('ajouter_libre'),
+                      style: OutlinedButton.styleFrom(padding: serre),
+                      onPressed: validee ? null : _ajouterLibre,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Ajouter une ligne',
+                          textAlign: TextAlign.center),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const Key('partager_liste'),
+                      style: OutlinedButton.styleFrom(padding: serre),
+                      onPressed: _partagerListe,
+                      icon: const Icon(Icons.ios_share),
+                      label: const Text('Enregistrer ou partager',
+                          textAlign: TextAlign.center),
+                    ),
+                  ),
+                ],
+              ),
+              if (!validee) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    key: const Key('valider_courses'),
+                    onPressed: _liste.lignes.isEmpty ? null : _valider,
+                    child: const Text("Saisir ce que j'ai acheté"),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Bandeau résumé : durée couverte, personnes attendues, coût cumulé des séries
+  /// déjà validées (valeurs déjà connues de l'écran, rien de nouveau calculé).
+  Widget _bandeauResume(BuildContext context) {
+    final personnes = _gymnases.fold<int>(0, (t, g) => t + (_personnes[g.id] ?? 0));
+    final cout = _liste.seriesValidees > 0 ? coutAffiche(_liste.coutTotalCentimes) : '—';
+    Widget chiffre(String libelle, String valeur, String cle) => Expanded(
+          child: Column(
+            children: [
+              Text(valeur,
+                  key: Key(cle),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Palette.pruneFonce)),
+              const SizedBox(height: 2),
+              Text(libelle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: Palette.gris)),
+            ],
+          ),
+        );
+    return Card(
+      key: const Key('bandeau_resume'),
+      color: Palette.pruneDoux,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        child: Row(
+          children: [
+            chiffre('Durée', '${_nombre(_jours)} j', 'resume_duree'),
+            chiffre('Personnes', '$personnes', 'resume_personnes'),
+            chiffre('Coût cumulé', cout, 'resume_cout'),
+          ],
+        ),
+      ),
     );
   }
 
@@ -435,6 +544,7 @@ class _EtatCourses extends State<EcranCourses> {
           ],
         ),
         const SizedBox(height: 12),
+        _bandeauResume(context),
         ...(_onglet == 0
             ? _ongletAcheter(context, titre, achats, cles, aucunePersonne)
             : _ongletAchete(context)),
@@ -482,53 +592,44 @@ class _EtatCourses extends State<EcranCourses> {
                   'Cochez au fur et à mesure dans les rayons. Les quantités tiennent compte du stock.'),
               const SizedBox(height: 4),
               _rayons(context, achats, cles),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  key: const Key('ajouter_libre'),
-                  onPressed: _ajouterLibre,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Ajouter une ligne'),
-                ),
-              ),
-              const Divider(),
-              Text('Quantités par produit', style: titre),
-              KeyedSubtree(
-                key: ValueKey(_version),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final g in _gymnases) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 4),
-                        child: Text(
-                            _gymnases.length > 1 ? 'Produits : ${g.nom}' : 'Produits',
-                            style: titre),
+              const SizedBox(height: 4),
+              Card(
+                key: const Key('quantites_produits'),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Quantités par produit', style: titre),
+                      KeyedSubtree(
+                        key: ValueKey(_version),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final g in _gymnases) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                child: Text(
+                                    _gymnases.length > 1
+                                        ? 'Produits : ${g.nom}'
+                                        : 'Produits',
+                                    style: titre),
+                              ),
+                              for (final p in _produits)
+                                _ligneProduit(g, p, _tableaux[g.id]),
+                            ],
+                          ],
+                        ),
                       ),
-                      for (final p in _produits) _ligneProduit(g, p, _tableaux[g.id]),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-      const SizedBox(height: 16),
-      OutlinedButton.icon(
-        key: const Key('partager_liste'),
-        onPressed: _partagerListe,
-        icon: const Icon(Icons.ios_share),
-        label: const Text('Partager la liste'),
-      ),
-      if (!validee) ...[
-        const SizedBox(height: 8),
-        FilledButton(
-          key: const Key('valider_courses'),
-          onPressed: _liste.lignes.isEmpty ? null : _valider,
-          child: const Text("Saisir ce que j'ai acheté"),
-        ),
-      ],
     ];
   }
 
@@ -537,11 +638,16 @@ class _EtatCourses extends State<EcranCourses> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ExpansionTile(
+        Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
           key: const Key('reglages_courses'),
-          tilePadding: EdgeInsets.zero,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           title: Text(_resumeReglages(), key: const Key('resume_reglages')),
-          childrenPadding: const EdgeInsets.only(bottom: 8),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           children: [
             Text('Durée à couvrir', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
@@ -592,6 +698,7 @@ class _EtatCourses extends State<EcranCourses> {
               ),
             ),
           ],
+        ),
         ),
         if (aucunePersonne)
           Padding(
@@ -655,18 +762,38 @@ class _EtatCourses extends State<EcranCourses> {
                 key: Key('rayon_$r'),
                 margin: const EdgeInsets.only(bottom: 8),
                 clipBehavior: Clip.antiAlias,
-                child: ExpansionTile(
-                  initiallyExpanded: true,
-                  title: Text(libellesRayons[r]!,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  children: [
-                    for (final a in articles)
-                      if (a.rayon == r) _ligneArticle(a, usages[a.cle]),
-                  ],
-                ),
+                child: _rayon(r, articles.where((a) => a.rayon == r).toList(), usages),
               ),
         ],
       ),
+    );
+  }
+
+  /// Un rayon : carte repliable, avec le compteur « cochés/total » à côté du nom.
+  Widget _rayon(String r, List<_Article> articles, Map<String, List<String>> usages) {
+    final cochesIci = articles.where((a) => _coches.contains(a.cle)).length;
+    final fini = cochesIci == articles.length;
+    return ExpansionTile(
+      initiallyExpanded: true,
+      shape: const Border(),
+      collapsedShape: const Border(),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(libellesRayons[r]!,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 10),
+          BadgeComptoir(
+            texte: '$cochesIci/${articles.length}',
+            fond: fini ? Palette.saugeDoux : Palette.anthraciteDoux,
+            encre: fini ? Palette.saugeFonce : Palette.anthraciteFonce,
+            cleTexte: Key('compteur_rayon_$r'),
+          ),
+        ],
+      ),
+      children: [for (final a in articles) _ligneArticle(a, usages[a.cle])],
     );
   }
 
@@ -748,8 +875,13 @@ class _EtatCourses extends State<EcranCourses> {
     return [
       if (validee != null) _bandeauValidee(context, validee)
       else if (_liste.precedent.series > 0) _bandeauSeries(context)
-      else const Text('Aucune course validée pour l’instant.',
-          key: Key('aucune_validee')),
+      else const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('Aucune course validée pour l’instant.',
+              key: Key('aucune_validee')),
+        ),
+      ),
       if (validee != null) ...[
         const SizedBox(height: 8),
         FilledButton(
