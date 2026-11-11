@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain » close et fusionnée
+- Fusionnée dans `main` sur accord écrit de Kinder (« tu peux fusionner »), après la vérification par une autre IA ; le test final de Kinder avec l'APK 1.4.0 n'est pas consigné (écart à R11 assumé par Kinder). Branche supprimée après fusion.
+
 ## 11/11/2026 — Mission « Retours du terrain » : vérification par une autre IA
 - Critères 1 à 4 réussis à l'écran, contrôle rapide réussi, aucun défaut visuel (captures du vérificateur, hors dépôt). Remise réelle des trois classeurs à la feuille de partage d'Android vue. Réserves : coût et résultat du comparateur non vus avec de vrais achats ; comparaison lente en version de développement. En attente : test et capture de Kinder avec l'APK 1.4.0, puis son accord de fusion.
 
