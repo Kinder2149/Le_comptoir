@@ -143,4 +143,56 @@ void main() {
       expect(appels, 1);
     });
   });
+
+  group('heure de la dernière actualisation (T6, décision 79 b)', () {
+    Widget avecHeure(
+            Future<void> Function() relire, DateTime Function() horloge) =>
+        MaterialApp(
+          home: Scaffold(
+            body: Actualisable(
+              relire: relire,
+              horloge: horloge,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [Text('Contenu')],
+              ),
+            ),
+          ),
+        );
+
+    String heure(WidgetTester tester) =>
+        tester.widget<Text>(find.byKey(const Key('heure_actualisation'))).data!;
+
+    testWidgets('la ligne « Actualisé le » est présente à l\'ouverture',
+        (tester) async {
+      await tester.pumpWidget(
+          avecHeure(() async {}, () => DateTime(2026, 11, 11, 9, 5)));
+      expect(heure(tester), 'Actualisé le 11/11 à 09:05');
+    });
+
+    testWidgets('un glisser réussi met l\'heure à jour', (tester) async {
+      var maintenant = DateTime(2026, 11, 11, 9, 5);
+      await tester.pumpWidget(avecHeure(() async {}, () => maintenant));
+      maintenant = DateTime(2026, 11, 11, 14, 30);
+      await _glisser(tester);
+      expect(heure(tester), 'Actualisé le 11/11 à 14:30');
+    });
+
+    testWidgets('hors réseau : heure inchangée et message affiché',
+        (tester) async {
+      var maintenant = DateTime(2026, 11, 11, 9, 5);
+      await tester.pumpWidget(avecHeure(
+        () async => throw FirebaseException(
+            plugin: 'cloud_firestore', code: 'unavailable'),
+        () => maintenant,
+      ));
+      maintenant = DateTime(2026, 11, 11, 14, 30);
+      await _glisser(tester);
+      expect(heure(tester), 'Actualisé le 11/11 à 09:05');
+      expect(
+        tester.widget<Text>(find.byKey(const Key('message_actualisation'))).data,
+        messageHorsReseau,
+      );
+    });
+  });
 }

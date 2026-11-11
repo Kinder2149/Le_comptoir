@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T6 : heure de la dernière actualisation
+- Une ligne « Actualisé le JJ/MM à HH:MM » sous le titre des écrans actualisables (association, événement, caisses en direct, stock, bilan), mise à jour après un glisser vers le bas réussi, inchangée hors réseau (le message hors réseau s'affiche). Composant partagé, aucune relecture ajoutée, aucune règle. Tests : 503.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T5 : annuler un changement de source
 - Prévision : « Annuler ce changement » remet exactement les chiffres d'avant le dernier changement de source (corrections à la main comprises), lisible aussi sur un autre téléphone ; une seule annulation (la dernière) ; « Revenir au menu » inchangé et efface l'annulation en attente. Nouveau document d'annulation côté serveur : règles déployées le 11/11/2026 (accord donné pour la mission), suppression de l'association mise à jour. Tests : 500 de logique et d'écrans, 266 de règles.
 
