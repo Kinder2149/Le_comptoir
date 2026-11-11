@@ -233,12 +233,15 @@ void main() {
     // ---------- 5. Paramètres du responsable : la liste des membres et ses actions.
     await ouvrirParametres();
     await attendre(tester, find.byKey(Key('param_membre_$leaUid')));
+    await toucher(find.byKey(Key('param_changer_$leaUid')));
     expect(find.byKey(Key('param_nommer_$leaUid')), findsOneWidget);
     expect(find.byKey(Key('param_sortir_$leaUid')), findsOneWidget);
     await toucher(find.byKey(Key('param_nommer_$leaUid')));
+    await toucher(find.byKey(const Key('confirmer_nomination')));
     await attendreTexte('param_statut_$leaUid', 'Gestionnaire en attente');
+    await toucher(find.byKey(Key('param_changer_$leaUid')));
     expect(find.byKey(Key('param_retirer_gestion_$leaUid')), findsOneWidget);
-    expect(find.byKey(Key('param_nommer_$leaUid')), findsNothing);
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // ferme la feuille
     await photo('07_parametres_responsable');
     Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
     await pause(800);

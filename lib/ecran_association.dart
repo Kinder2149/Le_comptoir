@@ -528,18 +528,60 @@ class _EtatParametres extends State<EcranParametres> {
     }
   }
 
-  /// Section réservée au responsable : nom et code de l'association.
+  /// Carte de l'écran (même style que les autres écrans) ; la zone dangereuse a un bord brique.
+  Widget _carte(
+    BuildContext context, {
+    Key? key,
+    required String titre,
+    required List<Widget> enfants,
+    bool danger = false,
+  }) =>
+      Card(
+        key: key,
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: danger ? Palette.brique : Palette.filet),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                titre,
+                style: danger
+                    ? Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(color: Palette.briqueFonce)
+                    : Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              ...enfants,
+            ],
+          ),
+        ),
+      );
+
+  /// Couleurs du badge de statut (décision 31).
+  (Color, Color) _couleursStatut(Membre x) {
+    if (x.estResponsable) return (Palette.anthracite, Colors.white);
+    if (x.enAttente) return (Palette.ocreDoux, Palette.ocreFonce);
+    if (x.role == 'gestionnaire') return (Palette.pruneDoux, Palette.pruneFonce);
+    return (Palette.anthraciteDoux, Palette.anthraciteFonce);
+  }
+
+  /// Carte réservée au responsable : nom et code de l'association.
   Widget _sectionAssociation(BuildContext context) => StreamBuilder<Association?>(
         stream: widget.depot.suivreAssociation(widget.assoId),
         builder: (context, a) {
           final asso = a.data;
           if (asso == null) return const SizedBox.shrink();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Divider(height: 40),
-              Text('Association', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
+          return _carte(
+            context,
+            titre: 'Association et code',
+            enfants: [
               Text(asso.nom,
                   key: const Key('param_nom'),
                   style: Theme.of(context).textTheme.titleLarge),
@@ -565,98 +607,198 @@ class _EtatParametres extends State<EcranParametres> {
         },
       );
 
-  /// Liste unique des membres, pour le responsable et les gestionnaires actifs.
-  /// Les boutons d'action ne sont montrés qu'au responsable.
+  /// Carte des membres, pour le responsable et les gestionnaires actifs.
+  /// Seul le responsable a « Changer le statut », sur les autres membres.
   Widget _sectionMembres(
           BuildContext context, List<Membre> membres, bool responsable) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(height: 40),
-          Text('Membres (${membres.length})',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+      _carte(
+        context,
+        titre: 'Membres (${membres.length})',
+        enfants: [
           for (final x in membres)
-            Column(
+            Padding(
               key: Key('param_membre_${x.uid}'),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(x.prenom),
-                  subtitle: Text(libelleStatut(x),
-                      key: Key('param_statut_${x.uid}')),
-                ),
-                if (responsable && !x.estResponsable)
-                  Wrap(
-                    spacing: 8,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      if (x.role == 'benevole' && !x.enAttente)
-                        TextButton(
-                          key: Key('param_nommer_${x.uid}'),
-                          style: TypeAction.gerer.texte,
-                          onPressed: () => widget.depot
-                              .nommerGestionnaire(widget.assoId, x.uid),
-                          child: const Text('Nommer gestionnaire'),
-                        ),
-                      if (x.role == 'gestionnaire' || x.enAttente)
-                        TextButton(
-                          key: Key('param_retirer_gestion_${x.uid}'),
-                          style: TypeAction.danger.texte,
-                          onPressed: () => _retirerGestion(x),
-                          child: const Text('Retirer le statut de gestionnaire'),
-                        ),
-                      TextButton(
-                        key: Key('param_sortir_${x.uid}'),
-                        style: TypeAction.danger.texte,
-                        onPressed: () => _sortir(x),
-                        child: const Text("Retirer de l'association"),
+                      Expanded(
+                        child: Text(x.prenom, overflow: TextOverflow.ellipsis),
+                      ),
+                      BadgeComptoir(
+                        texte: libelleStatut(x),
+                        cleTexte: Key('param_statut_${x.uid}'),
+                        fond: _couleursStatut(x).$1,
+                        encre: _couleursStatut(x).$2,
                       ),
                     ],
                   ),
-              ],
+                  if (responsable && !x.estResponsable)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        key: Key('param_changer_${x.uid}'),
+                        style: TypeAction.gerer.texte,
+                        onPressed: () => _changerStatut(x),
+                        child: const Text('Changer le statut'),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          if (membres.every((x) => x.estResponsable))
-            const Text('Aucun autre membre.',
-                key: Key('aucun_autre_membre')),
+          if (membres.every((x) => x.estResponsable)) ...[
+            const Text('Aucun autre membre.', key: Key('aucun_autre_membre')),
+            if (responsable) ...[
+              const SizedBox(height: 8),
+              const Text(
+                "Pour inviter des membres, partagez le code d'accès (carte "
+                "« Association et code ») : ils le saisissent à leur arrivée.",
+                key: Key('aide_invitation'),
+              ),
+            ],
+          ],
         ],
       );
 
-  /// Note « Qui peut quoi » : les droits des trois rôles.
-  Widget _quiPeutQuoi(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(height: 40),
-          Text('Qui peut quoi', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          const Text(
-            "Responsable : nomme et retire les gestionnaires, retire un membre, "
-            "change le code d'accès et supprime l'association.\n"
-            'Gestionnaire : gère les menus, les événements, le stock et les bilans '
-            'des gymnases qui lui sont rattachés ; voit la liste des membres sans '
-            'pouvoir la modifier.\n'
-            'Bénévole : tient sa caisse et voit les événements en cours ; ne voit ni '
-            'les menus ni la liste des membres.',
-            key: Key('qui_peut_quoi'),
-          ),
+  /// Feuille « Changer le statut » (responsable seul). Chaque choix passe
+  /// par sa confirmation, puis par la méthode d'origine.
+  Future<void> _changerStatut(Membre x) async {
+    final benevoleActuel = x.role == 'benevole' && !x.enAttente;
+    final enGestion = x.role == 'gestionnaire' || x.enAttente;
+    final choix = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('Changer le statut de ${x.prenom}',
+                  style: Theme.of(c).textTheme.titleMedium),
+            ),
+            ListTile(
+              key: Key('param_nommer_${x.uid}'),
+              enabled: benevoleActuel,
+              leading: const Icon(Icons.manage_accounts_outlined),
+              title: const Text('Gestionnaire'),
+              subtitle: Text(x.enAttente
+                  ? 'Déjà nommé : en attente de son activation'
+                  : x.role == 'gestionnaire'
+                      ? 'Statut actuel'
+                      : 'Il gère les menus, les événements et le stock'),
+              onTap: () => Navigator.pop(c, 'gestionnaire'),
+            ),
+            ListTile(
+              key: Key('param_retirer_gestion_${x.uid}'),
+              enabled: enGestion,
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Bénévole'),
+              subtitle: Text(benevoleActuel
+                  ? 'Statut actuel'
+                  : 'Il ne gère plus les menus ni les événements'),
+              onTap: () => Navigator.pop(c, 'benevole'),
+            ),
+            ListTile(
+              key: Key('param_sortir_${x.uid}'),
+              leading: Icon(Icons.person_remove_outlined,
+                  color: Palette.brique),
+              title: Text("Retirer de l'association",
+                  style: TextStyle(color: Palette.briqueFonce)),
+              subtitle: const Text("Il n'a plus accès à l'association"),
+              onTap: () => Navigator.pop(c, 'retirer'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (choix == 'gestionnaire') {
+      await _nommer(x);
+    } else if (choix == 'benevole') {
+      await _retirerGestion(x);
+    } else if (choix == 'retirer') {
+      await _sortir(x);
+    }
+  }
+
+  /// Confirmation avant de nommer un gestionnaire (il reste en attente
+  /// jusqu'à son activation avec Google).
+  Future<void> _nommer(Membre x) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Nommer ${x.prenom} gestionnaire ?'),
+        content: const Text(
+            "Il est « en attente » : il devient gestionnaire quand il active "
+            "son statut avec Google depuis ses Paramètres. D'ici là, il garde "
+            "les droits d'un bénévole."),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Annuler')),
+          FilledButton(
+              style: TypeAction.gerer.plein,
+              key: const Key('confirmer_nomination'),
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Nommer')),
         ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.depot.nommerGestionnaire(widget.assoId, x.uid);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _erreurAutre = 'Changement impossible. Vérifiez le réseau.');
+      }
+    }
+  }
+
+  /// Note « Qui peut quoi » : les droits des trois rôles, repliable.
+  Widget _quiPeutQuoi(BuildContext context) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Palette.filet),
+        ),
+        child: ExpansionTile(
+          key: const Key('qui_peut_quoi'),
+          shape: const Border(),
+          collapsedShape: const Border(),
+          title: Text('Qui peut quoi',
+              style: Theme.of(context).textTheme.titleMedium),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: const [
+            Text(
+              "Responsable : nomme et retire les gestionnaires, retire un membre, "
+              "change le code d'accès et supprime l'association.\n"
+              'Gestionnaire : gère les menus, les événements, le stock et les bilans '
+              'des gymnases qui lui sont rattachés ; voit la liste des membres sans '
+              'pouvoir la modifier.\n'
+              'Bénévole : tient sa caisse et voit les événements en cours ; ne voit ni '
+              'les menus ni la liste des membres.',
+            ),
+          ],
+        ),
       );
 
-  /// Zone réservée au responsable : suppression de l'association.
+  /// Carte réservée au responsable : suppression de l'association.
   Widget _sectionZone(BuildContext context) => StreamBuilder<Association?>(
         stream: widget.depot.suivreAssociation(widget.assoId),
         builder: (context, a) {
           final asso = a.data;
           if (asso == null) return const SizedBox.shrink();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Divider(height: 40),
-              Text('Zone dangereuse',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+          return _carte(
+            context,
+            titre: 'Zone dangereuse',
+            danger: true,
+            enfants: [
               if (_suppression)
                 const Text('Suppression en cours…',
                     key: Key('suppression_en_cours'))
@@ -722,32 +864,48 @@ class _EtatParametres extends State<EcranParametres> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(moi.prenom,
-                  key: const Key('mon_prenom'),
-                  style: Theme.of(context).textTheme.titleLarge),
-              Text('Statut : ${libelleStatut(moi)}',
-                  key: const Key('mon_statut')),
-              Text(google ? 'Connexion Google : active' : 'Connexion Google : non',
-                  key: const Key('ma_connexion')),
-              if (moi.enAttente) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Le responsable vous a nommé gestionnaire. Activez votre '
-                  'connexion Google pour obtenir les droits de gestion.',
-                  key: Key('invitation_gestionnaire'),
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  key: const Key('activer_gestionnaire'),
-                  onPressed: _occupe ? null : _activer,
-                  child: const Text('Activer avec Google'),
-                ),
-              ],
-              if (_erreur != null)
+              _carte(
+                context,
+                titre: 'Mon compte',
+                enfants: [
+                  Text(moi.prenom,
+                      key: const Key('mon_prenom'),
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text('Statut : ${libelleStatut(moi)}',
+                      key: const Key('mon_statut')),
+                  Text(
+                      google ? 'Connexion Google : active' : 'Connexion Google : non',
+                      key: const Key('ma_connexion')),
+                  if (moi.enAttente) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Le responsable vous a nommé gestionnaire. Activez votre '
+                      'connexion Google pour obtenir les droits de gestion.',
+                      key: Key('invitation_gestionnaire'),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      key: const Key('activer_gestionnaire'),
+                      onPressed: _occupe ? null : _activer,
+                      child: const Text('Activer avec Google'),
+                    ),
+                  ],
+                  if (_erreur != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(_erreur!,
+                          key: const Key('erreur_activation'),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error)),
+                    ),
+                ],
+              ),
+              if (_erreurAutre != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(_erreur!,
-                      key: const Key('erreur_activation'),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(_erreurAutre!,
+                      key: const Key('erreur_parametres'),
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.error)),
                 ),
@@ -755,14 +913,6 @@ class _EtatParametres extends State<EcranParametres> {
               if (voirMembres) _sectionMembres(context, membres, responsable),
               _quiPeutQuoi(context),
               if (responsable) _sectionZone(context),
-              if (_erreurAutre != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(_erreurAutre!,
-                      key: const Key('erreur_parametres'),
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
-                ),
             ],
           );
         },

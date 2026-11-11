@@ -133,10 +133,10 @@ void main() {
     await finTransition(tester);
     expect(texte(tester, 'param_nom'), 'Club Param');
     expect(texte(tester, 'param_code'), code1);
-    await defilerJusqua(tester, find.byKey(Key('param_sortir_$leaUid')));
-    expect(find.byKey(Key('param_sortir_$leaUid')), findsOneWidget);
-    expect(find.byKey(Key('param_sortir_$maxUid')), findsOneWidget);
-    expect(find.byKey(Key('param_sortir_$chefUid')), findsNothing); // pas sur le responsable
+    await defilerJusqua(tester, find.byKey(Key('param_changer_$leaUid')));
+    expect(find.byKey(Key('param_changer_$leaUid')), findsOneWidget);
+    expect(find.byKey(Key('param_changer_$maxUid')), findsOneWidget);
+    expect(find.byKey(Key('param_changer_$chefUid')), findsNothing); // pas sur le responsable
 
     // ====== 2. Changer le code : l'ancien est refusé aux nouveaux arrivants ======
     await defilerJusqua(tester, find.byKey(const Key('regenerer')));
@@ -150,14 +150,15 @@ void main() {
     await db.waitForPendingWrites();
 
     // ====== 3. Retirer Max ======
-    await defilerJusqua(tester, find.byKey(Key('param_sortir_$maxUid')));
+    await defilerJusqua(tester, find.byKey(Key('param_changer_$maxUid')));
+    await toucher(tester, find.byKey(Key('param_changer_$maxUid')));
     await toucher(tester, find.byKey(Key('param_sortir_$maxUid')));
     await toucher(tester, find.byKey(const Key('confirmer_sortie')));
-    for (var i = 0; i < 150 && find.byKey(Key('param_sortir_$maxUid')).evaluate().isNotEmpty; i++) {
+    for (var i = 0; i < 150 && find.byKey(Key('param_membre_$maxUid')).evaluate().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byKey(Key('param_sortir_$maxUid')), findsNothing);
-    expect(find.byKey(Key('param_sortir_$leaUid')), findsOneWidget); // Léa est toujours là
+    expect(find.byKey(Key('param_membre_$maxUid')), findsNothing);
+    expect(find.byKey(Key('param_membre_$leaUid')), findsOneWidget); // Léa est toujours là
     expect(await restStatutDocument('associations/$assoId/membres/$maxUid'), 404);
     expect(await restStatutDocument('associations/$assoId/membres/$leaUid'), 200);
     // Ses ventes passées restent (bilans) : Léa, elle, n'a pas bougé.

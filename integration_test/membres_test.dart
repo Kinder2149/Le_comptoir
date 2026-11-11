@@ -113,17 +113,22 @@ void main() {
     await ouvrir(tester, 'chef2', googleAnnule);
     await attendre(tester, find.byKey(const Key('parametres')));
     await ouvrirParametres(tester);
-    await attendre(tester, find.byKey(Key('param_nommer_$leaUid')));
+    await attendre(tester, find.byKey(Key('param_changer_$leaUid')));
     await finTransition(tester);
     expect(texte(tester, 'param_statut_$leaUid'), 'Bénévole');
     expect(find.byKey(Key('param_nommer_$chefUid')), findsNothing); // pas sur soi
     expect(find.byKey(Key('param_retirer_gestion_$chefUid')), findsNothing);
     expect(find.byKey(Key('param_sortir_$chefUid')), findsNothing);
+    await toucher(tester, find.byKey(Key('param_changer_$leaUid')));
     await toucher(tester, find.byKey(Key('param_nommer_$leaUid')));
+    await toucher(tester, find.byKey(const Key('confirmer_nomination')));
     await attendreTexte(tester, 'param_statut_$leaUid', 'Gestionnaire en attente');
-    expect(find.byKey(Key('param_nommer_$leaUid')), findsNothing);
+    await toucher(tester, find.byKey(Key('param_changer_$leaUid')));
+    expect(tester.widget<ListTile>(find.byKey(Key('param_nommer_$leaUid'))).enabled, isFalse);
     expect(find.byKey(Key('param_retirer_gestion_$leaUid')), findsOneWidget);
     expect(find.byKey(Key('param_sortir_$leaUid')), findsOneWidget);
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // ferme la feuille
+    await finTransition(tester);
     // Côté serveur : elle reste bénévole tant qu'elle n'a pas activé.
     var doc = (await refLea(leaUid).get(serveur)).data()!;
     expect(doc['role'], 'benevole');
@@ -180,10 +185,14 @@ void main() {
     await attendre(tester, find.byKey(const Key('parametres')));
     await ouvrirParametres(tester);
     await attendreTexte(tester, 'param_statut_$leaUid', 'Gestionnaire');
+    await toucher(tester, find.byKey(Key('param_changer_$leaUid')));
     await toucher(tester, find.byKey(Key('param_retirer_gestion_$leaUid')));
     await toucher(tester, find.byKey(const Key('confirmer_retrait')));
     await attendreTexte(tester, 'param_statut_$leaUid', 'Bénévole');
-    expect(find.byKey(Key('param_nommer_$leaUid')), findsOneWidget); // renommable
+    await toucher(tester, find.byKey(Key('param_changer_$leaUid')));
+    expect(tester.widget<ListTile>(find.byKey(Key('param_nommer_$leaUid'))).enabled, isTrue); // renommable
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // ferme la feuille
+    await finTransition(tester);
     doc = (await refLea(leaUid).get(serveur)).data()!;
     expect(doc['role'], 'benevole');
     expect(doc.containsKey('nomme'), isFalse);

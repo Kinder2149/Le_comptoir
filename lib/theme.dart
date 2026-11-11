@@ -67,6 +67,38 @@ enum TypeAction {
       );
 }
 
+/// Pastille de statut (rôle d'un membre) : texte court sur fond doux.
+class BadgeComptoir extends StatelessWidget {
+  const BadgeComptoir({
+    super.key,
+    required this.texte,
+    required this.fond,
+    required this.encre,
+    this.cleTexte,
+  });
+
+  final String texte;
+  final Color fond;
+  final Color encre;
+  final Key? cleTexte;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: fond,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        texte,
+        key: cleTexte,
+        style: TextStyle(color: encre, fontSize: 13, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
 /// Thème de toute l'application : anthracite, lin et boutons arrondis (14), cartes (16).
 ThemeData themeComptoir() {
   const scheme = ColorScheme.light(

@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T7 : Paramètres en cartes
+- Paramètres rangés en cartes (Mon compte, Association et code, Membres, Qui peut quoi repliable, Zone dangereuse) ; badge de statut par membre ; pour le responsable, « Changer le statut » (bénévole, gestionnaire, retirer de l'association) avec confirmation ; gestionnaire : liste sans action ; bénévole : pas de liste. Droits et règles inchangés. Tests : 513.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T6 : heure de la dernière actualisation
 - Une ligne « Actualisé le JJ/MM à HH:MM » sous le titre des écrans actualisables (association, événement, caisses en direct, stock, bilan), mise à jour après un glisser vers le bas réussi, inchangée hors réseau (le message hors réseau s'affiche). Composant partagé, aucune relecture ajoutée, aucune règle. Tests : 503.
 
