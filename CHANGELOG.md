@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi » : Plan prêt
+- Huit retours de Kinder avant le tournoi du week-end : partage au lieu de téléchargement, classeur du club pour l'association test, Paramètres non rangés, pas de retour en arrière après une source de prévision, page Courses non rangée, pas d'ajout de produit depuis « Produits et images », heure de la dernière actualisation, import dispersé.
+- Décisions 75 à 79 validées par Kinder : enregistrer ou partager chaque fichier ; un seul import, par un assistant dans « Extraction et modèle » (modifie la décision 72 pour l'import) ; ajout d'un produit à un événement en préparation ou en cours, repris dans le menu (modifie la décision 13, nom et prix existants toujours figés) ; annulation d'un changement de source ; heure de la dernière actualisation ; Paramètres et Courses en cartes.
+- Plan T1 à T9, critères et niveaux de preuve validés par Kinder (PLAN_STOCK_COURSES.md section 16), avec le prompt de lancement de la session mère. La mission passe devant « Banc d'essai » ; pas de banc dans cette mission (écart assumé par Kinder), N3 par la suite actuelle.
+
 ## 11/11/2026 — Méthode v7.2 : statuts remis à jour
 - « Retours du terrain » repasse en « En attente de ma capture » : sous la v7.2 (R11), la fusion peut précéder le test final, mais seule la capture de Kinder ferme la mission. Nouvelle mission « Banc d'essai » en attente (4), avec son critère de fin (durées relevées par le banc comparées aux 7 à 8 heures de « Retours du terrain »).
 

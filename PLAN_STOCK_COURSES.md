@@ -1030,3 +1030,69 @@ Tu es la session mère de la mission « Retours du terrain » de Le Comptoir (te
 9. Fin : documentation à jour, résumé final dans CHANGELOG.md, graphify à jour, branche poussée sur le dépôt, APK de recette 1.4.0 ; puis Kinder fait son test et sa capture. Fusion dans main seulement après son accord écrit.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+## 16. Mission « Prêt pour le tournoi » (décisions 75 à 79, plan et critères validés par Kinder le 11/11/2026)
+
+**Critère de fin de mission (validé par Kinder, 11/11/2026)** : « Dans l'association test, depuis Extraction et modèle, j'importe le classeur de notre club : le menu, l'an passé, la prévision et le stock de départ du tournoi sont en place sans autre saisie ; j'enregistre un fichier dans Téléchargements ; j'ajoute un produit depuis Produits et images et je le vois en caisse et dans le menu ; dans la prévision j'annule un changement de source ; je vois l'heure de la dernière actualisation ; je change le statut d'un membre ; Paramètres et Courses sont rangés en cartes comme le reste de l'application. »
+
+**Origine** : retours de Kinder du 11/11/2026, avant la mise en service pour le tournoi du week-end (association « test », qui est celle du tournoi), avec une capture des Paramètres (sections séparées par des traits, sans cartes, un seul membre).
+
+**Constats faits dans le code au cadrage (11/11/2026)** :
+- Fichiers : `lib/partage.dart` ne fait que la feuille de partage d'Android (`Share.shareXFiles`) ; aucun enregistrement. `file_picker` 11.0.3 (déjà accordé) offre `FilePicker.saveFile(bytes: …)` sur Android : pas de nouvelle dépendance.
+- Import : deux chemins séparés. `lib/ecran_menus.dart` (« Importer un menu depuis Excel », `lib/import_menu.dart`, feuille Menu, crée un menu) et `lib/ecran_classeur.dart` ouvert depuis l'événement (« Importer un classeur », `lib/import_classeur.dart` : stock de départ de l'événement + références de l'Historique ; feuilles Menu, Courses et Bilan ignorées). Les références (`DepotEvenements.appliquerImport`, collection `references`) sont rangées au niveau de l'association : elles ne demandent pas d'événement ; le stock de départ, si.
+- Classeur de l'an passé : `recette/historique-tournoi-an-passe.xlsx` (fait en P9 le 07/11/2026, importé alors sur émulateur seulement).
+- Paramètres (`EcranParametres`, `lib/ecran_association.dart`) : sections séparées par `Divider`, sans cartes ; actions « Nommer gestionnaire », « Retirer le statut de gestionnaire », « Retirer de l'association » en boutons texte, visibles seulement sur les autres membres (Kinder étant seul membre, il n'en voyait aucune).
+- Prévision (`lib/ecran_prevision.dart`) : « D'après une source » et « Revenir au menu » (remet tout aux chiffres du menu) ; rien ne rend l'état d'avant le dernier changement de source.
+- Courses (`lib/ecran_courses.dart`, 973 lignes) : non revue à l'écran depuis Ergonomie (fusionnée sans vérification par une autre IA).
+- « Produits et images » (`EcranProduitsEvenement`, `lib/ecran_evenement.dart`) : image seulement. Règle `evenements/{e}/produits/{p}` : `create` déjà permis à la gestion quand `reglableApres(a, e)` ; à vérifier au cadrage de T4 (en cours compris ?).
+- Actualisation (`lib/actualisation.dart`) : aucun repère d'heure.
+
+**Réponse de Kinder (11/11/2026)** : les produits et les prix du week-end sont ceux du menu déjà saisi dans l'association test. Le classeur du club (T3) ne recrée donc pas de menu : l'assistant reprend le menu existant de même nom, et le classeur apporte l'an passé (et le stock de départ si sa feuille est remplie).
+
+**Préalables (validés avec le plan)** : (1) la mission démarre maintenant : « Retours du terrain » est fusionnée et n'attend que la capture de Kinder (R29) ; (2) règles d'accès déployées sur le vrai projet dès que leurs tests passent, accord donné une fois pour toute la mission ; (3) une session mère (Sonnet) mène les étapes une par une, chacune dans une sous-session neuve, modèle selon R17 ; (4) aucune nouvelle dépendance sans accord de Kinder ; (5) pas de banc d'essai dans cette mission (décision 75, écart assumé par Kinder) : N3 = `tests_regles/lancer_integration.ps1` ; rouges connus au départ : `evenements_test`, `menus_test`, `images_test`, et `parcours_ergonomie_test` / `parcours_retours_terrain_test` figés par les captures.
+
+**Ce qu'on ne touche pas** : les calculs (prévision, courses, calcul inverse, report), le bilan, la caisse (sauf l'affichage du produit ajouté), les droits des rôles (décisions 19, 23, 71), le nom et le prix d'un produit déjà dans un événement, les menus et événements existants (hors ajout de T4).
+
+**Étapes** (une à la fois, dans l'ordre ; niveau de preuve selon R34)
+
+| # | Étape | Ce que Kinder voit | Critères | Preuve |
+|---|---|---|---|---|
+| T1 | Enregistrer sur le téléphone (décision 76) | Chaque bouton de fichier | (1) les six fichiers (modèle, données de l'association, export d'un tournoi, comparateur, classeur de l'événement, liste de courses) proposent « Enregistrer sur le téléphone » et « Partager » ; (2) « Enregistrer » ouvre le choix du dossier et le fichier y est, lisible ; (3) annuler le choix ne montre aucune erreur ; (4) aucune dépendance ajoutée | N1 + N2 (service du téléphone : enregistrement réel d'un fichier sur l'émulateur) |
+| T2 « opus » | Assistant d'import unique (décision 77) | Carte « Importer » dans Extraction et modèle | (1) départ : modèle générique ou classeur choisi ; (2) menu : nouveau menu créé, ou menu existant de même nom repris sans modification ; (3) anciens tournois enregistrés comme références de prévision ; (4) tournoi en préparation choisi (facultatif) : stock de départ rempli (gymnases et produits retrouvés par leur nom) et prévision réglée sur la référence importée ; (5) résumé avant toute écriture, lignes ignorées avec leur raison ; (6) « Importer un menu » et « Importer un classeur » renvoient vers l'assistant ; (7) un bénévole ne voit pas l'assistant ; (8) un classeur à l'ancien format reste importable. Marquée « opus » : fusion de deux imports et enchaînement sur le tournoi, beaucoup de cas | N1 + N2 (vrai moteur de données et ses règles vus depuis l'application) |
+| T3 | Classeur du club pour l'association test | Fichier `recette/classeur-notre-club.xlsx` | (1) produit par Claude Code d'après `recette/historique-tournoi-an-passe.xlsx`, avec un relevé de ce qui a été repris ou non ; (2) feuille Menu laissée vide ou au nom du menu de l'association test : aucun menu en double ; (3) feuille Stock de départ prête à remplir (gymnases à nommer comme dans le tournoi) ; (4) importé par l'assistant sur émulateur sans erreur, consommations égales au relevé | N2 (import réel sur émulateur) |
+| T4 | Ajouter un produit (décision 78) | Bouton « Ajouter un produit » dans Produits et images | (1) en préparation et en cours : le produit est créé dans l'événement et dans le menu d'origine ; (2) il apparaît dans stock de départ, prévision, courses et caisse ; (3) nom et prix des produits existants inchangés ; (4) événement clôturé : pas de bouton ; (5) un bénévole ne peut pas ajouter (test de règles) | N1 + N2 (règles vues depuis l'application, caisse) |
+| T5 | Annuler un changement de source (décision 79 a) | Prévision | (1) après « D'après une source », « Annuler ce changement » rend exactement les chiffres d'avant, corrections à la main comprises ; (2) « Revenir au menu » marche comme avant ; (3) l'annulation se lit aussi sur un autre téléphone | N1 |
+| T6 | Heure de la dernière actualisation (décision 79 b) | Écrans actualisables (association, événement, caisses en direct, stock, bilan) | (1) ligne « Actualisé le JJ/MM à HH:MM » sous le titre ; (2) mise à jour après un glisser vers le bas réussi ; (3) hors réseau, elle ne change pas et le message hors réseau s'affiche | N1 |
+| T7 | Paramètres en cartes (décision 79 c) | Paramètres | (1) cartes Mon compte, Association et code, Membres, Qui peut quoi (repliable), Zone dangereuse, aux couleurs de la décision 31 ; (2) chaque membre a un badge de statut ; (3) responsable : « Changer le statut » propose bénévole, gestionnaire, retirer de l'association, avec confirmation ; (4) gestionnaire : liste sans action ; bénévole : pas de liste ; (5) règles inchangées (un gestionnaire ne retire toujours personne) | N1 |
+| T8 | Page Courses en cartes (décision 79 d) | Courses | (1) bandeau résumé (durée, personnes, coût cumulé) ; (2) rayons en cartes repliables avec compteur ; (3) actions (Ajouter une ligne, Partager / Enregistrer, Valider) fixées en bas ; (4) tous les tests de calcul des courses passent sans modification ; (5) captures avant et après rangées dans `audit_front/tournoi/` | N1 |
+| T9 | Clôture de mission | Parcours complet et texte de vérification | (1) N3 avec la suite actuelle : vert ou rouges connus seulement ; (2) texte de vérification pour une autre IA rangé dans cette section ; (3) APK de recette 1.5.0 reconstruit ; (4) rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google), capture qui sert aussi à « Retours du terrain » | N3 |
+
+**Dépendances entre étapes** : T1 avant T2 et T8 (boutons de fichier) ; T2 avant T3 (le classeur s'importe par l'assistant) ; T4 à T7 indépendantes ; T9 en dernier. Ordre retenu, du plus utile au tournoi au plus visuel : T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8 → T9.
+
+**Arrêts prévus** : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
+
+**Suivi** (une ligne par étape close)
+
+| Étape | État | Date | Critères |
+|---|---|---|---|
+
+### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
+
+```
+Tu es la session mère de la mission « Prêt pour le tournoi » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end : va droit au but.
+
+1. Lis, dans cet ordre : V:\DEV\METHODO\3_CHANTIER.md, PROJET_CONTEXTE.md (bloc STATUT, décisions 13, 19, 23, 56, 70 à 79, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md section 16 (plan T1 à T9, critères, constats, préalables), CHANGELOG.md (dernière entrée), graphify-out/GRAPH_REPORT.md.
+2. Préalable : vérifie que la branche `claude/cadrage-pret-tournoi` (ce plan) est fusionnée dans main. Sinon, tu t'arrêtes là et tu le dis à Kinder.
+3. Hygiène git : rien de non enregistré (le dossier `graphify-out/converted/`, produit par graphify, n'est pas du travail de Kinder : laisse-le), main à jour avec le dépôt en ligne, puis branche `claude/pret-tournoi` depuis main. Jamais de travail sur main.
+4. Pour chaque étape, de T1 à T9, dans l'ordre :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 16 (« Cadrage Tn »), critères du plan repris tels quels.
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon R17 : Sonnet, sauf T2 marquée « opus ». Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie la preuve au niveau écrit au plan (N1 : flutter analyze, flutter test, tests_regles/lancer.ps1 ; N2 : le seul parcours Android qui prouve le critère, sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (préalable 2).
+   d. Ligne dans le tableau de suivi de la section 16, ligne dans CHANGELOG.md, commit sur la branche. Puis étape suivante, sans attendre Kinder.
+5. Pas de banc d'essai dans cette mission (décision 75) : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1 ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test). Une sous-session n'enquête jamais sur un rouge connu.
+6. T3 : les produits et prix du week-end sont ceux du menu déjà saisi dans l'association test : le classeur du club ne crée pas de menu ; il part de recette/historique-tournoi-an-passe.xlsx.
+7. Aucune dépendance nouvelle sans accord de Kinder. Les calculs, le bilan et les droits des rôles ne changent pas ; le nom et le prix d'un produit déjà dans un événement restent figés.
+8. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
+9. Clôture (T9, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
