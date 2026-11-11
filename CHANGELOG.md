@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain » : figeage et plan (phases 1 à 4)
+- Retours de Kinder après l'usage réel d'une caisse sur deux téléphones : message « Stock épuisé » qui reste après le retrait de la ligne, liste des membres absente des Paramètres, pas d'actualisation entre deux téléphones, pas d'endroit unique pour le modèle, les extractions et la comparaison de tournois.
+- Constats dans le code : défaut du message confirmé ; liste des membres réservée au responsable dans les Paramètres ; tous les écrans sont en direct (le défaut d'actualisation est à reproduire) ; modèle sans nom de club mais avec des marques.
+- Décisions 68 à 74 et plan F1 à F7 avec leurs critères, validés par Kinder (PLAN_STOCK_COURSES.md section 15, prompt de lancement de la session mère inclus). Statut « Plan prêt » ; le chantier démarre après la clôture d'« Ergonomie de la gestion ». Branche `claude/cadrage-retours-terrain`, partie de `claude/ergonomie-gestion`.
+
 ## 10/11/2026 — Tri des projets (lot 6)
 - Missions rangées : « Ergonomie de la gestion » seule active ; « Stock et courses » et « C1 » restent « En attente de ma capture » (checklist visuelle de Kinder sur la 1.3.0 : liste « À acheter » rangée par rayons, cases à cocher qui restent cochées, « Partager la liste » lisible, Stock par famille, rien de coupé) ; « Plan initial » (1), « Publication Play Store » (2) et « Menu, événement et courses » (3) « En attente (n°) » ; « Préparer l'événement » était déjà Close. Aucune branche touchée : `claude/ergonomie-gestion` (12 commits non fusionnés dans `main`) et `claude/comptoir-app-refinement-cnuyb4` (16 commits non envoyés) laissées telles quelles.
 
