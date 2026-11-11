@@ -14,11 +14,15 @@ import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
-import 'ecran_preparation.dart';
+import 'ecran_classeur.dart';
+import 'ecran_personnes_duree.dart';
+import 'ecran_prevision.dart';
 import 'ecran_restes.dart';
+import 'ecran_stock_depart.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
 import 'restes.dart';
+import 'tableau_bord.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -104,17 +108,6 @@ class EcranEvenement extends StatelessWidget {
 
   /// Choix d'une photo (remplaçable dans les tests).
   final SelecteurPhoto selecteurPhoto;
-
-  Future<void> _changerImage(BuildContext context, ProduitEvenement p) async {
-    final r = await demanderImageProduit(context,
-        nom: p.nom,
-        icone: p.icone,
-        photo: p.photo,
-        selecteurPhoto: selecteurPhoto);
-    if (r == null) return;
-    await depot.modifierImageProduit(evenementId, p.id,
-        icone: r.icone, photo: r.photo);
-  }
 
   /// Ouvre (ou reprend, ou rouvre) la caisse du membre dans [gymnase]. Si une
   /// caisse est ouverte dans un autre gymnase, on l'explique et on propose de la
@@ -342,6 +335,7 @@ class EcranEvenement extends StatelessWidget {
     portee: portee,
     membres: membres,
     codeAssociation: codeAssociation,
+    selecteurPhoto: selecteurPhoto,
     onOuvrirCaisse: (c) => _ouvrirVentesDe(context, ev, c),
     onCloturer: (caisses) => _cloturer(context, ev, caisses),
     onOuvrirEvenement: () => _ouvrirEvenement(context, ev),
@@ -451,42 +445,39 @@ class EcranEvenement extends StatelessWidget {
                       );
                     },
                   ),
-              const Divider(height: 32),
-              Text('Produits', style: Theme.of(context).textTheme.titleMedium),
-              StreamBuilder<List<ProduitEvenement>>(
-                stream: depot.suivreProduits(evenementId),
-                builder: (context, s) {
-                  final produits = s.data ?? const <ProduitEvenement>[];
-                  return Column(
-                    children: [
-                      for (final p in produits)
-                        ListTile(
-                          key: Key('produit_evenement_${p.id}'),
-                          leading: VignetteProduit(
-                            key: Key('vignette_evenement_${p.id}'),
-                            icone: p.icone,
-                            photo: p.photo,
+              // Le bénévole voit la liste des produits ici ; la gestion la trouve dans
+              // « Produits et images » (tableau de bord).
+              if (!peutModifier) ...[
+                const Divider(height: 32),
+                Text('Produits', style: Theme.of(context).textTheme.titleMedium),
+                StreamBuilder<List<ProduitEvenement>>(
+                  stream: depot.suivreProduits(evenementId),
+                  builder: (context, s) {
+                    final produits = s.data ?? const <ProduitEvenement>[];
+                    return Column(
+                      children: [
+                        for (final p in produits)
+                          ListTile(
+                            key: Key('produit_evenement_${p.id}'),
+                            leading: VignetteProduit(
+                              key: Key('vignette_evenement_${p.id}'),
+                              icone: p.icone,
+                              photo: p.photo,
+                            ),
+                            title: Text(p.nom),
+                            subtitle: Text(
+                              formaterEuros(p.prixCentimes) +
+                                  (p.stock == null
+                                      ? ''
+                                      : ' · Stock : ${p.stock}') +
+                                  resumeFiche(p.fiche),
+                            ),
                           ),
-                          title: Text(p.nom),
-                          subtitle: Text(
-                            formaterEuros(p.prixCentimes) +
-                                (p.stock == null
-                                    ? ''
-                                    : ' · Stock : ${p.stock}') +
-                                resumeFiche(p.fiche),
-                          ),
-                          // La gestion corrige l'image (pas le nom ni le prix).
-                          trailing: peutModifier && !ev.cloture
-                              ? const Icon(Icons.image_outlined)
-                              : null,
-                          onTap: peutModifier && !ev.cloture
-                              ? () => _changerImage(context, p)
-                              : null,
-                        ),
-                    ],
-                  );
-                },
-              ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         );
@@ -495,8 +486,9 @@ class EcranEvenement extends StatelessWidget {
   }
 }
 
-/// Suivi, gymnases, bilan et clôture, limités à ce que le membre de la gestion a
-/// le droit de voir. Les flux sont créés une fois (pas à chaque affichage).
+/// Le tableau de bord de la gestion (décision 62) : trois temps, Avant (préparer),
+/// Pendant (suivre le tournoi) et Après (clôturer, bilan, export). Chaque temps lit ses
+/// propres flux, créés quand on l'ouvre : un flux Firestore ne s'écoute qu'une fois.
 class _BlocGestion extends StatefulWidget {
   const _BlocGestion({
     required this.depot,
@@ -504,6 +496,7 @@ class _BlocGestion extends StatefulWidget {
     required this.portee,
     required this.membres,
     required this.codeAssociation,
+    required this.selecteurPhoto,
     required this.onOuvrirCaisse,
     required this.onCloturer,
     required this.onOuvrirEvenement,
@@ -514,6 +507,7 @@ class _BlocGestion extends StatefulWidget {
   final PorteeGestion portee;
   final Stream<List<Membre>> membres;
   final Stream<String> codeAssociation;
+  final SelecteurPhoto selecteurPhoto;
   final void Function(Caisse caisse) onOuvrirCaisse;
   final void Function(List<Caisse> caisses) onCloturer;
   final VoidCallback onOuvrirEvenement;
@@ -526,7 +520,7 @@ class _BlocGestion extends StatefulWidget {
 /// état qu'à l'abonnement : chaque écran (suivi, bilan) a donc les siens.
 class _Flux {
   _Flux(this.tableau, this.produits, this.stocks, this.etats, this.gymnases,
-      this.caisses, this.courses);
+      this.caisses, this.courses, this.stocksDepart);
 
   final Stream<TableauDeBord> tableau;
   final Stream<List<ProduitEvenement>> produits;
@@ -537,10 +531,14 @@ class _Flux {
 
   /// La liste de courses (coût au bilan) : seulement pour qui y a accès.
   final Stream<ListeCourses?>? courses;
+
+  /// Le stock de départ (tâche « Stock de départ » d'Avant).
+  final Stream<Map<String, Map<String, StockDepart>>> stocksDepart;
 }
 
 class _EtatBlocGestion extends State<_BlocGestion> {
   late _Flux _suivi;
+  late OngletEvenement _onglet;
 
   _Flux _creerFlux() {
     final filtre = widget.portee.filtre;
@@ -562,27 +560,42 @@ class _EtatBlocGestion extends State<_BlocGestion> {
           ),
       caisses.suivreCaisses(gymnaseIds: filtre),
       widget.portee.toutVoir ? widget.depot.suivreListeCourses(id) : null,
+      widget.depot.suivreStocksDepart(id, gymnases: filtre),
     );
   }
 
   void _abonner() => _suivi = _creerFlux();
 
-  Future<void> _ouvrirPreparation(
-          BuildContext context, Evenement ev, PorteeGestion portee) =>
+  /// Changer d'onglet relit les flux (un onglet ouvert reçoit des flux neufs).
+  void _ouvrirOnglet(OngletEvenement o) => setState(() {
+        _onglet = o;
+        _suivi = _creerFlux();
+      });
+
+  /// Personnes et durée : son écran court, ouvert par la tâche d'Avant (et par les courses).
+  void _ouvrirPersonnes(BuildContext context, Evenement ev, PorteeGestion portee) =>
       Navigator.of(context).push<void>(
         MaterialPageRoute(
-          builder: (_) => EcranPreparation(
+          builder: (_) => EcranPersonnesDuree(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            definirJours: (j) => widget.depot.definirJours(ev.id, j),
+            definirPersonnes: (g, n) =>
+                widget.depot.definirPersonnes(ev.id, g, n),
+          ),
+        ),
+      );
+
+  /// Prévision : son écran, ouvert par la tâche d'Avant.
+  void _ouvrirPrevision(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranPrevision(
             evenement: widget.depot.suivreEvenement(ev.id),
             portee: portee,
             gymnases: widget.depot.suivreGymnases(ev.id),
             produits: widget.depot.suivreProduits(ev.id),
-            stocks:
-                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
-            definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
-            definirJours: (j) => widget.depot.definirJours(ev.id, j),
-            definirPersonnes: (g, n) =>
-                widget.depot.definirPersonnes(ev.id, g, n),
-            onVoirGymnases: () => _voirGymnases(context, ev, portee),
             previsions: widget.depot.suivrePrevisions(ev.id),
             definirPrevision: (p, c) => widget.depot.definirPrevision(ev.id, p, c),
             chargerPasses: () => widget.depot.evenementsPasses(sauf: ev.id),
@@ -590,7 +603,44 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             revenirAuMenu: () => widget.depot.revenirAuMenu(ev.id),
             chargerReferences: widget.depot.lireReferences,
             appliquerReference: (r) => widget.depot.appliquerReference(ev.id, r),
+            definirPrevisionVerifiee: (v) =>
+                widget.depot.definirPrevisionVerifiee(ev.id, v),
+            onVoirCourses: portee.toutVoir
+                ? () => _ouvrirCourses(context, ev, portee)
+                : null,
+          ),
+        ),
+      );
+
+  /// Classeur Excel : le modèle à télécharger et le classeur rempli à importer.
+  void _ouvrirClasseur(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranClasseur(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            produits: widget.depot.suivreProduits(ev.id),
+            stocks:
+                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
             importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
+          ),
+        ),
+      );
+
+  /// Stock de départ : son écran (un onglet par gymnase), ouvert par la tâche d'Avant.
+  void _ouvrirStockDepart(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranStockDepart(
+            evenement: widget.depot.suivreEvenement(ev.id),
+            portee: portee,
+            gymnases: widget.depot.suivreGymnases(ev.id),
+            produits: widget.depot.suivreProduits(ev.id),
+            stocks:
+                widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
+            definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
+            onVoirGymnases: () => _voirGymnases(context, ev, portee),
           ),
         ),
       );
@@ -609,16 +659,116 @@ class _EtatBlocGestion extends State<_BlocGestion> {
         ),
       );
 
+  void _ouvrirProduits(BuildContext context, Evenement ev) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranProduitsEvenement(
+            depot: widget.depot,
+            evenementId: ev.id,
+            modifiable: !ev.cloture,
+            selecteurPhoto: widget.selecteurPhoto,
+          ),
+        ),
+      );
+
+  void _ouvrirCourses(BuildContext context, Evenement ev, PorteeGestion portee) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => EcranCourses(
+            depot: widget.depot,
+            evenementId: ev.id,
+            onAllerPreparation: () async => _ouvrirPersonnes(context, ev, portee),
+          ),
+        ),
+      );
+
+  /// Caisses en direct : le suivi (totaux, produits, caisses) sur son propre écran.
+  void _ouvrirCaisses(BuildContext context, PorteeGestion portee) {
+    final flux = _creerFlux();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Caisses en direct')),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              SuiviEnDirect(
+                key: const Key('suivi_en_direct'),
+                tableau: flux.tableau,
+                produits: flux.produits,
+                gymnases: flux.gymnases,
+                stocks: flux.stocks,
+                etats: flux.etats,
+                commun: portee.toutVoir,
+                onOuvrirCaisse: widget.onOuvrirCaisse,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _ouvrirBilan(BuildContext context, Evenement ev, PorteeGestion portee) {
+    // Le bilan a ses propres flux, pas ceux du suivi.
+    final flux = _creerFlux();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => EcranBilan(
+          evenement: ev,
+          tableau: flux.tableau,
+          produits: flux.produits,
+          gymnases: flux.gymnases,
+          stocks: flux.stocks,
+          stocksReference: widget.depot
+              .suivreStocksReference(ev.id, gymnases: portee.filtre),
+          courses: flux.courses,
+          apports: widget.depot.suivreApports(ev.id),
+          commun: portee.toutVoir,
+          limite: !portee.toutVoir,
+        ),
+      ),
+    );
+  }
+
+  /// Ajoute au stock d'un produit suivi (même écriture que « Ajouter » dans Gymnases et stocks).
+  Future<void> _ajouterStock(BuildContext context, Evenement ev, ASurveiller x) async {
+    final n = await showDialog<int>(
+      context: context,
+      builder: (_) => DialogueNombre(titre: 'Ajouter au stock de ${x.nomProduit}'),
+    );
+    if (n == null) return;
+    try {
+      await widget.depot.reapprovisionner(ev.id, x.gymnaseId, x.produitId, n);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Ajout impossible. Vérifiez le réseau.',
+              key: Key('erreur_ajout_stock'),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _onglet = ongletInitial(widget.evenement);
     _abonner();
   }
 
   @override
   void didUpdateWidget(_BlocGestion ancien) {
     super.didUpdateWidget(ancien);
-    if (ancien.evenement.id != widget.evenement.id ||
+    // Ouvrir l'événement (préparation -> en cours) ou le clôturer change le temps affiché.
+    final statutChange = ancien.evenement.statut != widget.evenement.statut;
+    if (statutChange) _onglet = ongletInitial(widget.evenement);
+    if (statutChange ||
+        ancien.evenement.id != widget.evenement.id ||
         !setEquals(ancien.portee.filtre, widget.portee.filtre)) {
       _abonner();
     }
@@ -655,146 +805,411 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                 ),
               )
             : const SizedBox.shrink(),
-        // Ouverture : le responsable, ou un gestionnaire rattaché à tous les gymnases.
-        if (peutOuvrirEvenement(ev, portee))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: FilledButton(
-              key: const Key('ouvrir_evenement'),
-              style: TypeAction.reussir.plein,
-              onPressed: widget.onOuvrirEvenement,
-              child: const Text("Ouvrir l'événement"),
+        SegmentedButton<OngletEvenement>(
+          key: const Key('onglets_evenement'),
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+              value: OngletEvenement.avant,
+              label: Text('Avant', key: Key('onglet_avant')),
             ),
+            ButtonSegment(
+              value: OngletEvenement.pendant,
+              label: Text('Pendant', key: Key('onglet_pendant')),
+            ),
+            ButtonSegment(
+              value: OngletEvenement.apres,
+              label: Text('Après', key: Key('onglet_apres')),
+            ),
+          ],
+          selected: {_onglet},
+          onSelectionChanged: (s) {
+            if (s.first != _onglet) _ouvrirOnglet(s.first);
+          },
+        ),
+        const SizedBox(height: 12),
+        switch (_onglet) {
+          OngletEvenement.avant => _avant(context, ev, portee),
+          OngletEvenement.pendant => _pendant(context, ev, portee),
+          OngletEvenement.apres => _apres(context, ev, portee),
+        },
+      ],
+    );
+  }
+
+  // ---------- Avant : préparer le tournoi ----------
+
+  Widget _avant(BuildContext context, Evenement ev, PorteeGestion portee) {
+    final courses = _suivi.courses;
+    return StreamBuilder<List<Gymnase>>(
+      stream: _suivi.gymnases,
+      builder: (context, g) => StreamBuilder<Map<String, Map<String, StockDepart>>>(
+        stream: _suivi.stocksDepart,
+        builder: (context, s) {
+          if (g.connectionState == ConnectionState.waiting ||
+              s.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final gymnases = g.data ?? const <Gymnase>[];
+          final stocks = s.data ?? const <String, Map<String, StockDepart>>{};
+          if (courses == null) {
+            return _contenuAvant(context, ev, portee, gymnases, stocks, null);
+          }
+          return StreamBuilder<ListeCourses?>(
+            stream: courses,
+            builder: (context, c) => c.connectionState == ConnectionState.waiting
+                ? const Center(child: CircularProgressIndicator())
+                : _contenuAvant(context, ev, portee, gymnases, stocks,
+                    c.data?.seriesValidees ?? 0),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _contenuAvant(
+    BuildContext context,
+    Evenement ev,
+    PorteeGestion portee,
+    List<Gymnase> gymnases,
+    Map<String, Map<String, StockDepart>> stocks,
+    int? series,
+  ) {
+    final taches = tachesAvant(
+      ev: ev,
+      gymnases: gymnases,
+      stocksDepart: stocks,
+      seriesValidees: series,
+    );
+    final faites = taches.where((t) => t.faite).length;
+    final par = {for (final t in taches) t.cle: t};
+    // Une tâche ouvre son écran ; la clé du bouton reste celle de l'écran qu'elle ouvre.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Préparer le tournoi',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 6),
+        Text('$faites sur ${taches.length} faits', key: const Key('avancement_avant')),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          key: const Key('progression_avant'),
+          value: faites / taches.length,
+        ),
+        const SizedBox(height: 12),
+        _ligneTache(
+          par['stock']!,
+          cle: const Key('voir_preparation'),
+          surClic: () => _ouvrirStockDepart(context, ev, portee),
+        ),
+        _ligneTache(
+          par['personnes']!,
+          cle: const Key('tache_personnes'),
+          surClic: () => _ouvrirPersonnes(context, ev, portee),
+        ),
+        _ligneTache(
+          par['prevision']!,
+          cle: const Key('tache_prevision'),
+          surClic: () => _ouvrirPrevision(context, ev, portee),
+        ),
+        _ligneTache(
+          par['courses']!,
+          cle: portee.toutVoir ? const Key('voir_courses') : const Key('tache_courses'),
+          surClic: portee.toutVoir ? () => _ouvrirCourses(context, ev, portee) : null,
+        ),
+        Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: const ListTile(
+            key: Key('tache_materiel'),
+            leading: Icon(Icons.build_outlined),
+            title: Text('Matériel'),
+            subtitle: Text('Bientôt'),
           ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          key: const Key('voir_produits'),
+          style: TypeAction.gerer.contour,
+          onPressed: () => _ouvrirProduits(context, ev),
+          child: const Text('Produits et images'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          key: const Key('voir_gymnases'),
+          style: TypeAction.gerer.contour,
+          onPressed: () => _voirGymnases(context, ev, portee),
+          child: const Text('Gymnases et stocks'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('ouvrir_classeur'),
+          style: TypeAction.gerer.contour,
+          onPressed: () => _ouvrirClasseur(context, ev, portee),
+          icon: const Icon(Icons.table_chart_outlined),
+          label: const Text('Excel'),
+        ),
+        if (peutOuvrirEvenement(ev, portee)) ...[
+          const SizedBox(height: 20),
+          FilledButton(
+            key: const Key('ouvrir_evenement'),
+            style: TypeAction.reussir.plein,
+            onPressed: widget.onOuvrirEvenement,
+            child: const Text('Ouvrir le tournoi aux bénévoles'),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Les bénévoles ne voient pas encore ce tournoi.',
+            key: Key('ouverture_info'),
+            textAlign: TextAlign.center,
+          ),
+        ],
         if (ev.enPreparation && !portee.toutVoir)
           const Padding(
-            padding: EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(top: 12),
             child: Text(
               "Seul le responsable, ou un gestionnaire rattaché à tous les gymnases, "
               "peut ouvrir l'événement.",
               key: Key('ouverture_reservee'),
             ),
           ),
-        // Les accès (gymnases, bilan) passent AVANT le suivi, qui est long. Éléments
-        // toujours présents (vides ou non) : le suivi garde sa place et son état.
-        !ev.cloture
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: OutlinedButton(
-                  key: const Key('voir_preparation'),
-                  style: TypeAction.gerer.contour,
-                  onPressed: () => _ouvrirPreparation(context, ev, portee),
-                  child: const Text('Préparation'),
+      ],
+    );
+  }
+
+  /// Une tâche d'Avant : une coche (faite ou non), son titre et ce qu'on y lit.
+  Widget _ligneTache(TacheAvant t, {required Key cle, VoidCallback? surClic}) =>
+      Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          key: cle,
+          leading: Icon(
+            t.faite ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: t.faite ? Palette.saugeFonce : Palette.gris,
+          ),
+          title: Text(t.titre),
+          subtitle: Text(t.detail, key: Key('detail_${t.cle}')),
+          trailing: surClic == null ? null : const Icon(Icons.chevron_right),
+          onTap: surClic,
+        ),
+      );
+
+  // ---------- Pendant : suivre le tournoi ----------
+
+  Widget _pendant(BuildContext context, Evenement ev, PorteeGestion portee) {
+    if (ev.enPreparation) {
+      return const Text(
+        "Le tournoi n'est pas encore ouvert : ses chiffres apparaissent à l'ouverture.",
+        key: Key('pendant_attente'),
+      );
+    }
+    if (ev.cloture) {
+      return const Text(
+        'Le tournoi est clôturé : voir l’onglet Après.',
+        key: Key('pendant_cloture'),
+      );
+    }
+    return StreamBuilder<TableauDeBord>(
+      stream: _suivi.tableau,
+      builder: (context, t) {
+        final tableau = t.data;
+        if (tableau == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final ouvertes = tableau.caisses.where((r) => !r.caisse.cloturee).length;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Chiffres du jour',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ventes : ${tableau.nbVentes} · ${formaterEuros(tableau.totalCentimes)}',
+              key: const Key('pendant_total'),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            Text(
+              'Caisses ouvertes : $ouvertes',
+              key: const Key('pendant_caisses'),
+            ),
+            const SizedBox(height: 16),
+            _aSurveiller(context, ev),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              key: const Key('voir_gymnases'),
+              style: TypeAction.gerer.contour,
+              onPressed: () => _voirGymnases(context, ev, portee),
+              child: const Text('Stock'),
+            ),
+            const SizedBox(height: 8),
+            if (portee.toutVoir) ...[
+              OutlinedButton(
+                key: const Key('voir_courses'),
+                style: TypeAction.gerer.contour,
+                onPressed: () => _ouvrirCourses(context, ev, portee),
+                child: const Text("Courses d'appoint"),
+              ),
+              const SizedBox(height: 8),
+            ],
+            OutlinedButton(
+              key: const Key('voir_caisses'),
+              style: TypeAction.gerer.contour,
+              onPressed: () => _ouvrirCaisses(context, portee),
+              child: const Text('Caisses en direct'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('voir_bilan'),
+              style: TypeAction.analyser.contour,
+              onPressed: () => _ouvrirBilan(context, ev, portee),
+              child: const Text('Bilan provisoire'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('voir_produits'),
+              style: TypeAction.gerer.contour,
+              onPressed: () => _ouvrirProduits(context, ev),
+              child: const Text('Produits et images'),
+            ),
+            if (ev.enCours && !portee.toutVoir)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text(
+                  "Seul le responsable, ou un gestionnaire rattaché à tous les "
+                  "gymnases, peut clôturer l'événement.",
+                  key: Key('cloture_reservee'),
                 ),
-              )
-            : const SizedBox.shrink(),
-        !ev.cloture
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: OutlinedButton(
-                  key: const Key('voir_gymnases'),
-                  style: TypeAction.gerer.contour,
-                  onPressed: () => _voirGymnases(context, ev, portee),
-                  child: const Text('Gymnases et stocks'),
+              ),
+            if (ev.enCours && portee.toutVoir)
+              StreamBuilder<List<Caisse>>(
+                stream: _suivi.caisses,
+                builder: (context, s) {
+                  final liste = s.data ?? const <Caisse>[];
+                  final ouvertesCaisses = liste.where((c) => !c.cloturee).length;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: ouvertesCaisses == 0
+                        ? FilledButton(
+                            key: const Key('cloturer_evenement'),
+                            style: TypeAction.reussir.plein,
+                            onPressed: () => widget.onCloturer(liste),
+                            child: const Text("Clôturer l'événement"),
+                          )
+                        : OutlinedButton(
+                            key: const Key('cloturer_evenement'),
+                            style: TypeAction.danger.contour,
+                            onPressed: () => widget.onCloturer(liste),
+                            child: const Text('Forcer la clôture'),
+                          ),
+                  );
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// « À surveiller » : produits épuisés, vides ou à stock bas, avec un « + » pour ajouter.
+  Widget _aSurveiller(BuildContext context, Evenement ev) {
+    return StreamBuilder<List<ProduitEvenement>>(
+      stream: _suivi.produits,
+      builder: (context, p) => StreamBuilder<Map<String, Map<String, EtatStock>>>(
+        stream: _suivi.etats,
+        builder: (context, e) => StreamBuilder<List<Gymnase>>(
+          stream: _suivi.gymnases,
+          builder: (context, g) {
+            final produits = p.data;
+            final etats = e.data;
+            final gymnases = g.data;
+            if (produits == null || etats == null || gymnases == null) {
+              return const SizedBox.shrink();
+            }
+            final liste = aSurveiller(
+              produits: produits,
+              gymnases: gymnases,
+              etats: etats,
+            );
+            final plusieurs = gymnases.length > 1;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'À surveiller',
+                  key: const Key('titre_a_surveiller'),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-              )
-            : const SizedBox.shrink(),
-        // Les courses : responsable, ou gestionnaire rattaché à tous les gymnases.
-        !ev.cloture && portee.toutVoir
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: OutlinedButton(
-                  key: const Key('voir_courses'),
-                  style: TypeAction.gerer.contour,
-                  onPressed: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute(
-                      builder: (_) => EcranCourses(
-                        depot: widget.depot,
-                        evenementId: ev.id,
-                        onAllerPreparation: () =>
-                            _ouvrirPreparation(context, ev, portee),
+                const SizedBox(height: 4),
+                if (liste.isEmpty)
+                  const Text(
+                    'Rien à surveiller pour l’instant.',
+                    key: Key('rien_a_surveiller'),
+                  ),
+                for (final x in liste)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      key: Key('surveiller_${x.gymnaseId}_${x.produitId}'),
+                      title: Text(x.nomProduit),
+                      subtitle: Text(
+                        plusieurs
+                            ? '${x.nomGymnase} · ${_libelleEtat(x.etat)}'
+                            : _libelleEtat(x.etat),
+                        style: TextStyle(
+                          color: couleurEtat(x.etat),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: IconButton.filledTonal(
+                        key: Key('ajout_surveiller_${x.gymnaseId}_${x.produitId}'),
+                        tooltip: 'Ajouter au stock',
+                        icon: const Icon(Icons.add),
+                        onPressed: () => _ajouterStock(context, ev, x),
                       ),
                     ),
                   ),
-                  child: const Text('Courses'),
-                ),
-              )
-            : const SizedBox.shrink(),
-        if (!ev.enPreparation)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: OutlinedButton(
-            key: const Key('voir_bilan'),
-            style: TypeAction.analyser.contour,
-            onPressed: () {
-              // Le bilan a ses propres flux, pas ceux du suivi.
-              final flux = _creerFlux();
-              Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => EcranBilan(
-                    evenement: ev,
-                    tableau: flux.tableau,
-                    produits: flux.produits,
-                    gymnases: flux.gymnases,
-                    stocks: flux.stocks,
-                    stocksReference: widget.depot
-                        .suivreStocksReference(ev.id, gymnases: portee.filtre),
-                    courses: flux.courses,
-                    apports: widget.depot.suivreApports(ev.id),
-                    commun: portee.toutVoir,
-                    limite: !portee.toutVoir,
-                  ),
-                ),
-              );
-            },
-            child: const Text('Voir le bilan'),
-          ),
+              ],
+            );
+          },
         ),
-        // Rien à suivre tant que l'événement n'est pas ouvert.
-        if (!ev.enPreparation)
-          SuiviEnDirect(
-            key: const Key('suivi_en_direct'),
-            tableau: _suivi.tableau,
-            produits: _suivi.produits,
-            gymnases: _suivi.gymnases,
-            stocks: _suivi.stocks,
-            etats: _suivi.etats,
-            commun: portee.toutVoir,
-            onOuvrirCaisse: widget.onOuvrirCaisse,
-          ),
-        if (ev.enCours && !portee.toutVoir)
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: Text(
-              "Seul le responsable, ou un gestionnaire rattaché à tous les gymnases, "
-              "peut clôturer l'événement.",
-              key: Key('cloture_reservee'),
-            ),
-          ),
-        if (ev.enCours && portee.toutVoir)
-          StreamBuilder<List<Caisse>>(
-            stream: _suivi.caisses,
-            builder: (context, s) {
-              final liste = s.data ?? const <Caisse>[];
-              final ouvertes = liste.where((c) => !c.cloturee).length;
-              return Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: ouvertes == 0
-                    ? FilledButton(
-                        key: const Key('cloturer_evenement'),
-                        style: TypeAction.reussir.plein,
-                        onPressed: () => widget.onCloturer(liste),
-                        child: const Text("Clôturer l'événement"),
-                      )
-                    : OutlinedButton(
-                        key: const Key('cloturer_evenement'),
-                        style: TypeAction.danger.contour,
-                        onPressed: () => widget.onCloturer(liste),
-                        child: const Text('Forcer la clôture'),
-                      ),
-              );
-            },
-          ),
+      ),
+    );
+  }
+
+  String _libelleEtat(EtatStock e) => switch (e) {
+        EtatStock.epuise => 'Épuisé',
+        EtatStock.vide => 'Vide',
+        _ => 'Stock bas',
+      };
+
+  // ---------- Après : clôture, bilan, export ----------
+
+  Widget _apres(BuildContext context, Evenement ev, PorteeGestion portee) {
+    if (ev.enPreparation) {
+      return const Text(
+        "Le bilan et l'export apparaissent une fois le tournoi ouvert.",
+        key: Key('apres_attente'),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          ev.cloture
+              ? 'Tournoi clôturé. Le bilan et l’export Excel sont ci-dessous.'
+              : 'Tournoi en cours : la clôture se fait dans l’onglet Pendant.',
+          key: const Key('apres_etat'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          key: const Key('voir_bilan'),
+          style: TypeAction.analyser.contour,
+          onPressed: () => _ouvrirBilan(context, ev, portee),
+          child: Text(ev.cloture ? 'Voir le bilan et exporter' : 'Voir le bilan provisoire'),
+        ),
       ],
     );
   }
@@ -1190,6 +1605,84 @@ class _EtatSuivi extends State<SuiviEnDirect> {
           ],
         );
       },
+    );
+  }
+}
+
+/// « Produits et images » (gestion, décision 61) : la liste des produits de l'événement,
+/// et la correction de leur image. Le nom et le prix ne changent pas ici.
+class EcranProduitsEvenement extends StatelessWidget {
+  const EcranProduitsEvenement({
+    super.key,
+    required this.depot,
+    required this.evenementId,
+    required this.modifiable,
+    this.selecteurPhoto = selecteurPhotoReel,
+  });
+
+  final DepotEvenements depot;
+  final String evenementId;
+
+  /// Faux une fois l'événement clôturé : la liste se lit seulement.
+  final bool modifiable;
+
+  /// Choix d'une photo (remplaçable dans les tests).
+  final SelecteurPhoto selecteurPhoto;
+
+  Future<void> _changerImage(BuildContext context, ProduitEvenement p) async {
+    final r = await demanderImageProduit(context,
+        nom: p.nom,
+        icone: p.icone,
+        photo: p.photo,
+        selecteurPhoto: selecteurPhoto);
+    if (r == null) return;
+    await depot.modifierImageProduit(evenementId, p.id,
+        icone: r.icone, photo: r.photo);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Produits et images')),
+      body: StreamBuilder<List<ProduitEvenement>>(
+        stream: depot.suivreProduits(evenementId),
+        builder: (context, s) {
+          final produits = s.data;
+          if (produits == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(
+                modifiable
+                    ? 'Touchez un produit pour corriger son image. Son nom et son '
+                        'prix ne changent pas.'
+                    : 'L\'événement est clôturé : les images se lisent seulement.',
+                key: const Key('aide_produits'),
+              ),
+              const SizedBox(height: 8),
+              for (final p in produits)
+                ListTile(
+                  key: Key('produit_evenement_${p.id}'),
+                  leading: VignetteProduit(
+                    key: Key('vignette_evenement_${p.id}'),
+                    icone: p.icone,
+                    photo: p.photo,
+                  ),
+                  title: Text(p.nom),
+                  subtitle: Text(
+                    formaterEuros(p.prixCentimes) +
+                        (p.stock == null ? '' : ' · Stock : ${p.stock}') +
+                        resumeFiche(p.fiche),
+                  ),
+                  trailing: modifiable ? const Icon(Icons.image_outlined) : null,
+                  onTap: modifiable ? () => _changerImage(context, p) : null,
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

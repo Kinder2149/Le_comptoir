@@ -3,8 +3,21 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:le_comptoir/classeur.dart';
 
-/// Un classeur de test avec les feuilles « Stock de départ » et « Historique » au format
-/// du modèle (ligne d'aide, ligne d'en-têtes, puis les données).
+/// En-têtes de l'ancien Menu (avant la décision 66) : les classeurs anciens doivent
+/// rester lisibles, les tests d'import s'en servent pour le prouver.
+const entetesMenuAncien = [
+  enteteProduit,
+  'Prix',
+  'Type',
+  'Provenance',
+  'Verres par litre',
+  'Parts par gâteau',
+  'Recette',
+  enteteConsommation,
+];
+
+/// Un classeur de test avec les feuilles « Menu » (ancien format), « Stock de départ » et
+/// « Historique » : ligne d'aide, ligne d'en-têtes, puis les données.
 Uint8List classeurDeTest({
   List<List<Object?>> menu = const [],
   List<List<Object?>> stock = const [],
@@ -28,7 +41,7 @@ Uint8List classeurDeTest({
     }
   }
 
-  feuille(feuilleMenu, entetesMenu, menu);
+  feuille(feuilleMenu, entetesMenuAncien, menu);
   feuille(feuilleStock, entetesStock, stock);
   feuille(feuilleHistorique, entetesHistorique, historique);
   feuille(feuilleCourses, entetesCourses, const []);

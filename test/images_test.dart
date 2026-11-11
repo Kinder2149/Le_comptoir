@@ -89,10 +89,10 @@ void main() {
       expect(m['Croque-monsieur']!.prixCentimes, 100);
       expect(croque.conso, 0.65);
       expect(croque.ingredients.length, 4);
-      expect(croque.ingredients[0], const Ingredient('Pain de mie', 2, 'tranche'));
-      expect(croque.ingredients[1], const Ingredient('Jambon blanc', 0.45, 'tranche'));
-      expect(croque.ingredients[2], const Ingredient('Gruyère râpé', 16, 'g'));
-      expect(croque.ingredients[3], const Ingredient('Beurre', 5, 'g'));
+      expect(croque.ingredients[0], const Ingredient('Pain de mie', 2, 'tranche', 'boulangerie'));
+      expect(croque.ingredients[1], const Ingredient('Jambon blanc', 0.45, 'tranche', 'frais'));
+      expect(croque.ingredients[2], const Ingredient('Gruyère râpé', 16, 'g', 'frais'));
+      expect(croque.ingredients[3], const Ingredient('Beurre', 5, 'g', 'frais'));
       expect(m['Croque végé']!.fiche.ingredients.map((i) => i.nom),
           ['Pain de mie', 'Bûche de chèvre', 'Tomate', 'Beurre']);
       // La tartiflette est une variante de croque, plus un plat à part.

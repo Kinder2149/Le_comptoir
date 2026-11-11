@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'depot_menus.dart';
 import 'ecran_caisse.dart';
 import 'ecran_menus.dart';
+import 'liste_familles.dart';
 import 'theme.dart';
 import 'ticket.dart';
 
@@ -139,40 +140,62 @@ class EcranMenu extends StatelessWidget {
                 return const Center(
                     child: Text('Aucun produit.', key: Key('aucun_produit')));
               }
-              return ListView(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Text(
-                      "Catalogue : le stock se règle dans l'événement.",
-                      key: Key('bandeau_menu'),
-                    ),
-                  ),
-                  for (final p in produits)
-                    ListTile(
-                      key: Key('produit_${p.id}'),
-                      leading: VignetteProduit(
-                          key: Key('vignette_${p.id}'),
-                          icone: p.icone,
-                          photo: p.photo),
-                      title: Text(p.nom),
-                      subtitle: Text(
-                        formaterEuros(p.prixCentimes) +
-                            (p.fiche.type == 'unite'
-                                ? ''
-                                : ' · ${libellesTypes[p.fiche.type]}') +
-                            (p.fiche.provenance == 'apporte'
-                                ? ' · Apporté par les bénévoles'
-                                : ''),
-                      ),
-                      onTap: () => _editerProduit(context, p),
-                    ),
-                ],
+              return ListeProduitsMenu(
+                produits: produits,
+                onTap: (p) => _editerProduit(context, p),
               );
             },
           ),
         );
       },
+    );
+  }
+}
+
+/// Produits d'un menu rangés par familles (décision 63). Sans accès à la base :
+/// testable seul. Image : photo, sinon icône juste, sinon pastille aux initiales.
+class ListeProduitsMenu extends StatelessWidget {
+  const ListeProduitsMenu({
+    super.key,
+    required this.produits,
+    required this.onTap,
+  });
+
+  final List<ProduitMenu> produits;
+  final void Function(ProduitMenu produit) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListeFamilles<ProduitMenu>(
+      elements: produits,
+      familleDe: (p) => p.fiche.famille,
+      nomDe: (p) => p.nom,
+      enTete: const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 8),
+        child: Text(
+          "Catalogue : le stock se règle dans l'événement.",
+          key: Key('bandeau_menu'),
+        ),
+      ),
+      ligne: (context, p, couleur) => ListTile(
+        key: Key('produit_${p.id}'),
+        leading: p.photo != null || p.icone != null
+            ? VignetteProduit(
+                key: Key('vignette_${p.id}'), icone: p.icone, photo: p.photo)
+            : PastilleProduit(
+                key: Key('pastille_${p.id}'), nom: p.nom, couleur: couleur),
+        title: Text(p.nom),
+        subtitle: Text(
+          formaterEuros(p.prixCentimes) +
+              (p.fiche.type == 'unite'
+                  ? ''
+                  : ' · ${libellesTypes[p.fiche.type]}') +
+              (p.fiche.provenance == 'apporte'
+                  ? ' · Apporté par les bénévoles'
+                  : ''),
+        ),
+        onTap: () => onTap(p),
+      ),
     );
   }
 }
@@ -222,11 +245,13 @@ class _LigneIngredient {
       : nom = TextEditingController(text: i?.nom ?? ''),
         quantite = TextEditingController(
             text: i == null ? '' : nombrePourSaisie(i.quantite)),
-        unite = i?.unite ?? 'unite';
+        unite = i?.unite ?? 'unite',
+        rayon = i?.rayon ?? 'autre';
 
   final TextEditingController nom;
   final TextEditingController quantite;
   String unite;
+  String rayon;
 
   void liberer() {
     nom.dispose();
@@ -257,6 +282,8 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
           ? ''
           : prixPourSaisie(widget.produit!.prixCentimes));
   late String _provenance = widget.produit?.fiche.provenance ?? 'achete';
+  late String _famille = widget.produit?.fiche.famille ?? 'autre';
+  late String _rayon = widget.produit?.fiche.rayon ?? 'autre';
   late String? _icone = widget.produit?.icone;
   late Uint8List? _photo = widget.produit?.photo;
   String? _erreur;
@@ -281,13 +308,18 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
     final fiche = FicheProduit(
       type: _type,
       provenance: _provenance,
+      famille: _famille,
+      rayon: _rayon,
       // Une consommation illisible devient -1 : refusée par la vérification.
       conso: _conso.text.trim().isEmpty ? null : (conso ?? -1),
       ingredients: _type == 'compose'
           ? [
               for (final l in _lignes)
                 Ingredient(
-                    l.nom.text.trim(), parserNombre(l.quantite.text) ?? 0, l.unite),
+                    l.nom.text.trim(),
+                    parserNombre(l.quantite.text) ?? 0,
+                    l.unite,
+                    l.rayon),
             ]
           : const [],
       verresParLitre: _type == 'litre' ? parserNombre(_verres.text) : null,
@@ -328,6 +360,21 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
             _type = v ?? 'unite';
             _erreur = null;
           }),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          key: const Key('famille_produit'),
+          isExpanded: true,
+          initialValue: _famille,
+          decoration: const InputDecoration(labelText: 'Famille'),
+          items: [
+            for (final f in famillesProduit)
+              DropdownMenuItem(
+                  key: Key('famille_$f'),
+                  value: f,
+                  child: Text(libellesFamilles[f]!)),
+          ],
+          onChanged: (v) => setState(() => _famille = v ?? 'autre'),
         ),
         if (_type == 'litre') ...[
           const SizedBox(height: 12),
@@ -375,6 +422,23 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
           ],
           onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
         ),
+        if (_type != 'compose' && _provenance == 'achete') ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: const Key('rayon_produit'),
+            isExpanded: true,
+            initialValue: _rayon,
+            decoration: const InputDecoration(labelText: 'Rayon des courses'),
+            items: [
+              for (final r in rayonsCourses)
+                DropdownMenuItem(
+                    key: Key('rayon_$r'),
+                    value: r,
+                    child: Text(libellesRayons[r]!)),
+            ],
+            onChanged: (v) => setState(() => _rayon = v ?? 'autre'),
+          ),
+        ],
         const SizedBox(height: 8),
         TextField(
           key: const Key('conso_produit'),
@@ -429,6 +493,20 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
                 onPressed: () => setState(() => _lignes.removeAt(i)),
               ),
             ],
+          ),
+          DropdownButtonFormField<String>(
+            key: Key('ingredient_rayon_$i'),
+            isExpanded: true,
+            initialValue: l.rayon,
+            decoration: const InputDecoration(labelText: 'Rayon'),
+            items: [
+              for (final r in rayonsCourses)
+                DropdownMenuItem(
+                    key: Key('rayon_${i}_$r'),
+                    value: r,
+                    child: Text(libellesRayons[r]!)),
+            ],
+            onChanged: (v) => setState(() => l.rayon = v ?? 'autre'),
           ),
         ],
       ),

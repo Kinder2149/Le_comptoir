@@ -26,11 +26,11 @@ rules_version = '2';
 //       gymnases/{g}                              un lieu de vente : nom, creeLe (jamais supprimé)
 //         stocks/{p}                              quantite, reference? (dernier total réglé ou ajouté ; base du « stock bas »), repris? (true = repris des restes ; effacé à la correction)
 //                                                 (absent = pas de suivi de ce produit dans ce gymnase)
-//       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite},
+//       courses/liste                             statut ('preparation' puis 'validee'), lignes[] {gymnaseId, produitId, quantite}, libres[] {nom, quantite, rayon?},
 //                                                 restes[] {cle, quantite}, majLe, + à la validation : achats[] {cle, quantite},
 //                                                 rendements[] {gymnaseId, produitId, quantite}, coutCentimes, valideeLe — la liste de courses de l'événement (gestion de tous les gymnases)
 //                                                 + cumul des séries déjà validées (C1) : cumulSeries, cumulCout, cumulAjouts[] {produitId, quantite} ; une liste validée repart vide en « preparation » avec le cumul augmenté de sa série
-//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses
+//                                                 evenements/{e}.nbJours (0,5 à 30) et gymnases/{g}.personnes (0 à 1000) : réglages des courses ; evenements/{e}.previsionVerifiee (booléen) : tableau de bord
 //         vides/{p}                               creeLe : produit signalé « vide » dans ce gymnase (document présent = vide)
 //       rattachements/{uid}                       gymnases: [ids] — les gymnases d'un gestionnaire (écrit par le
 //                                                 responsable seul). Un gestionnaire ne lit, n'annule et ne règle
@@ -88,49 +88,43 @@ service cloud.firestore {
     // unité de la liste fixe}. Pas de boucle dans les règles, et une requête ne peut pas
     // évaluer plus de 1000 expressions : un test compact, écrit en clair, par position
     // (une valeur d'un mauvais type fait échouer le test, donc refuse l'écriture).
+    // Un ingrédient : quantité > 0, nom de 1 à 40 caractères, unité et rayon (facultatif, absent = « autre »)
+    // de listes fixes. Unité et rayon sont testés ensemble (« g|frais ») pour économiser des expressions.
+    function ingredientValide(i) {
+      return i.quantite > 0 && i.nom.matches('.{1,40}')
+        && (i.unite + '|' + i.get('rayon', 'autre')).matches('(unite|tranche|g|kg|cl|L)[|](boulangerie|frais|boissons|epicerie|entretien|autre)');
+    }
+    // Les positions sont testées par blocs de cinq : un seul test de taille par bloc plein,
+    // car chaque expression compte dans la limite de 1000 par requête.
     function ingredientsValides(l) {
+      let n = l.size();
       return l is list
-        && l.size() >= 1
-        && l.size() <= 20
-        && (l.size() <= 0 || (l[0].quantite > 0 && l[0].nom.matches('.{1,40}') && l[0].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 1 || (l[1].quantite > 0 && l[1].nom.matches('.{1,40}') && l[1].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 2 || (l[2].quantite > 0 && l[2].nom.matches('.{1,40}') && l[2].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 3 || (l[3].quantite > 0 && l[3].nom.matches('.{1,40}') && l[3].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 4 || (l[4].quantite > 0 && l[4].nom.matches('.{1,40}') && l[4].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 5 || (l[5].quantite > 0 && l[5].nom.matches('.{1,40}') && l[5].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 6 || (l[6].quantite > 0 && l[6].nom.matches('.{1,40}') && l[6].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 7 || (l[7].quantite > 0 && l[7].nom.matches('.{1,40}') && l[7].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 8 || (l[8].quantite > 0 && l[8].nom.matches('.{1,40}') && l[8].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 9 || (l[9].quantite > 0 && l[9].nom.matches('.{1,40}') && l[9].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 10 || (l[10].quantite > 0 && l[10].nom.matches('.{1,40}') && l[10].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 11 || (l[11].quantite > 0 && l[11].nom.matches('.{1,40}') && l[11].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 12 || (l[12].quantite > 0 && l[12].nom.matches('.{1,40}') && l[12].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 13 || (l[13].quantite > 0 && l[13].nom.matches('.{1,40}') && l[13].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 14 || (l[14].quantite > 0 && l[14].nom.matches('.{1,40}') && l[14].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 15 || (l[15].quantite > 0 && l[15].nom.matches('.{1,40}') && l[15].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 16 || (l[16].quantite > 0 && l[16].nom.matches('.{1,40}') && l[16].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 17 || (l[17].quantite > 0 && l[17].nom.matches('.{1,40}') && l[17].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 18 || (l[18].quantite > 0 && l[18].nom.matches('.{1,40}') && l[18].unite.matches('unite|tranche|g|kg|cl|L')))
-        && (l.size() <= 19 || (l[19].quantite > 0 && l[19].nom.matches('.{1,40}') && l[19].unite.matches('unite|tranche|g|kg|cl|L')));
+        && n >= 1
+        && n <= 20
+        && ingredientValide(l[0])
+        && (n < 5 ? ((n <= 1 || ingredientValide(l[1])) && (n <= 2 || ingredientValide(l[2])) && (n <= 3 || ingredientValide(l[3])) && (n <= 4 || ingredientValide(l[4]))) : (ingredientValide(l[1]) && ingredientValide(l[2]) && ingredientValide(l[3]) && ingredientValide(l[4]) && (n < 10 ? ((n <= 5 || ingredientValide(l[5])) && (n <= 6 || ingredientValide(l[6])) && (n <= 7 || ingredientValide(l[7])) && (n <= 8 || ingredientValide(l[8])) && (n <= 9 || ingredientValide(l[9]))) : (ingredientValide(l[5]) && ingredientValide(l[6]) && ingredientValide(l[7]) && ingredientValide(l[8]) && ingredientValide(l[9]) && (n < 15 ? ((n <= 10 || ingredientValide(l[10])) && (n <= 11 || ingredientValide(l[11])) && (n <= 12 || ingredientValide(l[12])) && (n <= 13 || ingredientValide(l[13])) && (n <= 14 || ingredientValide(l[14]))) : (ingredientValide(l[10]) && ingredientValide(l[11]) && ingredientValide(l[12]) && ingredientValide(l[13]) && ingredientValide(l[14]) && (n < 20 ? ((n <= 15 || ingredientValide(l[15])) && (n <= 16 || ingredientValide(l[16])) && (n <= 17 || ingredientValide(l[17])) && (n <= 18 || ingredientValide(l[18])) && (n <= 19 || ingredientValide(l[19]))) : (ingredientValide(l[15]) && ingredientValide(l[16]) && ingredientValide(l[17]) && ingredientValide(l[18]) && ingredientValide(l[19])))))))));
     }
     // Type, recette, ratio et consommation. Sans type = « unite ». Une recette
     // seulement pour un produit composé, un ratio seulement pour un produit au litre.
     function ficheValide(d) {
+      let t = d.get('type', 'unite');
       return (!('type' in d) || d.type in ['compose', 'unite', 'part', 'litre'])
         && (!('provenance' in d) || d.provenance in ['achete', 'apporte'])
+        && (!('famille' in d) || d.famille.matches('croques|boissons_chaudes|boissons_fraiches|snacks_fruits|fait_maison|autre'))
+        && (!('rayon' in d) || d.rayon.matches('boulangerie|frais|boissons|epicerie|entretien|autre'))
         && (!('partsParEntier' in d)
-            || (d.get('type', 'unite') == 'part' && d.partsParEntier is int && d.partsParEntier >= 1 && d.partsParEntier <= 100))
+            || (t == 'part' && d.partsParEntier is int && d.partsParEntier >= 1 && d.partsParEntier <= 100))
         && (!('conso' in d) || (d.conso is number && d.conso >= 0 && d.conso <= 1000))
-        && (d.get('type', 'unite') == 'compose'
+        && (t == 'compose'
             ? ('ingredients' in d && ingredientsValides(d.ingredients))
             : !('ingredients' in d))
-        && (d.get('type', 'unite') == 'litre'
+        && (t == 'litre'
             ? ('verresParLitre' in d && d.verresParLitre is number && d.verresParLitre > 0 && d.verresParLitre <= 100)
             : !('verresParLitre' in d));
     }
     function produitValide(d) {
       return d.keys().hasAll(['nom', 'prixCentimes', 'creeLe'])
-        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'conso', 'ingredients', 'verresParLitre', 'partsParEntier'])
+        && d.keys().hasOnly(['nom', 'prixCentimes', 'stock', 'creeLe', 'icone', 'photo', 'type', 'provenance', 'famille', 'rayon', 'conso', 'ingredients', 'verresParLitre', 'partsParEntier'])
         && ficheValide(d)
         && (!('icone' in d)
             || (d.icone is string && d.icone in ['croque', 'salade', 'fruit', 'the', 'cafe', 'barre', 'soda', 'gateau_sucre', 'gateau_sale', 'crepe', 'biere', 'eau', 'frites', 'glace', 'tarte']))
@@ -222,15 +216,41 @@ service cloud.firestore {
         && d.get('cumulCout', 0) == r.get('cumulCout', 0)
         && d.get('cumulAjouts', []) == r.get('cumulAjouts', []);
     }
+    // Rayon facultatif de chaque ligne libre (liste fixe, absent = « autre »).
+    // Positions testées par blocs de dix (un seul test de taille par bloc plein) pour rester
+    // sous la limite de 1000 expressions par requête ; mesuré : 60 lignes libres passent.
+    function libreValide(x) {
+      return x.get('rayon', 'autre').matches('boulangerie|frais|boissons|epicerie|entretien|autre');
+    }
+    function libresValides(l) {
+      let n = l.size();
+      return l is list
+        && (n < 10 ? ((n <= 0 || libreValide(l[0])) && (n <= 1 || libreValide(l[1])) && (n <= 2 || libreValide(l[2])) && (n <= 3 || libreValide(l[3])) && (n <= 4 || libreValide(l[4])) && (n <= 5 || libreValide(l[5])) && (n <= 6 || libreValide(l[6])) && (n <= 7 || libreValide(l[7])) && (n <= 8 || libreValide(l[8])) && (n <= 9 || libreValide(l[9]))) : (libreValide(l[0]) && libreValide(l[1]) && libreValide(l[2]) && libreValide(l[3]) && libreValide(l[4]) && libreValide(l[5]) && libreValide(l[6]) && libreValide(l[7]) && libreValide(l[8]) && libreValide(l[9]) && (n < 20 ? ((n <= 10 || libreValide(l[10])) && (n <= 11 || libreValide(l[11])) && (n <= 12 || libreValide(l[12])) && (n <= 13 || libreValide(l[13])) && (n <= 14 || libreValide(l[14])) && (n <= 15 || libreValide(l[15])) && (n <= 16 || libreValide(l[16])) && (n <= 17 || libreValide(l[17])) && (n <= 18 || libreValide(l[18])) && (n <= 19 || libreValide(l[19]))) : (libreValide(l[10]) && libreValide(l[11]) && libreValide(l[12]) && libreValide(l[13]) && libreValide(l[14]) && libreValide(l[15]) && libreValide(l[16]) && libreValide(l[17]) && libreValide(l[18]) && libreValide(l[19]) && (n < 30 ? ((n <= 20 || libreValide(l[20])) && (n <= 21 || libreValide(l[21])) && (n <= 22 || libreValide(l[22])) && (n <= 23 || libreValide(l[23])) && (n <= 24 || libreValide(l[24])) && (n <= 25 || libreValide(l[25])) && (n <= 26 || libreValide(l[26])) && (n <= 27 || libreValide(l[27])) && (n <= 28 || libreValide(l[28])) && (n <= 29 || libreValide(l[29]))) : (libreValide(l[20]) && libreValide(l[21]) && libreValide(l[22]) && libreValide(l[23]) && libreValide(l[24]) && libreValide(l[25]) && libreValide(l[26]) && libreValide(l[27]) && libreValide(l[28]) && libreValide(l[29]) && (n < 40 ? ((n <= 30 || libreValide(l[30])) && (n <= 31 || libreValide(l[31])) && (n <= 32 || libreValide(l[32])) && (n <= 33 || libreValide(l[33])) && (n <= 34 || libreValide(l[34])) && (n <= 35 || libreValide(l[35])) && (n <= 36 || libreValide(l[36])) && (n <= 37 || libreValide(l[37])) && (n <= 38 || libreValide(l[38])) && (n <= 39 || libreValide(l[39]))) : (libreValide(l[30]) && libreValide(l[31]) && libreValide(l[32]) && libreValide(l[33]) && libreValide(l[34]) && libreValide(l[35]) && libreValide(l[36]) && libreValide(l[37]) && libreValide(l[38]) && libreValide(l[39]) && (n < 50 ? ((n <= 40 || libreValide(l[40])) && (n <= 41 || libreValide(l[41])) && (n <= 42 || libreValide(l[42])) && (n <= 43 || libreValide(l[43])) && (n <= 44 || libreValide(l[44])) && (n <= 45 || libreValide(l[45])) && (n <= 46 || libreValide(l[46])) && (n <= 47 || libreValide(l[47])) && (n <= 48 || libreValide(l[48])) && (n <= 49 || libreValide(l[49]))) : (libreValide(l[40]) && libreValide(l[41]) && libreValide(l[42]) && libreValide(l[43]) && libreValide(l[44]) && libreValide(l[45]) && libreValide(l[46]) && libreValide(l[47]) && libreValide(l[48]) && libreValide(l[49]) && (n < 60 ? ((n <= 50 || libreValide(l[50])) && (n <= 51 || libreValide(l[51])) && (n <= 52 || libreValide(l[52])) && (n <= 53 || libreValide(l[53])) && (n <= 54 || libreValide(l[54])) && (n <= 55 || libreValide(l[55])) && (n <= 56 || libreValide(l[56])) && (n <= 57 || libreValide(l[57])) && (n <= 58 || libreValide(l[58])) && (n <= 59 || libreValide(l[59]))) : (libreValide(l[50]) && libreValide(l[51]) && libreValide(l[52]) && libreValide(l[53]) && libreValide(l[54]) && libreValide(l[55]) && libreValide(l[56]) && libreValide(l[57]) && libreValide(l[58]) && libreValide(l[59])))))))))))));
+    }
+    // Cases cochées en magasin (décision 65) : « articles » = clés des articles affichés
+    // (150 au plus), « coches » = map clé -> true. Une case ne peut viser qu'un article
+    // de la liste : les clés de « coches » sont un sous-ensemble de « articles ».
+    // Sans « articles » ni « coches » (écritures d'avant E6), rien à vérifier : court-circuit
+    // qui garde la liste de 60 lignes libres sous la limite de 1000 expressions.
+    function articlesValides(d) {
+      // Les cases sont un sous-ensemble des articles, donc bornées par eux. Un « coches »
+      // qui n'est pas une map fait échouer keys().
+      return !d.keys().hasAny(['articles', 'coches'])
+        || (d.get('articles', []) is list
+            && d.get('articles', []).size() <= 150
+            && d.get('coches', {}).keys().hasOnly(d.get('articles', [])));
+    }
     function listePreparationValide(d) {
-      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'cumulSeries', 'cumulCout', 'cumulAjouts'])
+      return d.keys().hasOnly(['statut', 'lignes', 'libres', 'restes', 'majLe', 'cumulSeries', 'cumulCout', 'cumulAjouts', 'articles', 'coches'])
         && d.keys().hasAll(['statut', 'lignes', 'libres', 'restes', 'majLe'])
         && cumulValide(d)
+        && articlesValides(d)
         && d.statut == 'preparation'
         && d.lignes is list
         && d.lignes.size() <= 400
         && d.libres is list
         && d.libres.size() <= 60
+        && libresValides(d.libres)
         && d.restes is list
         && d.restes.size() <= 100
         && d.majLe is timestamp;
@@ -386,6 +406,14 @@ service cloud.firestore {
           && request.resource.data.nbJours is number
           && request.resource.data.nbJours >= 0.5
           && request.resource.data.nbJours <= 30;
+
+        // Prévision vérifiée (décision 62, « C'est vérifié ») : un booléen seul, réglé par la
+        // gestion qui règle la durée (responsable, ou gestionnaire rattaché à tous les gymnases),
+        // tant que l'événement n'est pas clôturé.
+        allow update: if gereTout(a, e)
+          && resource.data.statut in ['en_preparation', 'en_cours']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['previsionVerifiee'])
+          && request.resource.data.previsionVerifiee is bool;
 
         // Un gymnase de plus : le compteur monte de 1 ET le gymnase `dernierGymnase` naît
         // dans le même lot (le compteur ne se monte jamais seul : il décide qui est
@@ -587,6 +615,7 @@ service cloud.firestore {
                     && request.resource.data.lignes.size() <= 400
                     && request.resource.data.libres is list
                     && request.resource.data.libres.size() <= 60
+                    && libresValides(request.resource.data.libres)
                     && request.resource.data.restes is list
                     && request.resource.data.restes.size() <= 100
                     && request.resource.data.achats is list

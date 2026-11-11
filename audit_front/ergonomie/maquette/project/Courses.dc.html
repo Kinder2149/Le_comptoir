@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Courses en magasin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.article{display:flex;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid #EFE7DA;min-height:48px}
+.case{width:26px;height:26px;border-radius:8px;border:2px solid #8a8e95;flex:none;box-sizing:border-box}
+.coche{width:26px;height:26px;border-radius:8px;background:#5A7D4F;flex:none;display:flex;align-items:center;justify-content:center}
+.rayon{display:flex;align-items:center;gap:8px;padding:12px 12px 8px;font-weight:700;font-size:15px}
+.q{font-weight:700;font-size:15px;text-align:right;min-width:72px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F4EFE6;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column">
+  <header style="background:#2F343C;color:#fff;padding:18px 16px 12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="Prevision.dc.html" aria-label="Retour" style="color:#fff;width:40px;height:40px;display:flex;align-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+      <div style="flex:1"><div style="font-size:12px;color:#D9B06F">Avant · étape 4 sur 4</div><div style="font-size:20px;font-weight:700">Courses</div></div>
+      <button aria-label="Partager la liste" style="background:none;border:1px solid #6b7079;color:#fff;border-radius:12px;width:44px;height:40px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+    </div>
+  </header>
+
+  <div role="tablist" aria-label="Vue des courses" style="display:flex;gap:6px;padding:12px 16px 0">
+    <button role="tab" aria-selected="true" style="flex:1;height:44px;border-radius:12px;border:0;background:#6C4F86;color:#fff;font:700 14px Roboto">À acheter · 9/14</button>
+    <button role="tab" aria-selected="false" style="flex:1;height:44px;border-radius:12px;border:1px solid #CDBFA8;background:#FFFDF8;color:#2F343C;font:500 14px Roboto">Déjà acheté</button>
+  </div>
+  <p style="margin:10px 16px 8px;font-size:13px;color:#5d6168">Cochez au fur et à mesure dans les rayons. Les quantités tiennent compte du stock.</p>
+
+  <main style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:10px">
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="rayon">Boulangerie</div>
+      <div class="article" style="color:#8a8e95"><span class="coche"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span><span style="flex:1;text-decoration:line-through">Pain de mie<span style="display:block;font-size:12px;text-decoration:none">pour les croques</span></span><span class="q">456 tranches</span></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="rayon">Frais et crèmerie</div>
+      <div class="article"><span class="case"></span><span style="flex:1">Gruyère râpé<span style="display:block;font-size:12px;color:#5d6168">croque-monsieur</span></span><span class="q">2,5 kg</span></div>
+      <div class="article"><span class="case"></span><span style="flex:1">Jambon blanc</span><span class="q">71 tranches</span></div>
+      <div class="article"><span class="case"></span><span style="flex:1">Beurre</span><span class="q">1,2 kg</span></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="rayon">Boissons</div>
+      <div class="article"><span class="case"></span><span style="flex:1">Café</span><span class="q">78 L</span></div>
+      <div class="article"><span class="case"></span><span style="flex:1">Coca<span style="display:block;font-size:12px;color:#5d6168">24 verres déjà en stock</span></span><span class="q">14 L</span></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px dashed #CDBFA8;border-radius:16px;overflow:hidden">
+      <div class="rayon">Entretien et matériel</div>
+      <div class="article"><span class="case"></span><span style="flex:1">Liquide vaisselle</span><span class="q">2</span></div>
+    </section>
+  </main>
+
+  <footer style="padding:12px 16px 20px;border-top:1px solid #E3DACB;display:flex;gap:10px;align-items:center">
+    <div style="flex:1;font-size:13px;color:#5d6168">Retour du magasin ?</div>
+    <button style="height:52px;border-radius:14px;border:0;background:#5A7D4F;color:#fff;font:700 15px Roboto;padding:0 18px">Saisir ce que j'ai acheté</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

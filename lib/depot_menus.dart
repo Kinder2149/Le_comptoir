@@ -36,6 +36,48 @@ const libellesUnites = {
 
 const maxIngredients = 20;
 
+/// Familles de produits (décision 63) : liste fixe, dans cet ordre. Absent = « autre ».
+const famillesProduit = [
+  'croques',
+  'boissons_chaudes',
+  'boissons_fraiches',
+  'snacks_fruits',
+  'fait_maison',
+  'autre',
+];
+
+const libellesFamilles = {
+  'croques': 'Croques',
+  'boissons_chaudes': 'Boissons chaudes',
+  'boissons_fraiches': 'Boissons fraîches',
+  'snacks_fruits': 'Snacks et fruits',
+  'fait_maison': 'Fait maison',
+  'autre': 'Autre',
+};
+
+/// Rayons des courses (décision 64) : liste fixe. Absent = « autre ».
+const rayonsCourses = [
+  'boulangerie',
+  'frais',
+  'boissons',
+  'epicerie',
+  'entretien',
+  'autre',
+];
+
+const libellesRayons = {
+  'boulangerie': 'Boulangerie',
+  'frais': 'Frais et crèmerie',
+  'boissons': 'Boissons',
+  'epicerie': 'Épicerie',
+  'entretien': 'Entretien et matériel',
+  'autre': 'Autre',
+};
+
+/// Rayon lu dans un document : absent ou inconnu = « autre ».
+String rayonDepuis(Object? v) =>
+    v is String && rayonsCourses.contains(v) ? v : 'autre';
+
 /// Provenance d'un produit (décision 45) : acheté par l'association (défaut,
 /// produit sans le champ) ou apporté par les bénévoles (hors courses sauf ajout).
 const provenancesProduit = ['achete', 'apporte'];
@@ -47,28 +89,32 @@ const libellesProvenances = {
 
 /// Un ingrédient d'une recette : quantité pour UNE unité du produit (fraction permise).
 class Ingredient {
-  const Ingredient(this.nom, this.quantite, this.unite);
+  const Ingredient(this.nom, this.quantite, this.unite, [this.rayon = 'autre']);
 
   final String nom;
   final double quantite;
   final String unite;
+
+  /// Rayon des courses (voir [rayonsCourses]).
+  final String rayon;
 
   /// Deux ingrédients sont « le même » si leur nom ne diffère ni par la casse,
   /// ni par les accents, ni par les espaces autour (reconnaissance des courses).
   String get cle => cleIngredient(nom);
 
   Map<String, dynamic> versMap() =>
-      {'nom': nom, 'quantite': quantite, 'unite': unite};
+      {'nom': nom, 'quantite': quantite, 'unite': unite, if (rayon != 'autre') 'rayon': rayon};
 
   @override
   bool operator ==(Object other) =>
       other is Ingredient &&
       other.nom == nom &&
       other.quantite == quantite &&
-      other.unite == unite;
+      other.unite == unite &&
+      other.rayon == rayon;
 
   @override
-  int get hashCode => Object.hash(nom, quantite, unite);
+  int get hashCode => Object.hash(nom, quantite, unite, rayon);
 }
 
 /// « Pain de Mié » et « pain de mie » donnent la même clé.
@@ -92,11 +138,19 @@ class FicheProduit {
     this.verresParLitre,
     this.provenance = 'achete',
     this.partsParEntier,
+    this.famille = 'autre',
+    this.rayon = 'autre',
   });
 
   static const unite = FicheProduit();
 
   final String type;
+
+  /// Famille du produit (voir [famillesProduit]).
+  final String famille;
+
+  /// Rayon d'un produit acheté tel quel (type non composé, acheté) ; sinon sans effet.
+  final String rayon;
 
   /// Type « part » : nombre de parts d'un gâteau entier (facultatif, 1 à 100).
   final int? partsParEntier;
@@ -113,7 +167,12 @@ class FicheProduit {
   factory FicheProduit.depuis(Map<String, dynamic> d) {
     final type = d['type'] as String?;
     final provenance = d['provenance'] as String?;
+    final famille = d['famille'];
     return FicheProduit(
+      famille: famille is String && famillesProduit.contains(famille)
+          ? famille
+          : 'autre',
+      rayon: rayonDepuis(d['rayon']),
       provenance: provenance != null && provenancesProduit.contains(provenance)
           ? provenance
           : 'achete',
@@ -122,7 +181,7 @@ class FicheProduit {
       ingredients: [
         for (final i in (d['ingredients'] as List?) ?? const [])
           Ingredient(i['nom'] as String, (i['quantite'] as num).toDouble(),
-              i['unite'] as String),
+              i['unite'] as String, rayonDepuis(i['rayon'])),
       ],
       verresParLitre: (d['verresParLitre'] as num?)?.toDouble(),
       partsParEntier: (d['partsParEntier'] as num?)?.toInt(),
@@ -134,6 +193,14 @@ class FicheProduit {
   Map<String, dynamic> versMap({bool supprimerLeReste = false}) => {
         'type': type,
         'provenance': provenance,
+        if (famille != 'autre')
+          'famille': famille
+        else if (supprimerLeReste)
+          'famille': FieldValue.delete(),
+        if (type != 'compose' && provenance == 'achete' && rayon != 'autre')
+          'rayon': rayon
+        else if (supprimerLeReste)
+          'rayon': FieldValue.delete(),
         if (conso != null)
           'conso': conso
         else if (supprimerLeReste)
@@ -158,6 +225,12 @@ class FicheProduit {
     if (!provenancesProduit.contains(provenance)) {
       return 'Provenance inconnue.';
     }
+    if (!famillesProduit.contains(famille)) {
+      return 'Famille inconnue.';
+    }
+    if (!rayonsCourses.contains(rayon)) {
+      return 'Rayon inconnu.';
+    }
     if (conso != null && (conso! < 0 || conso! > 1000)) {
       return 'Consommation invalide (0 à 1000 par personne et par jour).';
     }
@@ -169,6 +242,9 @@ class FicheProduit {
         return '$maxIngredients ingrédients au plus.';
       }
       for (final i in ingredients) {
+        if (!rayonsCourses.contains(i.rayon)) {
+          return 'Rayon inconnu pour « ${i.nom.trim()} ».';
+        }
         if (i.nom.trim().isEmpty || i.nom.trim().length > 40) {
           return 'Chaque ingrédient a un nom (40 caractères max).';
         }
@@ -278,6 +354,20 @@ FicheProduit _ficheModele(Map e) {
     final provenance = e['provenance'];
     if (provenance != null && !provenancesProduit.contains(provenance)) {
       throw FormatException('Provenance inconnue dans le modèle : $e');
+    }
+    final famille = e['famille'];
+    if (famille != null && !famillesProduit.contains(famille)) {
+      throw FormatException('Famille inconnue dans le modèle : $e');
+    }
+    final rayon = e['rayon'];
+    if (rayon != null && !rayonsCourses.contains(rayon)) {
+      throw FormatException('Rayon inconnu dans le modèle : $e');
+    }
+    for (final i in (e['ingredients'] as List?) ?? const []) {
+      final r = i is Map ? i['rayon'] : null;
+      if (r != null && !rayonsCourses.contains(r)) {
+        throw FormatException('Rayon inconnu dans le modèle : $e');
+      }
     }
     final fiche = FicheProduit.depuis(Map<String, dynamic>.from(e));
     for (final i in fiche.ingredients) {

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Stock de départ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ligne{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #EFE7DA;min-height:48px}
+.pastille{width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+.pas{width:36px;height:36px;border-radius:10px;border:1px solid #CDBFA8;background:#fff;color:#2F343C;font:700 18px Roboto;padding:0}
+.qte{width:52px;height:36px;border-radius:10px;border:1px solid #CDBFA8;text-align:center;font:500 16px Roboto;color:#2F343C;background:#fff;box-sizing:border-box}
+.famille{display:flex;align-items:center;gap:8px;padding:12px;font-weight:700;font-size:15px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F4EFE6;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column">
+  <header style="background:#2F343C;color:#fff;padding:18px 16px 12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="Main.dc.html" aria-label="Retour" style="color:#fff;width:40px;height:40px;display:flex;align-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+      <div style="flex:1"><div style="font-size:12px;color:#D9B06F">Avant · étape 1 sur 4</div><div style="font-size:20px;font-weight:700">Stock de départ</div></div>
+    </div>
+  </header>
+
+  <div role="tablist" aria-label="Gymnases" style="display:flex;gap:6px;padding:12px 16px 0">
+    <button role="tab" aria-selected="true" style="flex:1;height:44px;border-radius:12px;border:0;background:#6C4F86;color:#fff;font:700 14px Roboto">Jean Moulin · 12</button>
+    <button role="tab" aria-selected="false" style="flex:1;height:44px;border-radius:12px;border:1px solid #CDBFA8;background:#FFFDF8;color:#2F343C;font:500 14px Roboto">Coubertin · 7</button>
+  </div>
+  <p style="margin:10px 16px 8px;font-size:13px;line-height:1.4;color:#5d6168">Ce qu'il y a déjà sur place. Laissez vide ce que vous ne comptez pas. Les boissons se comptent en verres.</p>
+
+  <main style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:10px">
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#A04467"></span><span style="flex:1">Boissons fraîches</span><span style="font-weight:500;font-size:13px;color:#5d6168">5 sur 7 comptés</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d6168" stroke-width="2" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></div>
+      <div class="ligne"><span class="pastille" style="background:#A04467">Co</span><span style="flex:1"><span style="display:block;font-size:15px;font-weight:500">Coca</span><span style="font-size:12px;color:#8a6d1f">Repris de 2025</span></span><button class="pas" aria-label="Moins">−</button><input class="qte" aria-label="Quantité Coca" value="24"><button class="pas" aria-label="Plus">+</button></div>
+      <div class="ligne"><span class="pastille" style="background:#A04467">Fa</span><span style="flex:1;font-size:15px;font-weight:500">Fanta</span><button class="pas" aria-label="Moins">−</button><input class="qte" aria-label="Quantité Fanta" value="16"><button class="pas" aria-label="Plus">+</button></div>
+      <div class="ligne"><span class="pastille" style="background:#A04467">IT</span><span style="flex:1;font-size:15px;font-weight:500">Ice Tea</span><button class="pas" aria-label="Moins">−</button><input class="qte" aria-label="Quantité Ice Tea" value="" placeholder="—"><button class="pas" aria-label="Plus">+</button></div>
+      <div class="ligne"><span class="pastille" style="background:#A04467">Bi</span><span style="flex:1;font-size:15px;font-weight:500">Bière</span><button class="pas" aria-label="Moins">−</button><input class="qte" aria-label="Quantité Bière" value="40"><button class="pas" aria-label="Plus">+</button></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#9A670F"></span><span style="flex:1">Boissons chaudes</span><span style="font-weight:500;font-size:13px;color:#5d6168">2 sur 3</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d6168" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#5A7D4F"></span><span style="flex:1">Snacks et fruits</span><span style="font-weight:500;font-size:13px;color:#5d6168">5 sur 7</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d6168" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+    </section>
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px">
+      <div class="famille"><span style="width:10px;height:10px;border-radius:50%;background:#D9B06F"></span><span style="flex:1">Croques</span><span style="font-weight:500;font-size:13px;color:#5d6168">Faits sur place</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d6168" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+    </section>
+    <section style="background:transparent;border:1px dashed #CDBFA8;border-radius:16px">
+      <div class="famille" style="color:#5d6168"><span style="width:10px;height:10px;border-radius:50%;background:#6C4F86"></span><span style="flex:1">Fait maison</span><span style="font-weight:500;font-size:13px">Apporté le jour même</span></div>
+    </section>
+  </main>
+
+  <footer style="padding:12px 16px 20px;border-top:1px solid #E3DACB;display:flex;gap:10px">
+    <button style="flex:1;height:52px;border-radius:14px;border:1px solid #6C4F86;background:transparent;color:#6C4F86;font:700 14px Roboto">Copier vers Coubertin</button>
+    <button style="flex:1;height:52px;border-radius:14px;border:0;background:#2F343C;color:#fff;font:700 15px Roboto">C'est fait</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

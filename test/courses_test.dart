@@ -429,11 +429,12 @@ void testsC1() {
       // 40 croques : 80 tranches de pain, 40/3 -> 14 tranches de jambon, 280 g de gruyère.
       expect(
         texteListeCourses('Liste de courses', calculerAchats(produits, liste), liste.libres),
-        'Liste de courses\n\nÀ acheter\n- Gruyère râpé : 280 g\n'
+        // Les ingrédients de ces recettes n'ont pas de rayon : tout tombe dans « Autre ».
+        'Liste de courses\n\nAutre\n- Gruyère râpé : 280 g\n'
         '- Jambon blanc : 14 tranches\n- Pain de mie : 80 tranches\n'
-        '\nAutres achats\n- Liquide vaisselle × 2\n',
+        '- Liquide vaisselle × 2\n',
       );
-      expect(texteListeCourses('T', const [], const []), 'T\n\nÀ acheter\n- rien\n');
+      expect(texteListeCourses('T', const [], const []), 'T\n\nRien à acheter\n');
     });
   });
 }

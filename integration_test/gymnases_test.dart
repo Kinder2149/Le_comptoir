@@ -185,8 +185,11 @@ void main() {
     expect(await stock(gA, croque), 20);
     expect(await stock(gB, croque), 15); // chaque gymnase a son stock
 
+    await toucher(tester, find.byKey(Key('non_suivis_$gA'))); // on déplie les non suivis
+    await toucher(tester, find.byKey(Key('menu_${gA}_$cafe')));
     await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // suivre le café
     await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock : 0');
+    await toucher(tester, find.byKey(Key('menu_${gA}_$cafe')));
     await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // ne plus le suivre
     await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock non suivi');
     expect(await stock(gA, cafe), isNull);
@@ -194,6 +197,7 @@ void main() {
     await toucher(tester, find.byKey(Key('suivre_tous_$gA')));
     await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock : 0');
     expect(await stock(gA, croque), 20);
+    await toucher(tester, find.byKey(Key('menu_${gA}_$cafe')));
     await toucher(tester, find.byKey(Key('suivi_${gA}_$cafe'))); // on le laisse non suivi
     await attendreTexte(tester, 'stock_${gA}_$cafe', 'Stock non suivi');
     expect(find.byKey(Key('suivre_tous_$gA')), findsOneWidget);

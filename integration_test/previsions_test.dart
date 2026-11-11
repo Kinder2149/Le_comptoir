@@ -177,10 +177,12 @@ void main() {
     }
 
     Future<void> ouvrirPreparation() async {
-      await attendre(tester, find.byKey(const Key('voir_preparation')));
+      await attendre(tester, find.byKey(const Key('onglet_avant')));
+      await toucher(tester, find.byKey(const Key('onglet_avant')));
+      await attendre(tester, find.byKey(const Key('tache_prevision')));
       await finTransition(tester);
-      await toucher(tester, find.byKey(const Key('voir_preparation')));
-      await attendre(tester, find.byKey(const Key('titre_etape_prevision')));
+      await toucher(tester, find.byKey(const Key('tache_prevision')));
+      await attendre(tester, find.byKey(const Key('bandeau_prevision')));
       await finTransition(tester);
     }
 
@@ -190,6 +192,7 @@ void main() {
       await toucher(tester, find.byKey(const Key('voir_courses')));
       await attendre(tester, find.byKey(const Key('etat_courses')));
       await finTransition(tester);
+      await ouvrirReglagesCourses(tester);
       await toucher(tester, find.byKey(const Key('recalculer')));
       await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
       for (var i = 0; i < 100 && champQte('qte_${gA}_$croque') != attendu; i++) {

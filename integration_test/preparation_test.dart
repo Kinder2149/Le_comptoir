@@ -126,21 +126,21 @@ void main() {
     await toucher(tester, find.text('Tournoi 2'));
     await attendre(tester, find.byKey(const Key('voir_preparation')));
     await finTransition(tester);
+    // La tâche « Stock de départ » ouvre son écran (E4) ; Soda et Croque sont dans « Autre ».
     await toucher(tester, find.byKey(const Key('voir_preparation')));
-    await attendre(tester, find.byKey(const Key('titre_etape_stock')));
+    await attendre(tester, find.byKey(const Key('aide_stock_depart')));
     await finTransition(tester);
-    // Mission P5 : le bouton du modèle Excel est dans la Préparation.
-    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+    await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+    await finTransition(tester);
 
     // Aucun ingrédient dans la liste : seulement Soda et Croque.
     expect(find.text('Pain de mie'), findsNothing);
     expect(find.text('Jambon'), findsNothing);
     expect(find.byKey(Key('depart_${gA}_$soda')), findsOneWidget);
-    expect(find.byKey(Key('depart_${gB}_$croque')), findsOneWidget);
 
     // ---------- 2. Le reste repris est pré-rempli et marqué.
     await attendre(tester, find.byKey(Key('repris_${gA}_$soda')));
-    expect(find.text("Repris de l'événement précédent"), findsOneWidget);
+    expect(find.text('Repris'), findsOneWidget);
     expect(
         tester
             .widget<TextField>(find.byKey(Key('depart_${gA}_$soda')))
@@ -162,6 +162,14 @@ void main() {
     expect((apres['quantite'], apres['reference']), (24, 24));
     expect(apres.containsKey('repris'), isFalse);
 
+    // Un onglet par gymnase (E4) : on passe au Gymnase B.
+    await toucher(tester, find.byKey(Key('onglet_gymnase_$gB')));
+    await finTransition(tester);
+    if (find.byKey(Key('depart_${gB}_$croque')).evaluate().isEmpty) {
+      await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+      await finTransition(tester);
+    }
+    expect(find.byKey(Key('depart_${gB}_$croque')), findsOneWidget);
     // Un croque au Gymnase B (saisie sans marque).
     await tester.enterText(find.byKey(Key('depart_${gB}_$croque')), '15');
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -189,11 +197,22 @@ void main() {
         find.descendant(
             of: find.byKey(const Key('etat_evenement')),
             matching: find.text('En cours')));
+    await attendre(tester, find.byKey(const Key('onglet_avant')));
+    await toucher(tester, find.byKey(const Key('onglet_avant')));
+    await attendre(tester, find.byKey(const Key('voir_preparation')));
     await toucher(tester, find.byKey(const Key('voir_preparation')));
     await attendre(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await finTransition(tester);
+    await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+    await finTransition(tester);
     expect(find.byKey(Key('depart_${gA}_$soda')), findsNothing); // plus de saisie de stock
     await attendreTexte(tester, 'lecture_depart_${gA}_$soda', 'Stock : 24');
+    await toucher(tester, find.byKey(Key('onglet_gymnase_$gB')));
+    await finTransition(tester);
+    if (find.byKey(Key('lecture_depart_${gB}_$croque')).evaluate().isEmpty) {
+      await toucher(tester, find.byKey(const Key('entete_famille_autre')));
+      await finTransition(tester);
+    }
     expect(texte(tester, 'lecture_depart_${gB}_$croque'), 'Stock : 15');
     await toucher(tester, find.byKey(const Key('aller_gymnases_stocks')));
     await attendre(tester, find.byKey(const Key('titre_stock_evenement')));
@@ -273,10 +292,21 @@ void main() {
     await attendre(tester, find.text('Tournoi P3'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi P3'));
-    await attendre(tester, find.byKey(const Key('voir_preparation')));
+    await attendre(tester, find.byKey(const Key('onglet_avant')));
+    await toucher(tester, find.byKey(const Key('onglet_avant')));
+    await attendre(tester, find.byKey(const Key('tache_personnes')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(const Key('voir_preparation')));
-    await attendre(tester, find.byKey(const Key('titre_etape_personnes')));
+    await toucher(tester, find.byKey(const Key('tache_personnes')));
+    await attendre(tester, find.byKey(const Key('aide_personnes_duree')));
+    await finTransition(tester);
+    // Mission P5 : le bouton du modèle Excel est sur l'écran Classeur (bouton Excel d'Avant).
+    await retour(tester);
+    await toucher(tester, find.byKey(const Key('ouvrir_classeur')));
+    await attendre(tester, find.byKey(const Key('telecharger_modele')));
+    expect(find.byKey(const Key('telecharger_modele')), findsOneWidget);
+    await retour(tester);
+    await toucher(tester, find.byKey(const Key('tache_personnes')));
+    await attendre(tester, find.byKey(const Key('aide_personnes_duree')));
     await finTransition(tester);
     expect(champ('champ_duree'), '2');
     expect(champ('champ_personnes_$gA'), '0');
@@ -316,11 +346,13 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await finTransition(tester);
     expect(find.byKey(Key('personnes_$gA')), findsNothing);
+    await ouvrirReglagesCourses(tester);
     expect(texte(tester, 'lecture_personnes_$gA'), 'Personnes attendues : 80');
     expect(find.text('Tout l’événement (2 j)'), findsOneWidget);
     expect(
         tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
         isTrue);
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     for (var i = 0;
@@ -331,7 +363,9 @@ void main() {
     expect(champQte('qte_${gA}_$croque'), '320'); // 80 x 2 jours x 2
 
     // Un jour complet : choix local, la durée de l'événement ne bouge pas.
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_jour')));
+    await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
     for (var i = 0;
         i < 100 && champQte('qte_${gA}_$croque') != '160';
@@ -348,6 +382,7 @@ void main() {
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await finTransition(tester);
+    await ouvrirReglagesCourses(tester);
     expect(
         tester.widget<ChoiceChip>(find.byKey(const Key('duree_tout'))).selected,
         isTrue);

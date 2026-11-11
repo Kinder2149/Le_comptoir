@@ -61,9 +61,10 @@ class PlanMenu {
 PlanMenu preparerMenu(ClasseurLu lu) {
   final ignorees = <String>[];
   final erreurs = <String>[];
-  final prefixe = 'Feuille « $feuilleMenu »';
+  // Le menu se lit dans les feuilles Menu et Recettes (décision 66) ; les autres non.
+  final prefixes = ['Feuille « $feuilleMenu »', 'Feuille « $feuilleRecettes »'];
   for (final e in lu.erreurs) {
-    if (!e.startsWith(prefixe)) continue; // les autres feuilles ne concernent pas le menu
+    if (!prefixes.any(e.startsWith)) continue;
     (e.contains(', ligne ') ? ignorees : erreurs).add(e);
   }
   final produits = <ProduitClasseur>[];

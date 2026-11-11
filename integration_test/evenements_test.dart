@@ -116,10 +116,13 @@ void main() {
     expect(texte(tester, 'menu_evenement'), 'Menu : Menu Tournoi');
     expect(texte(tester, 'modes_evenement'), 'Paiements : Espèces, Carte');
     expect(texte(tester, 'date_evenement'), 'Date : $aujourdhui');
+    await toucher(tester, find.byKey(const Key('voir_produits')));
     await attendre(tester, find.text('3,00 €'));
     expect(find.text('Croque-monsieur'), findsOneWidget);
     expect(find.text('Café'), findsOneWidget);
     expect(find.text('1,50 €'), findsOneWidget);
+    await tester.pageBack();
+    await laisserArriver(tester);
 
     // --- Un gymnase « Principal » a été créé avec l'événement ; le menu n'ayant
     // plus de stock, ce gymnase n'a aucun stock au départ (et les produits eux-mêmes
@@ -144,8 +147,12 @@ void main() {
     await menus.modifierProduit(menuId, produitCroque.id,
         nom: 'Croque-monsieur', prixCentimes: 500);
     await laisserArriver(tester);
+    await toucher(tester, find.byKey(const Key('voir_produits')));
+    await laisserArriver(tester);
     expect(find.text('3,00 €'), findsOneWidget);
     expect(find.text('5,00 €'), findsNothing);
+    await tester.pageBack();
+    await laisserArriver(tester);
 
     // --- Modification : nom et modes (le menu n'est pas modifiable).
     await toucher(tester, find.byKey(const Key('modifier_evenement')));

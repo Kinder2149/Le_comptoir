@@ -53,12 +53,16 @@ class LigneCourse {
 /// Ligne libre (décision 43) : matériel d'organisation, etc. Elle n'entre ni
 /// dans le stock ni dans le calcul.
 class LigneLibre {
-  const LigneLibre(this.nom, this.quantite);
+  const LigneLibre(this.nom, this.quantite, [this.rayon = 'autre']);
 
   final String nom;
   final double quantite;
 
-  Map<String, dynamic> versMap() => {'nom': nom, 'quantite': quantite};
+  /// Rayon des courses (voir [rayonsCourses]).
+  final String rayon;
+
+  Map<String, dynamic> versMap() =>
+      {'nom': nom, 'quantite': quantite, if (rayon != 'autre') 'rayon': rayon};
 }
 
 /// Ce que la validation ajoute au stock d'un gymnase pour un produit.
@@ -150,7 +154,17 @@ class ListeCourses {
     this.restes = const {},
     this.validation,
     this.precedent = const CumulCourses(),
+    this.articles = const [],
+    this.coches = const {},
   });
+
+  /// Clés des articles affichés (voir [clesArticles]) : les règles n'acceptent une
+  /// case que pour l'une d'elles. Écrites par l'application à chaque enregistrement.
+  final List<String> articles;
+
+  /// Cases cochées en magasin (décision 65) : clés d'articles. Partagées par tous les
+  /// téléphones de la gestion ; elles ne changent ni le stock ni le coût.
+  final Set<String> coches;
 
   /// Séries précédentes déjà validées.
   final CumulCourses precedent;
@@ -210,11 +224,18 @@ class ListeCourses {
         ],
         libres: [
           for (final l in (d['libres'] as List?) ?? const [])
-            LigneLibre(l['nom'] as String, (l['quantite'] as num).toDouble()),
+            LigneLibre(l['nom'] as String, (l['quantite'] as num).toDouble(),
+                rayonDepuis(l['rayon'])),
         ],
         restes: {
           for (final r in (d['restes'] as List?) ?? const [])
             r['cle'] as String: (r['quantite'] as num).toDouble(),
+        },
+        articles: [
+          for (final a in (d['articles'] as List?) ?? const []) a as String,
+        ],
+        coches: {
+          for (final c in ((d['coches'] as Map?) ?? const {}).keys) c as String,
         },
       );
 
@@ -233,12 +254,16 @@ class ListeCourses {
     List<LigneCourse>? lignes,
     List<LigneLibre>? libres,
     Map<String, double>? restes,
+    List<String>? articles,
+    Set<String>? coches,
   }) =>
       ListeCourses(
         lignes: lignes ?? this.lignes,
         libres: libres ?? this.libres,
         restes: restes ?? this.restes,
         precedent: precedent,
+        articles: articles ?? this.articles,
+        coches: coches ?? this.coches,
       );
 
   /// Quantité voulue d'un produit pour un gymnase, null si le produit n'est pas acheté.
@@ -313,7 +338,12 @@ class Achat {
     required this.uniteBase,
     required this.besoin,
     required this.reste,
+    this.rayon = 'autre',
   });
+
+  /// Rayon où se trouve l'achat (décision 64) : celui de l'ingrédient (premier trouvé
+  /// dans l'ordre des produits) ou celui du produit acheté tel quel.
+  final String rayon;
 
   /// Reconnaît le même achat d'une recette à l'autre : nom sans casse ni accents,
   /// et unité de base (« gruyère » en g et « gruyère » en tranches restent séparés).
@@ -337,10 +367,12 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
   final besoins = <String, double>{};
   final noms = <String, String>{};
   final unites = <String, String>{};
+  final rayons = <String, String>{};
 
-  void ajouter(String cle, String nom, String uniteBase, double q) {
+  void ajouter(String cle, String nom, String uniteBase, double q, String rayon) {
     besoins[cle] = (besoins[cle] ?? 0) + q;
     noms.putIfAbsent(cle, () => nom);
+    rayons.putIfAbsent(cle, () => rayon);
     unites[cle] = uniteBase;
   }
 
@@ -358,19 +390,22 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
         for (final i in fiche.ingredients) {
           final base = uniteDeBase(i.unite);
           ajouter('${i.cle}|$base', i.nom.trim(), base,
-              versUniteDeBase(i.quantite, i.unite) * l.quantite);
+              versUniteDeBase(i.quantite, i.unite) * l.quantite, i.rayon);
         }
       case 'litre':
         // Des verres vendus -> des litres à acheter (stockés en cl).
         final verres = fiche.verresParLitre ?? 0;
         if (verres > 0) {
-          ajouter('produit:${p.id}', p.nom, 'cl', l.quantite / verres * 100);
+          ajouter('produit:${p.id}', p.nom, 'cl', l.quantite / verres * 100,
+              fiche.rayon);
         }
       case 'part' when (fiche.partsParEntier ?? 0) > 0:
         // Des parts vendues -> des gâteaux entiers à acheter.
-        ajouter('produit:${p.id}', p.nom, 'gateau', l.quantite / fiche.partsParEntier!);
+        ajouter('produit:${p.id}', p.nom, 'gateau',
+            l.quantite / fiche.partsParEntier!, fiche.rayon);
       default:
-        ajouter('produit:${p.id}', p.nom, 'unite', l.quantite.toDouble());
+        ajouter('produit:${p.id}', p.nom, 'unite', l.quantite.toDouble(),
+            fiche.rayon);
     }
   }
 
@@ -382,6 +417,7 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
         uniteBase: unites[cle]!,
         besoin: besoins[cle]!,
         reste: liste.restes[cle] ?? 0,
+        rayon: rayons[cle]!,
       ),
   ];
   achats.sort((a, b) => cleIngredient(a.nom).compareTo(cleIngredient(b.nom)));
@@ -390,24 +426,65 @@ List<Achat> calculerAchats(List<ProduitEvenement> produits, ListeCourses liste) 
 
 /// Le texte de la liste « À acheter » à partager (mission C1) : une ligne par achat,
 /// puis les lignes libres. Reprend les quantités affichées à l'écran.
+/// Le texte est rangé par rayons (décision 64), dans l'ordre fixe des rayons ; un rayon
+/// sans rien à acheter n'apparaît pas.
 String texteListeCourses(String titre, List<Achat> achats, List<LigneLibre> libres) {
   final b = StringBuffer('$titre\n');
   final aAcheter = [for (final a in achats) if (a.aAcheter > 0) a];
-  b.writeln('\nÀ acheter');
-  if (aAcheter.isEmpty) b.writeln('- rien');
-  for (final a in aAcheter) {
-    b.writeln('- ${a.nom} : ${formaterQuantite(a.aAcheter, a.uniteBase)}');
+  if (aAcheter.isEmpty && libres.isEmpty) {
+    b.writeln('\nRien à acheter');
+    return b.toString();
   }
-  if (libres.isNotEmpty) {
-    b.writeln('\nAutres achats');
-    for (final l in libres) {
-      final q = l.quantite == l.quantite.roundToDouble()
-          ? l.quantite.toInt().toString()
-          : _decimal(l.quantite);
-      b.writeln('- ${l.nom} × $q');
-    }
+  for (final r in rayonsCourses) {
+    final lignes = [
+      for (final a in aAcheter)
+        if (a.rayon == r) '- ${a.nom} : ${formaterQuantite(a.aAcheter, a.uniteBase)}',
+      for (final l in libres)
+        if (rayonDepuis(l.rayon) == r)
+          '- ${l.nom} × ${l.quantite == l.quantite.roundToDouble() ? l.quantite.toInt().toString() : _decimal(l.quantite)}',
+    ];
+    if (lignes.isEmpty) continue;
+    b.writeln('\n${libellesRayons[r]}');
+    lignes.forEach(b.writeln);
   }
   return b.toString();
+}
+
+/// Clé d'un achat comme article cochable (décision 65) : « p:PRODUIT » pour un
+/// produit acheté tel quel, « i:INGREDIENT|UNITE » pour un ingrédient.
+String cleArticleAchat(Achat a) => a.cle.startsWith('produit:')
+    ? 'p:${a.cle.substring('produit:'.length)}'
+    : 'i:${a.cle}';
+
+/// Clés de tous les articles d'une liste, dans l'ordre affiché : d'abord les achats
+/// (même ordre que [calculerAchats]), puis les lignes libres « l:NOM » (« #2 » pour
+/// un deuxième article de même nom). Stables tant que la liste ne change pas.
+List<String> clesArticles(List<Achat> achats, List<LigneLibre> libres) {
+  final res = [for (final a in achats) cleArticleAchat(a)];
+  final vus = <String, int>{};
+  for (final l in libres) {
+    final base = 'l:${l.nom.trim()}';
+    final n = (vus[base] = (vus[base] ?? 0) + 1);
+    res.add(n == 1 ? base : '$base#$n');
+  }
+  return res;
+}
+
+/// Pour chaque ingrédient (clé d'article), les recettes qui l'utilisent et dont une
+/// ligne est prévue : « pour les croques » sous « Pain de mie ».
+Map<String, List<String>> usagesAchats(
+    List<ProduitEvenement> produits, ListeCourses liste) {
+  final res = <String, List<String>>{};
+  for (final p in produits) {
+    if (p.fiche.type != 'compose') continue;
+    if (!liste.lignes.any((l) => l.produitId == p.id && l.quantite > 0)) continue;
+    for (final i in p.fiche.ingredients) {
+      final cle = 'i:${i.cle}|${uniteDeBase(i.unite)}';
+      final noms = res.putIfAbsent(cle, () => []);
+      if (!noms.contains(p.nom)) noms.add(p.nom);
+    }
+  }
+  return res;
 }
 
 /// Rendement d'un produit : ce que les achats permettent d'ajouter au stock.

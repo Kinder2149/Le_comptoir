@@ -129,15 +129,23 @@ Uint8List _export({
     );
 
 /// Les lignes d'une feuille, cellules vides de fin retirées (nombres tels qu'écrits).
+/// Index 0 = la ligne d'aide (ligne 5), 1 = les en-têtes (ligne 6), 2 et suivants =
+/// les données (ligne 7 et suivantes) ; la feuille Bilan n'a pas d'en-tête : index 1 =
+/// sa première ligne de contenu.
 List<List<Object?>> _lignes(List<int> octets, String feuille) {
   final f = Excel.decodeBytes(octets).tables[feuille]!;
+  final brutes = feuille == feuilleBilan
+      ? [f.rows[4], ...f.rows.skip(6)]
+      : [f.rows[4], f.rows[5], ...f.rows.skip(6)];
   return [
-    for (final ligne in f.rows)
+    for (final ligne in brutes)
       () {
         final cellules = <Object?>[
           for (final d in ligne)
             switch (d?.value) {
               null => null,
+              // Une formule (consommation calculée) n'est pas une saisie : vide ici.
+              FormulaCellValue() => null,
               IntCellValue v => v.value,
               DoubleCellValue v => v.value,
               final v => v.toString(),
@@ -153,11 +161,18 @@ List<List<Object?>> _lignes(List<int> octets, String feuille) {
 
 void main() {
   group('critère 1 : le contenu du classeur', () {
-    test('cinq feuilles, dans l’ordre : Menu, Stock de départ, Historique, Courses, Bilan',
-        () {
+    test('sept feuilles, dans l’ordre : Accueil, Menu, Recettes, Stock de départ, '
+        'Historique, Courses, Bilan', () {
       final x = Excel.decodeBytes(_export());
-      expect(x.tables.keys.toList(),
-          ['Menu', 'Stock de départ', 'Historique', 'Courses', 'Bilan']);
+      expect(x.tables.keys.toList(), [
+        'Accueil',
+        'Menu',
+        'Recettes',
+        'Stock de départ',
+        'Historique',
+        'Courses',
+        'Bilan'
+      ]);
       expect(feuillesExport, x.tables.keys.toList());
       // Un vrai fichier .xlsx (archive zip).
       expect(_export().sublist(0, 2), [0x50, 0x4B]);
@@ -170,20 +185,38 @@ void main() {
       expect(_lignes(octets, 'Stock de départ')[1], entetesStock);
       expect(_lignes(octets, 'Historique')[1], entetesHistorique);
       expect(_lignes(octets, 'Courses')[1], entetesCourses);
-      for (final f in feuillesExport) {
+      for (final f in feuillesExport.where((f) => f != feuilleAccueil)) {
         final aide = _lignes(octets, f)[0];
         expect(aide.length, 1, reason: f);
         expect((aide.single as String).length, greaterThan(40), reason: f);
       }
     });
 
+    test('critère 6 : l\'export a la même mise en forme que le modèle, Bilan compris', () {
+      final x = Excel.decodeBytes(_export());
+      for (final f in feuillesExport.where((f) => f != feuilleAccueil)) {
+        final sheet = x.tables[f]!;
+        // Bandeau anthracite (ligne 2), en-têtes violets quand il y en a (ligne 6).
+        expect(sheet.rows[1][0]?.cellStyle?.backgroundColor.colorHex, 'FF2F343C',
+            reason: f);
+      }
+      expect(x.tables['Menu']!.rows[5][1]?.cellStyle?.backgroundColor.colorHex,
+          'FF6C4F86');
+      // Le Bilan a ses rubriques en violet (section) et ses en-têtes en violet.
+      final bilan = x.tables['Bilan']!;
+      final rubrique = bilan.rows.indexWhere((l) => l[0]?.value.toString() == 'Totaux');
+      expect(rubrique, greaterThan(0));
+      expect(bilan.rows[rubrique][0]?.cellStyle?.fontColor.colorHex, 'FF6C4F86');
+      expect(bilan.getColumnWidth(0), closeTo(30, 1));
+    });
+
     test('Menu : les produits de l’événement ; Stock de départ : gymnase × produit suivi, '
         'total de référence', () {
       final octets = _export();
       final menu = _lignes(octets, 'Menu').skip(2).toList();
-      expect(menu.map((l) => l[0]).toList(),
+      expect(menu.map((l) => l[1]).toList(),
           ['Croque-monsieur', 'Café', 'Salade', 'Gâteau', 'Soda']);
-      expect(menu.map((l) => l[1]).toList(), [3, 1.5, 4, 2.5, 1.5]);
+      expect(menu.map((l) => l[2]).toList(), [3, 1.5, 4, 2.5, 1.5]);
       expect(_lignes(octets, 'Stock de départ').skip(2).toList(), [
         ['Gymnase A', 'Croque-monsieur', 50],
         ['Gymnase A', 'Gâteau', 8],
@@ -213,10 +246,10 @@ void main() {
         'ligne libre', () {
       expect(_lignes(_export(), 'Courses').skip(2).toList(), [
         [null, 'Série 1 (cumul)', 1, 25],
-        [2, 'Café (unité)', 30],
-        [2, 'Croque-monsieur (unité)', 55], // 55 achetés, 60 prévus
+        [2, 'Café (unité)', 30, null, 'Autre'],
+        [2, 'Croque-monsieur (unité)', 55, null, 'Autre'], // 55 achetés, 60 prévus
         [2, 'Total de la série 2', null, 10],
-        [2, 'Gobelets', 200],
+        [2, 'Gobelets', 200, null, 'Autre'],
       ]);
     });
 
@@ -227,7 +260,7 @@ void main() {
       expect(
           _lignes(_export(courses: enPreparation), 'Courses').skip(2).toList(), [
         [1, 'Courses non validées'],
-        [1, 'Nappes', 3.5],
+        [1, 'Nappes', 3.5, null, 'Autre'],
       ]);
       expect(_lignes(_export(courses: null), 'Courses').skip(2).toList(), [
         [1, 'Courses non validées'],

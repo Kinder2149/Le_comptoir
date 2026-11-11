@@ -130,6 +130,8 @@ void main() {
     await ouvrir(tester, 'chef', googleAnnule);
     await attendre(tester, find.text('Tournoi'));
     await tester.tap(find.text('Tournoi'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await tester.tap(find.byKey(const Key('voir_caisses')));
     await attendre(tester, find.byKey(const Key('suivi_en_direct')));
     await attendreUnPeu(tester, 8);
     afficher('gestion, ouverture du suivi ($ventesInitiales ventes déjà faites)');

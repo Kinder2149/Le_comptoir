@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Événement pendant le tournoi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.alerte{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid #EFE7DA;min-height:48px}
+.etat{font-size:12px;font-weight:700;border-radius:8px;padding:4px 8px;white-space:nowrap}
+.action{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:16px;background:#FFFDF8;border:1px solid #E3DACB;text-decoration:none;color:#2F343C;min-height:48px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F4EFE6;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column">
+  <header style="background:#2F343C;color:#fff;padding:18px 16px 14px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button aria-label="Retour" style="background:none;border:0;color:#fff;width:40px;height:40px;padding:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div style="flex:1"><div style="font-size:20px;font-weight:700">Tournoi de printemps</div><div style="font-size:13px;color:#D9B06F">En cours · samedi, jour 1 sur 2</div></div>
+    </div>
+    <nav aria-label="Temps du tournoi" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+      <div style="background:#3d434c;color:#c9ccd1;border-radius:12px;padding:8px 0;text-align:center;font-size:14px">✓ Avant</div>
+      <div style="background:#D9B06F;color:#2F343C;border-radius:12px;padding:8px 0;text-align:center;font-weight:700;font-size:14px">2 · Pendant</div>
+      <div style="background:#3d434c;color:#c9ccd1;border-radius:12px;padding:8px 0;text-align:center;font-size:14px">3 · Après</div>
+    </nav>
+  </header>
+
+  <main style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <div style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:14px;padding:10px"><div style="font-size:12px;color:#5d6168">Ventes</div><div style="font-size:22px;font-weight:700">412,50 €</div></div>
+      <div style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:14px;padding:10px"><div style="font-size:12px;color:#5d6168">Tickets</div><div style="font-size:22px;font-weight:700">287</div></div>
+      <div style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:14px;padding:10px"><div style="font-size:12px;color:#5d6168">Caisses</div><div style="font-size:22px;font-weight:700">4 <span style="font-size:13px;font-weight:500;color:#5A7D4F">ouvertes</span></div></div>
+    </div>
+
+    <section style="background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;overflow:hidden">
+      <div style="display:flex;align-items:center;padding:12px 12px 8px;gap:8px"><span style="font-weight:700;font-size:15px;flex:1">À surveiller</span><span style="font-size:13px;color:#5d6168">3 produits</span></div>
+      <div class="alerte"><span style="flex:1"><span style="display:block;font-weight:500">Coca</span><span style="font-size:12px;color:#5d6168">Jean Moulin</span></span><span class="etat" style="background:#F6E1DE;color:#8e3129">Épuisé</span><button aria-label="Ajouter du Coca" style="width:44px;height:40px;border-radius:10px;border:1px solid #CDBFA8;background:#fff;font:700 18px Roboto;color:#2F343C">+</button></div>
+      <div class="alerte"><span style="flex:1"><span style="display:block;font-weight:500">Café</span><span style="font-size:12px;color:#5d6168">Coubertin · 6 verres</span></span><span class="etat" style="background:#F8EBD3;color:#7a520c">Stock bas</span><button aria-label="Ajouter du café" style="width:44px;height:40px;border-radius:10px;border:1px solid #CDBFA8;background:#fff;font:700 18px Roboto;color:#2F343C">+</button></div>
+      <div class="alerte"><span style="flex:1"><span style="display:block;font-weight:500">Gruyère</span><span style="font-size:12px;color:#5d6168">Signalé vide par Léa</span></span><span class="etat" style="background:#F6E1DE;color:#8e3129">Vide</span><button aria-label="Ajouter aux courses" style="width:44px;height:40px;border-radius:10px;border:1px solid #CDBFA8;background:#fff;color:#2F343C;padding:0;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.4 11h11L21 7H7"/></svg></button></div>
+    </section>
+
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <a class="action" href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6C4F86" stroke-width="2" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7"/></svg><span style="font-weight:700">Stock</span><span style="font-size:12px;color:#5d6168">Par gymnase</span></a>
+      <a class="action" href="Courses.dc.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6C4F86" stroke-width="2" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.4 11h11L21 7H7"/></svg><span style="font-weight:700">Courses d'appoint</span><span style="font-size:12px;color:#5d6168">Pour demain</span></a>
+      <a class="action" href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A04467" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span style="font-weight:700">Caisses en direct</span><span style="font-size:12px;color:#5d6168">Qui vend quoi</span></a>
+      <a class="action" href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A04467" stroke-width="2" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6"/></svg><span style="font-weight:700">Bilan provisoire</span><span style="font-size:12px;color:#5d6168">Chiffres du jour</span></a>
+    </div>
+  </main>
+
+  <footer style="padding:12px 16px 20px;border-top:1px solid #E3DACB">
+    <button style="width:100%;height:52px;border-radius:14px;border:1px solid #A8433A;background:transparent;color:#A8433A;font:700 15px Roboto">Clôturer le tournoi</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

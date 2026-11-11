@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Événement avant le tournoi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6C4F86}a:hover{color:#4f3966}
+.tache{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#FFFDF8;border:1px solid #E3DACB;border-radius:16px;text-decoration:none;color:#2F343C;min-height:48px}
+.rond{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;font-weight:700;font-size:14px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F4EFE6;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column">
+  <header style="background:#2F343C;color:#fff;padding:18px 16px 14px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button aria-label="Retour" style="background:none;border:0;color:#fff;width:40px;height:40px;padding:0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:700">Tournoi de printemps</div>
+        <div style="font-size:13px;color:#D9B06F">Sam. 14 et dim. 15 mars · 2 gymnases</div>
+      </div>
+      <button aria-label="Classeur Excel" style="background:none;border:1px solid #6b7079;color:#fff;border-radius:12px;height:40px;padding:0 10px;display:flex;align-items:center;gap:6px;font:500 13px Roboto">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Excel
+      </button>
+    </div>
+    <nav aria-label="Temps du tournoi" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+      <div style="background:#D9B06F;color:#2F343C;border-radius:12px;padding:8px 0;text-align:center;font-weight:700;font-size:14px">1 · Avant</div>
+      <div style="background:#3d434c;color:#c9ccd1;border-radius:12px;padding:8px 0;text-align:center;font-size:14px">2 · Pendant</div>
+      <div style="background:#3d434c;color:#c9ccd1;border-radius:12px;padding:8px 0;text-align:center;font-size:14px">3 · Après</div>
+    </nav>
+  </header>
+
+  <main style="flex:1;padding:18px 16px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <h1 style="margin:0;font-size:19px">Préparer le tournoi</h1>
+      <span style="font-size:14px;color:#5A7D4F;font-weight:700">2 sur 4 faits</span>
+    </div>
+    <div style="height:8px;border-radius:4px;background:#E3DACB;overflow:hidden"><div style="width:50%;height:8px;background:#5A7D4F"></div></div>
+
+    <a class="tache" href="StockDepart.dc.html">
+      <span class="rond" style="background:#5A7D4F;color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+      <span style="flex:1"><span style="display:block;font-weight:700;font-size:16px">Stock de départ</span><span style="font-size:13px;color:#5d6168">19 produits comptés · repris de 2025</span></span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a8e95" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+    <a class="tache" href="#">
+      <span class="rond" style="background:#5A7D4F;color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+      <span style="flex:1"><span style="display:block;font-weight:700;font-size:16px">Personnes et durée</span><span style="font-size:13px;color:#5d6168">120 personnes · 2 jours</span></span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a8e95" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+    <a class="tache" href="Prevision.dc.html" style="border:2px solid #6C4F86">
+      <span class="rond" style="background:#6C4F86;color:#fff">3</span>
+      <span style="flex:1"><span style="display:block;font-weight:700;font-size:16px">Prévision</span><span style="font-size:13px;color:#5d6168">D'après « Tournoi 2025 » · à vérifier</span></span>
+      <span style="background:#6C4F86;color:#fff;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700">Continuer</span>
+    </a>
+    <a class="tache" href="Courses.dc.html">
+      <span class="rond" style="background:#E3DACB;color:#2F343C">4</span>
+      <span style="flex:1"><span style="display:block;font-weight:700;font-size:16px">Courses</span><span style="font-size:13px;color:#5d6168">Se calculent dès la prévision faite</span></span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a8e95" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+    <div class="tache" style="border-style:dashed;background:transparent;color:#8a8e95">
+      <span class="rond" style="border:1px dashed #b9b1a3;color:#8a8e95">5</span>
+      <span style="flex:1"><span style="display:block;font-weight:700;font-size:16px">Matériel</span><span style="font-size:13px">Micro-ondes, cafetière, éponges… (bientôt)</span></span>
+    </div>
+
+    <div style="margin-top:4px;padding:12px 14px;border-radius:14px;background:#F8F1E2;border:1px solid #E8D6B0;font-size:13px;line-height:1.45">
+      Les bénévoles ne voient pas encore ce tournoi. Il s'ouvre quand tout est prêt.
+    </div>
+  </main>
+
+  <footer style="padding:12px 16px 20px;background:#F4EFE6;border-top:1px solid #E3DACB">
+    <button style="width:100%;height:56px;border:0;border-radius:14px;background:#5A7D4F;color:#fff;font:700 17px Roboto">Ouvrir le tournoi aux bénévoles</button>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

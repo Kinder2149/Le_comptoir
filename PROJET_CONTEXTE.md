@@ -4,19 +4,20 @@
 
 ```
 STATUT DU PROJET : En développement
-MISSION : Plan initial (étapes 1 à 14) — En implémentation
-MISSION : Publication Play Store — En implémentation
+MISSION : Ergonomie de la gestion (décisions 61 à 67, figée le 07/11/2026) — En implémentation (seule mission active, R29) — E1 à E9 implémentées et testées le 08/11/2026 sur la branche `claude/ergonomie-gestion` (PLAN_STOCK_COURSES.md section 14 ; version 1.3.0, APK de recette reconstruit) ; reste : vérification par une autre IA, test et capture de Kinder, puis fusion dans `main` sur son accord écrit — critère : j'ouvre un tournoi et je vois tout de suite où j'en suis (Avant, Pendant ou Après) et ce qu'il me reste à faire ; je saisis mon stock de départ gymnase par gymnase, produits rangés par familles ; je vérifie la prévision en une page ; je fais les courses en magasin avec une liste rangée par rayons que je coche ; je télécharge l'Excel : il est propre, expliqué et aux couleurs de l'application, et je peux le remplir puis le réimporter
+MISSION : Plan initial (étapes 1 à 14) — En attente (1) — application complète (étapes 1 à 15), mais le test unique de Kinder sur téléphones (RECETTE.md) n'est pas fait et aucun critère de fin n'est écrit : pas close
+MISSION : Publication Play Store — En attente (2) — reste : fiche et questionnaires de la Play Console, test fermé (12 testeurs, 14 jours), accès à la production (voir section 12)
 MISSION : Stock et courses (étapes 1 à 8) — En attente de ma capture
-MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) — En implémentation
+MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) — En attente (3) — vérifiée par une autre IA le 05/11/2026 ; reste le test et la capture de Kinder (B6)
   Étape : B1 Menu = catalogue sans stock — Close — critère : aucun stock dans un menu, provenance acheté / apporté par produit
   Étape : B2 Ratios et consommation par catégorie — Close — critère : 1 gâteau = n parts, ratio à zéro refusé
   Étape : B3 Gymnases et stock côté événement — Close — critère : stock propre à l'événement, vendu et reste exacts après 3 ventes
   Étape : B4 Courses depuis Gymnases et stock — Close — critère : demi-journée, jour complet ou plus, estimation modifiable
   Étape : B5 Clôture et report de stock — Close — critère : 6 L de soda et 2 L de café gardés repris au prochain événement
   Étape : B6 Clôture de mission — Vérification par une autre IA faite le 05/11/2026 (B1 à B5 et C1 réussis, texte en PLAN_STOCK_COURSES.md section 12), en attente du test et de la capture de Kinder — critère : verdict réussi/échoué par critère rendu par une autre IA
-MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — Implémentée et testée par Claude le 30/10/2026, fusionnée dans `main` (règles déployées le 30/10/2026), vérifiée par une autre IA le 05/11/2026, reste le test et la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
+MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — En attente de ma capture — Implémentée et testée par Claude le 30/10/2026, fusionnée dans `main` (règles déployées le 30/10/2026), vérifiée par une autre IA le 05/11/2026, reste le test et la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
 MISSION : Préparer l'événement (décisions 53 à 60, figée le 06/11/2026) — Implémentée et testée par Claude les 06 et 07/11/2026 sur la branche `claude/preparation-evenement` (P1 à P11, PLAN_STOCK_COURSES.md section 13 ; règles déployées ; APK de recette 1.2.0 dans `recette/`), vérifiée par une autre IA le 07/11/2026 (tous critères réussis), testée et validée par Kinder le 07/11/2026, fusionnée dans `main` le 07/11/2026 — Close — critère : je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli
-MISSION : Ergonomie de la gestion (décisions 61 à 67, figée le 07/11/2026) — Plan prêt (E1 à E9 et préalables validés par Kinder le 07/11/2026, PLAN_STOCK_COURSES.md section 14) ; en réalisation depuis le 07/11/2026 (session mère, branche `claude/ergonomie-gestion`) — critère : j'ouvre un tournoi et je vois tout de suite où j'en suis (Avant, Pendant ou Après) et ce qu'il me reste à faire ; je saisis mon stock de départ gymnase par gymnase, produits rangés par familles ; je vérifie la prévision en une page ; je fais les courses en magasin avec une liste rangée par rayons que je coche ; je télécharge l'Excel : il est propre, expliqué et aux couleurs de l'application, et je peux le remplir puis le réimporter
+PHASE : 6 Implémentation (Ergonomie de la gestion ; reste vérification par une autre IA, test et capture de Kinder, fusion sur accord écrit)
 IDÉES PARQUÉES :
   - Bloc « matériel » (après la mission Ergonomie de la gestion, case « Matériel » réservée)
   - Paiement carte avec Monetico (exploration, rien de figé)
@@ -423,6 +424,7 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
   thème a1, logo et icône). Vérifié le 05/10/2026 : analyse sans erreur, 141 tests de logique et d'écrans,
   132 tests de règles, 19 parcours Android, tous verts. Règles d'accès déployées sur le vrai projet.
 - APK de recette à jour (`recette/le-comptoir-recette.apk`, non suivi par git : à reconstruire, voir plus bas).
+- Mission Ergonomie de la gestion (08/11/2026) : 439 tests, 254 tests de règles, analyse sans erreur, parcours `parcours_ergonomie_test.dart` réussi ; APK 1.3.0+4. Pour lancer les émulateurs Firebase : Java 21 ou plus (celui d'Android Studio : `C:\Program Files\Android\Android Studio\jbr`), car Java 8 passe en premier sur ce poste.
 - **Reste à faire, dans cet ordre** : (1) test unique de Kinder sur téléphones (`RECETTE.md`) puis corrections ;
   (2) publication Play Store (en cours, 06/10/2026) : **fait** : application créée dans la Play Console
   (`fr.lecomptoir.le_comptoir`, gratuite, fr-FR), clé d'envoi dédiée (`V:\DEV\keys\le-comptoir-upload.jks` + `le-comptoir-key.properties` ;

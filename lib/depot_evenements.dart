@@ -78,6 +78,7 @@ class DepotEvenements {
       nbCaissesOuvertes: (data['nbCaissesOuvertes'] as int?) ?? 0,
       nbGymnases: (data['nbGymnases'] as int?) ?? 1,
       nbJours: (data['nbJours'] as num?)?.toDouble() ?? 2.0,
+      previsionVerifiee: data['previsionVerifiee'] == true,
     );
   }
 
@@ -448,6 +449,10 @@ class DepotEvenements {
   Future<void> definirJours(String evenementId, double jours) =>
       _evenements.doc(evenementId).update({'nbJours': jours});
 
+  /// « C'est vérifié » : la gestion a relu la prévision (ou la remet à vérifier).
+  Future<void> definirPrevisionVerifiee(String evenementId, bool verifiee) =>
+      _evenements.doc(evenementId).update({'previsionVerifiee': verifiee});
+
   Future<void> definirPersonnes(
           String evenementId, String gymnaseId, int personnes) =>
       _gymnase(evenementId, gymnaseId).update({'personnes': personnes});
@@ -668,12 +673,28 @@ class DepotEvenements {
       .snapshots().compte('courses')
       .map((d) => d.exists ? ListeCourses.depuis(d.data()!) : null);
 
+  /// Enregistre la liste en préparation. Fusion (et non remplacement) : les cases
+  /// cochées par d'autres téléphones sont gardées. Une case dont l'article n'est plus
+  /// dans la liste est retirée dans le même envoi (les règles l'exigent).
   Future<void> enregistrerListeCourses(
           String evenementId, ListeCourses liste) =>
       _evenements.doc(evenementId).collection('courses').doc('liste').set({
         ...liste.versMap(),
+        'articles': liste.articles,
+        'coches': {
+          for (final c in liste.coches)
+            if (!liste.articles.contains(c)) c: FieldValue.delete(),
+        },
         'majLe': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
+
+  /// Coche (ou décoche) un article de la liste, sans toucher au reste : deux téléphones
+  /// de la gestion peuvent cocher en même temps. Ne change ni le stock ni le coût.
+  Future<void> cocherArticle(String evenementId, String cle, bool coche) =>
+      _evenements.doc(evenementId).collection('courses').doc('liste').set({
+        'coches': {cle: coche ? true : FieldValue.delete()},
+        'majLe': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
   /// Valide les courses : ajoute les [rendements] au stock de chaque gymnase (et à
   /// son total de référence) et fige la liste, dans UN SEUL lot : tout est ajouté ou

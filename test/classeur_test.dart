@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/classeur.dart';
@@ -6,29 +8,46 @@ import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/export_bilan.dart';
 import 'package:le_comptoir/gymnase.dart';
 
-// Étape P5 : le modèle du classeur Excel (décision 57), logique pure.
-//   Menu riche : composé avec recette, litre (café), à la part apportée, à l'unité ;
-//   accents, prix 2,50 €, consommation 0,75, recette avec 1/4 de tranche.
+import 'classeur_aides.dart';
+
+// Étape E8 : le modèle du classeur Excel (décisions 57 et 66), logique pure.
+//   Menu riche : composé avec recette et rayons, litre (café), à la part apportée,
+//   à l'unité ; accents, prix 2,50 €, consommation 0,75, recette avec 1/4 de tranche.
 final _produits = [
   const ProduitEvenement('croque', 'Croque-monsieur', 300, null,
       fiche: FicheProduit(
         type: 'compose',
         conso: 2,
+        famille: 'croques',
         ingredients: [
-          Ingredient('Pain de mie', 2, 'tranche'),
-          Ingredient('Jambon', 0.25, 'tranche'),
-          Ingredient('Gruyère râpé', 25, 'g'),
-          Ingredient('Œuf', 1, 'unite'),
+          Ingredient('Pain de mie', 2, 'tranche', 'boulangerie'),
+          Ingredient('Jambon', 0.25, 'tranche', 'frais'),
+          Ingredient('Gruyère râpé', 25, 'g', 'frais'),
+          Ingredient('Œuf', 1, 'unite', 'epicerie'),
         ],
       )),
   const ProduitEvenement('cafe', 'Café', 100, null,
-      fiche: FicheProduit(type: 'litre', verresParLitre: 8, conso: 2)),
+      fiche: FicheProduit(
+          type: 'litre',
+          verresParLitre: 8,
+          conso: 2,
+          famille: 'boissons_chaudes',
+          rayon: 'boissons')),
   const ProduitEvenement('gateau', 'Gâteau salé', 250, null,
       fiche: FicheProduit(
-          type: 'part', partsParEntier: 8, provenance: 'apporte', conso: 0.75)),
-  const ProduitEvenement('fruit', 'Fruit', 50, null),
+          type: 'part',
+          partsParEntier: 8,
+          provenance: 'apporte',
+          conso: 0.75,
+          famille: 'fait_maison')),
+  const ProduitEvenement('fruit', 'Fruit', 50, null,
+      fiche: FicheProduit(famille: 'snacks_fruits')),
   const ProduitEvenement('eau', 'Eau', 120, null,
-      fiche: FicheProduit(type: 'litre', verresParLitre: 6.5)),
+      fiche: FicheProduit(
+          type: 'litre',
+          verresParLitre: 6.5,
+          famille: 'boissons_fraiches',
+          rayon: 'boissons')),
 ];
 
 const _gymnases = [Gymnase('gA', 'Gymnase Édith'), Gymnase('gB', 'Gymnase B')];
@@ -73,88 +92,100 @@ List<CellValue?> _l(List<Object?> v) => [
                     : TextCellValue(c.toString())
     ];
 
-List<List<CellValue?>> _menuAvec(List<List<Object?>> lignes) => [
+/// Une ligne du Menu (ancien format, sans Famille ni Rayon) : ordre des colonnes de
+/// l'ancien modèle.
+List<List<CellValue?>> _menuAncien(List<List<Object?>> lignes) => [
       _l(['aide']),
-      _l(entetesMenu),
+      _l(entetesMenuAncien),
       for (final l in lignes) _l(l),
     ];
 
+/// Les données d'une feuille du modèle (à partir de la ligne 7), cellules sans valeur
+/// de fin retirées.
+List<List<Data?>> _donnees(Sheet f) => f.rows.skip(6).toList();
+
+/// Les cellules d'une ligne, texte ou nombre, pour comparer.
+List<Object?> _valeurs(List<Data?> l) => [
+      for (final d in l)
+        switch (d?.value) {
+          null => null,
+          IntCellValue v => v.value,
+          DoubleCellValue v => v.value,
+          final v => v.toString(),
+        }
+    ];
+
 void main() {
-  test('critère 1 : un vrai .xlsx (zip « PK »), quatre feuilles dans l\'ordre', () {
-    final o = _modele();
-    expect(o.sublist(0, 2), [0x50, 0x4B]); // « PK » : début d'un zip
-    final x = Excel.decodeBytes(o);
-    expect(x.tables.keys.toList(),
-        ['Menu', 'Stock de départ', 'Historique', 'Courses']);
-    expect(feuillesModele, x.tables.keys.toList());
+  group('critère 1 : Accueil d\'abord, puis les feuilles du modèle', () {
+    test('six feuilles dans l\'ordre : Accueil, Menu, Recettes, Stock de départ, '
+        'Historique, Courses', () {
+      final o = _modele();
+      expect(o.sublist(0, 2), [0x50, 0x4B]); // « PK » : début d'un zip
+      final x = Excel.decodeBytes(o);
+      expect(x.tables.keys.toList(), [
+        'Accueil',
+        'Menu',
+        'Recettes',
+        'Stock de départ',
+        'Historique',
+        'Courses',
+      ]);
+      expect(feuillesModele, x.tables.keys.toList());
+      expect(x.getDefaultSheet(), 'Accueil');
+    });
   });
 
-  test('chaque feuille : ligne 1 = aide en français, ligne 2 = en-têtes exacts', () {
-    final x = Excel.decodeBytes(_modele());
-    const attendus = {
-      'Menu': [
-        'Produit',
-        'Prix',
-        'Type',
-        'Provenance',
-        'Verres par litre',
-        'Parts par gâteau',
-        'Recette',
-        'Consommation par personne et par jour',
-      ],
-      'Stock de départ': ['Gymnase', 'Produit', 'Quantité'],
-      'Historique': [
-        'Événement',
-        'Gymnase',
-        'Personnes',
-        'Jours',
-        'Produit',
-        'Quantité vendue'
-      ],
-      'Courses': [
-        'Série',
-        'Produit ou ligne libre',
-        'Quantité achetée',
-        'Coût'
-      ],
-    };
-    for (final e in attendus.entries) {
-      final lignes = x.tables[e.key]!.rows;
-      expect(lignes[0][0]?.value.toString().length, greaterThan(20),
-          reason: 'aide de ${e.key}');
-      expect([for (final c in lignes[1]) c?.value.toString()], e.value,
-          reason: 'en-têtes de ${e.key}');
-    }
-    // Historique et Courses : seulement l'aide et les en-têtes.
-    expect(x.tables['Historique']!.rows.length, 2);
-    expect(x.tables['Courses']!.rows.length, 2);
+  group('critère 2 : bandeau, couleurs, largeurs (les volets figés et les listes '
+      'déroulantes ne sont pas écrits par le paquet excel 4.0.6)', () {
+    test('bandeau anthracite et titre, en-têtes violets, largeurs de colonnes', () {
+      final x = Excel.decodeBytes(_modele());
+      final menu = x.tables['Menu']!;
+      expect(menu.rows[1][0]?.value.toString(), 'Menu');
+      expect(menu.rows[1][0]?.cellStyle?.backgroundColor.colorHex, 'FF2F343C');
+      expect(menu.rows[1][0]?.cellStyle?.fontColor.colorHex, 'FFFFFFFF');
+      // En-tête : ligne 6, fond violet, texte blanc.
+      expect(menu.rows[5][1]?.value.toString(), 'Produit');
+      expect(menu.rows[5][1]?.cellStyle?.backgroundColor.colorHex, 'FF6C4F86');
+      // Case calculée (Historique, consommation) : beige.
+      final histo = x.tables['Historique']!;
+      expect(histo.rows[6][6]?.cellStyle?.backgroundColor.colorHex, 'FFE8DFD0');
+      // Largeurs : Famille 24, Produit 32.
+      expect(menu.getColumnWidth(0), closeTo(24, 1));
+      expect(menu.getColumnWidth(1), closeTo(32, 1));
+    });
+
+    test('volets figés (sous la ligne 6) et listes déroulantes, lus dans le XML des feuilles',
+        () {
+      final octets = _modele();
+      final menu = xmlDeFeuille(octets, 'Menu');
+      expect(menu, contains('<pane ySplit="6" topLeftCell="A7" activePane="bottomLeft" state="frozen"/>'));
+      for (final col in ['A', 'D', 'E', 'H']) {
+        expect(menu, contains('sqref="${col}7:${col}500"'), reason: 'Menu $col');
+      }
+      expect(menu, contains('Croques,Boissons chaudes,Boissons fraîches,Snacks et fruits,Fait maison,Autre'));
+      expect(menu, contains("Composé (recette),À l'unité,À la part,Au litre"));
+      final recettes = xmlDeFeuille(octets, 'Recettes');
+      expect(recettes, contains('<pane ySplit="6"'));
+      expect(recettes, contains('sqref="D7:D500"'));
+      expect(recettes, contains('sqref="E7:E500"'));
+      expect(recettes, contains('unité,tranche,g,kg,cl,L'));
+      // Stock et Historique : volets figés, pas de liste ; Accueil : ni l'un ni l'autre.
+      final stock = xmlDeFeuille(octets, 'Stock de départ');
+      expect(stock, contains('<pane ySplit="6"'));
+      expect(stock, isNot(contains('<dataValidation ')));
+      expect(xmlDeFeuille(octets, 'Historique'), contains('<pane ySplit="6"'));
+      expect(xmlDeFeuille(octets, 'Accueil'), isNot(contains('<pane')));
+    });
+
+    test('la ligne d\'aide est étirée (fusion) et la feuille est sans quadrillage', () {
+      final x = Excel.decodeBytes(_modele());
+      final stock = x.tables['Stock de départ']!;
+      expect(stock.rows[4][0]?.value.toString(), startsWith('Une ligne par gymnase'));
+      expect(stock.spannedItems, contains('A5:C5'));
+    });
   });
 
-  test('critère 2 : Menu = les produits de l\'événement, Stock = gymnases x produits',
-      () {
-    final x = Excel.decodeBytes(_modele());
-    final menu = x.tables['Menu']!.rows;
-    expect([for (final l in menu.skip(2)) l[0]?.value.toString()],
-        ['Croque-monsieur', 'Café', 'Gâteau salé', 'Fruit', 'Eau']);
-    final stock = x.tables['Stock de départ']!.rows;
-    expect(stock.length, 2 + 2 * 5); // 2 gymnases x 5 produits
-    expect(stock[2][0]?.value.toString(), 'Gymnase Édith');
-    expect(stock[2][1]?.value.toString(), 'Croque-monsieur');
-    expect((stock[2][2]?.value as IntCellValue).value, 40);
-    // Produit non suivi dans ce gymnase : cellule vide.
-    expect(stock[5][1]?.value.toString(), 'Fruit');
-    expect(stock[5][2]?.value, isNull);
-  });
-
-  test('un gestionnaire partiel n\'obtient que ses gymnases', () {
-    final o = construireModele(
-        produits: _produits, gymnases: [_gymnases[1]], stocks: _stocks);
-    final lu = lireClasseur(o);
-    expect({for (final s in lu.stocks) s.gymnase}, {'Gymnase B'});
-    expect(lu.stocks.length, 5);
-  });
-
-  test('critère 3 : aller-retour exact des produits et des stocks', () {
+  test('critère 3 : aller-retour exact des produits, familles, recettes et rayons', () {
     final lu = lireClasseur(_modele());
     expect(lu.erreurs, isEmpty);
     expect(lu.produits.length, _produits.length);
@@ -168,6 +199,8 @@ void main() {
       expect(b.fiche.verresParLitre, a.fiche.verresParLitre);
       expect(b.fiche.partsParEntier, a.fiche.partsParEntier);
       expect(b.fiche.conso, a.fiche.conso);
+      expect(b.fiche.famille, a.fiche.famille, reason: a.nom);
+      expect(b.fiche.rayon, a.fiche.rayon, reason: a.nom);
       expect(b.fiche.ingredients, a.fiche.ingredients);
     }
     // Stocks : (gymnase, produit) -> quantité ou vide.
@@ -185,36 +218,65 @@ void main() {
     expect(lu.historique, isEmpty);
   });
 
-  test('critère 4 : accents conservés, prix et consommations numériques, recette '
-      'avec virgule décimale', () {
+  test('Menu : produits dans l\'ordre, accents, prix et consommations numériques, '
+      'Famille et Rayon écrits', () {
     final x = Excel.decodeBytes(_modele());
-    final menu = x.tables['Menu']!.rows;
-    final croque = menu[2];
-    expect(croque[0]?.value.toString(), 'Croque-monsieur');
-    expect((croque[1]?.value as IntCellValue).value, 3); // 3 € : nombre
-    expect(croque[2]?.value.toString(), 'Composé (recette)');
-    expect(croque[6]?.value.toString(),
-        '2 tranche Pain de mie ; 0,25 tranche Jambon ; 25 g Gruyère râpé ; 1 unité Œuf');
-    final gateau = menu[4];
-    expect(gateau[0]?.value.toString(), 'Gâteau salé');
-    expect((gateau[1]?.value as DoubleCellValue).value, 2.5); // 2,50 € : nombre
-    expect(gateau[2]?.value.toString(), 'À la part');
-    expect(gateau[3]?.value.toString(), 'Apporté par les bénévoles');
-    expect((gateau[5]?.value as IntCellValue).value, 8);
-    expect((gateau[7]?.value as DoubleCellValue).value, 0.75);
-    expect(menu[5][3]?.value.toString(), 'Acheté par l\'association');
-    expect(menu[3][2]?.value.toString(), 'Au litre');
-    expect((menu[6][4]?.value as DoubleCellValue).value, 6.5);
+    final menu = _donnees(x.tables['Menu']!);
+    expect(menu.length, 5);
+    final croque = _valeurs(menu[0]);
+    expect(croque[0], 'Croques'); // Famille
+    expect(croque[1], 'Croque-monsieur');
+    expect(croque[2], 3); // 3 € : nombre
+    expect(croque[3], 'Composé (recette)');
+    expect(croque[7], isNull); // pas de rayon pour un produit composé
+    final gateau = _valeurs(menu[2]);
+    expect(gateau[1], 'Gâteau salé');
+    expect(gateau[2], 2.5); // 2,50 € : nombre
+    expect(gateau[3], 'À la part');
+    expect(gateau[4], 'Apporté par les bénévoles');
+    expect(gateau[6], 8);
+    expect(gateau[8], 0.75);
+    expect(_valeurs(menu[1])[7], 'Boissons');
+    expect(_valeurs(menu[3])[7], 'Autre'); // achat tel quel sans rayon : « Autre »
+  });
+
+  test('Recettes : un ingrédient par ligne, avec quantité, unité et rayon', () {
+    final x = Excel.decodeBytes(_modele());
+    final recettes = _donnees(x.tables['Recettes']!);
+    expect(recettes.length, 4);
+    expect(_valeurs(recettes[0]),
+        ['Croque-monsieur', 'Pain de mie', 2, 'tranche', 'Boulangerie']);
+    expect(_valeurs(recettes[1]),
+        ['Croque-monsieur', 'Jambon', 0.25, 'tranche', 'Frais et crèmerie']);
+    expect(_valeurs(recettes[3]),
+        ['Croque-monsieur', 'Œuf', 1, 'unité', 'Épicerie']);
+  });
+
+  test('critère 4 : l\'Historique a une dernière colonne de consommation par personne '
+      'et par jour, en formule', () {
+    final x = Excel.decodeBytes(_modele());
+    final histo = x.tables['Historique']!;
+    expect(histo.rows[5][6]?.value.toString(), 'Consommation par personne et par jour');
+    final formule = histo.rows[6][6]?.value;
+    expect(formule, isA<FormulaCellValue>());
+    // Ligne 7 : quantité vendue (F) divisée par personnes (C) × jours (D).
+    expect((formule as FormulaCellValue).formula, contains('F7/(C7*D7)'));
+    // Le modèle vide prévoit des lignes de calcul (formules, sans saisie).
+    expect(_donnees(histo).length, 200);
+    expect(lireClasseur(_modele()).historique, isEmpty);
   });
 
   test('lecture tolérante : texte avec virgule, espaces, lignes vides, ordre des '
       'colonnes libre', () {
     final o = _classeur({
-      'Menu': _menuAvec([
-        ['Pizza', '2,50', 'À l\'unité', 'acheté par l\'association', null, null, null, '1,5'],
-        [null, null, null, null, null, null, null, null],
-        ['  Thé  ', ' 1 0,5 ', 'au litre', null, '8', null, null, null],
-      ]),
+      'Menu': [
+        _l(['aide']),
+        _l(['Consommation par personne et par jour', 'Produit', 'Prix', 'Type',
+          'Provenance', 'Verres par litre', 'Parts par gâteau']),
+        _l([1.5, 'Pizza', '2,50', 'À l\'unité', 'acheté par l\'association', null, null]),
+        [null, null, null, null, null, null, null],
+        _l([null, '  Thé  ', ' 1 0,5 ', 'au litre', null, '8', null]),
+      ],
       'Stock de départ': [
         _l(['aide']),
         _l(['Quantité', 'Produit', 'Gymnase']),
@@ -227,11 +289,31 @@ void main() {
     expect(lu.produits.length, 2);
     expect(lu.produits[0].prixCentimes, 250);
     expect(lu.produits[0].fiche.conso, 1.5);
+    expect(lu.produits[0].fiche.famille, 'autre');
     expect(lu.produits[1].nom, 'Thé');
     expect(lu.produits[1].prixCentimes, 1050);
     expect(lu.produits[1].fiche.verresParLitre, 8);
     expect(lu.stocks.single.quantite, 1000);
     expect(lu.stocks.single.gymnase, 'Gymnase A');
+  });
+
+  test('famille ou rayon inconnu : rangé dans « Autre », signalé sans bloquer', () {
+    final lu = lireClasseur(_classeur({
+      'Menu': [
+        _l(['aide']),
+        _l(['Famille', 'Produit', 'Prix', 'Type', 'Provenance', 'Verres par litre',
+          'Parts par gâteau', 'Rayon', 'Consommation par personne et par jour']),
+        _l(['Divers', 'Pizza', 2, 'À l\'unité', null, null, null, 'Surgelés', 1]),
+      ],
+      'Stock de départ': [_l(['aide']), _l(entetesStock)],
+      'Historique': [_l(['aide']), _l(entetesHistorique)],
+    }));
+    expect(lu.produits.single.fiche.famille, 'autre');
+    expect(lu.produits.single.fiche.rayon, 'autre');
+    expect(lu.erreurs.length, 2);
+    expect(lu.erreurs[0], contains('famille « Divers » inconnue'));
+    expect(lu.erreurs[1], contains('rayon « Surgelés » inconnue'));
+    expect(lu.erreurs.any((e) => e.contains(', ligne ')), isFalse);
   });
 
   test('feuille ou colonne manquante : erreur claire', () {
@@ -258,7 +340,7 @@ void main() {
 
   test('ligne invalide : listée avec son numéro, ignorée, le reste est lu', () {
     final lu = lireClasseur(_classeur({
-      'Menu': _menuAvec([
+      'Menu': _menuAncien([
         ['Bon', 2, null, null, null, null, null, null],
         ['Négatif', -1, null, null, null, null, null, null],
         ['Bizarre', 2, 'Inconnu', null, null, null, null, null],
@@ -288,7 +370,7 @@ void main() {
 
   test('l\'Historique est lu avec ses contrôles', () {
     final lu = lireClasseur(_classeur({
-      'Menu': _menuAvec([]),
+      'Menu': _menuAncien([]),
       'Stock de départ': [_l(['aide']), _l(entetesStock)],
       'Historique': [
         _l(['aide']),
@@ -307,6 +389,21 @@ void main() {
     expect(() => lireClasseur([1, 2, 3, 4]), throwsA(isA<ClasseurIllisible>()));
     expect(() => lireClasseur('a;b\n1;2'.codeUnits),
         throwsA(isA<ClasseurIllisible>()));
+  });
+
+  test('critère 5 : les classeurs à l\'ancien format s\'importent comme avant', () {
+    // Le classeur du tournoi de l'an passé : feuille Menu vide (en-têtes seuls), ventes
+    // dans l'Historique (38 lignes), aucune erreur.
+    final an = lireClasseur(File('recette/historique-tournoi-an-passe.xlsx')
+        .readAsBytesSync());
+    expect(an.erreurs, isEmpty);
+    expect(an.produits, isEmpty);
+    expect(an.historique.length, 38);
+    // Le classeur de l'audit (format précédent, recettes dans la colonne « Recette »).
+    final actuel = lireClasseur(
+        File('audit_front/ergonomie/classeur_actuel.xlsx').readAsBytesSync());
+    expect(actuel.erreurs, isEmpty);
+    expect(actuel.produits, isNotEmpty);
   });
 
   test('recette : unités acceptées en code ou en libellé, « ; » dans un nom '

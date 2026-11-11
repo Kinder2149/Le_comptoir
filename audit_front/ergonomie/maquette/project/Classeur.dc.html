@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Classeur Excel, feuille Menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{background:#6C4F86;color:#fff;font-weight:700;padding:8px 6px;border:1px solid #D8CFC0;text-align:center}
+td{padding:6px 8px;border:1px solid #D8CFC0;background:#fff;height:22px}
+td.n{text-align:right}
+td.calc{background:#E8DFD0;color:#6B6F76;font-style:italic}
+tr.maison td{background:#F3ECF8}
+tr.maison td.calc{background:#E8DFD0}
+.onglet{padding:6px 14px;font-size:12px;border:1px solid #CFC6B6;border-bottom:0;border-radius:6px 6px 0 0;background:#EDE8DF;color:#4a4e55}
+</style>
+</helmet>
+<div style="width:1100px;height:640px;box-sizing:border-box;background:#fff;font-family:Roboto,system-ui,sans-serif;color:#2F343C;display:flex;flex-direction:column;border:1px solid #CFC6B6">
+  <div style="background:#2F343C;padding:14px 18px 10px">
+    <div style="color:#fff;font-size:24px;font-weight:700">Menu</div>
+    <div style="color:#D9B06F;font-size:13px;margin-top:2px">Le catalogue de la buvette : ce qu'on vend, à quel prix, et ce qu'une personne consomme par jour.</div>
+  </div>
+  <div style="height:4px;background:#D9B06F"></div>
+  <div style="padding:8px 18px;font-size:12px;font-style:italic;color:#6B6F76">Une ligne par produit. Type et Provenance se choisissent dans une liste déroulante. « Conso / pers / jour » : 0,5 = un produit pour deux personnes par jour.</div>
+  <div style="flex:1;padding:0 18px;overflow:hidden">
+    <table>
+      <thead><tr><th style="width:150px">Famille</th><th>Produit</th><th style="width:80px">Prix (€)</th><th style="width:140px">Type</th><th style="width:180px">Provenance</th><th style="width:80px">Verres par litre</th><th style="width:80px">Parts par gâteau</th><th style="width:100px">Conso / pers / jour</th></tr></thead>
+      <tbody>
+        <tr><td>Croques</td><td>Croque-monsieur</td><td class="n">1,00 €</td><td>Composé (recette)</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,65</td></tr>
+        <tr><td>Croques</td><td>Croque végé</td><td class="n">1,00 €</td><td>Composé (recette)</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,45</td></tr>
+        <tr><td>Croques</td><td>Croque tartiflette</td><td class="n">1,00 €</td><td>Composé (recette)</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,60</td></tr>
+        <tr><td>Boissons chaudes</td><td>Café</td><td class="n">0,50 €</td><td>Au litre</td><td>Achetée</td><td class="n">4</td><td class="calc"></td><td class="n">1,30</td></tr>
+        <tr><td>Boissons chaudes</td><td>Thé</td><td class="n">0,50 €</td><td>À l'unité</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,30</td></tr>
+        <tr><td>Boissons fraîches</td><td>Coca</td><td class="n">1,00 €</td><td>Au litre</td><td>Achetée</td><td class="n">4</td><td class="calc"></td><td class="n">0,32</td></tr>
+        <tr><td>Boissons fraîches</td><td>Bière</td><td class="n">2,00 €</td><td>Au litre</td><td>Achetée</td><td class="n">4</td><td class="calc"></td><td class="n">0,50</td></tr>
+        <tr><td>Snacks et fruits</td><td>Mars</td><td class="n">1,00 €</td><td>À l'unité</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,05</td></tr>
+        <tr><td>Snacks et fruits</td><td>Fruit</td><td class="n">1,00 €</td><td>À l'unité</td><td>Achetée</td><td class="calc"></td><td class="calc"></td><td class="n">0,20</td></tr>
+        <tr class="maison"><td>Fait maison (bénévoles)</td><td>Tarte</td><td class="n">1,00 €</td><td>À la part</td><td>Apportée par les bénévoles</td><td class="calc"></td><td class="n">8</td><td class="n">1,00</td></tr>
+        <tr class="maison"><td>Fait maison (bénévoles)</td><td>Crêpes (3 petites)</td><td class="n">1,00 €</td><td>À l'unité</td><td>Apportée par les bénévoles</td><td class="calc"></td><td class="calc"></td><td class="n"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="display:flex;gap:4px;padding:10px 18px 0;border-top:1px solid #CFC6B6;background:#F7F4EE">
+    <span class="onglet">Accueil</span>
+    <span class="onglet" style="background:#fff;color:#2F343C;font-weight:700">Menu</span>
+    <span class="onglet">Recettes</span>
+    <span class="onglet">Stock de départ</span>
+    <span class="onglet">Historique</span>
+    <span class="onglet">Courses</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

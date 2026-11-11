@@ -133,15 +133,17 @@ void main() {
     // ---------- Critères 1 et 2 : cinq feuilles, chiffres du calcul à la main.
     final x = Excel.decodeBytes(octets!);
     expect(x.tables.keys.toList(), feuillesExport);
+    // Données dès la ligne 7 (après bandeau, aide et en-têtes) ; formules non comptées.
     List<String> lignes(String f) => [
-          for (final l in x.tables[f]!.rows.skip(2))
+          for (final l in x.tables[f]!.rows.skip(6))
             l
-                .where((d) => d?.value != null)
+                .where((d) => d?.value != null && d!.value is! FormulaCellValue)
                 .map((d) => d!.value.toString())
                 .join(' | '),
         ];
+    // Menu : Famille, puis Produit.
     expect(
-        lignes('Menu').map((l) => l.split(' | ').first).toSet(), {'Croque', 'Soda'});
+        lignes('Menu').map((l) => l.split(' | ')[1]).toSet(), {'Croque', 'Soda'});
     expect(lignes('Stock de départ'), contains('Gymnase A | Croque | 500'));
     expect(lignes('Historique'), [
       'Tournoi 2025 | Gymnase A | 40 | 2 | Croque | 160',

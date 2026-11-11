@@ -204,7 +204,10 @@ void main() {
     await attendre(tester, find.text('Tournoi 2'));
     await finTransition(tester);
     await toucher(tester, find.text('Tournoi 2'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendre(tester, find.byKey(const Key('aucune_caisse')));
+    await retour(tester);
     await attendre(tester, find.byKey(const Key('cloturer_evenement')));
     await finTransition(tester);
     expect(find.text("Clôturer l'événement"), findsOneWidget);
@@ -232,11 +235,14 @@ void main() {
     await caisses1.ouvrirCaisse(caisseChef, 'Chef');
     await attendre(tester, find.text('Tournoi'));
     await toucher(tester, find.text('Tournoi'));
+    await attendre(tester, find.byKey(const Key('voir_caisses')));
+    await toucher(tester, find.byKey(const Key('voir_caisses')));
     await attendre(tester, find.byKey(Key('caisse_$caisseLea')));
     await attendre(tester, find.byKey(Key('caisse_$caisseChef')));
     await finTransition(tester);
     expect(texte(tester, 'statut_caisse_$caisseLea'), startsWith('Clôturée')); // Lea
     expect(texte(tester, 'statut_caisse_$caisseChef'), startsWith('Ouverte')); // Chef
+    await retour(tester);
     expect(find.text('Forcer la clôture'), findsOneWidget);
     await toucher(tester, find.byKey(const Key('cloturer_evenement')));
     await toucher(tester, find.byKey(const Key('confirmer_cloture_evenement')));
