@@ -15,6 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
   runApp(LeComptoir(
+    navigatorKey: navigatorCle,
     accueil: EcranRacine(
       auth: FirebaseAuth.instance,
       depot: DepotAssociations(FirebaseFirestore.instance),
@@ -24,15 +25,21 @@ Future<void> main() async {
 }
 
 class LeComptoir extends StatelessWidget {
-  const LeComptoir({super.key, this.accueil = const EcranCaisse()});
+  const LeComptoir(
+      {super.key, this.accueil = const EcranCaisse(), this.navigatorKey});
 
   final Widget accueil;
+
+  /// Clé du navigateur, fournie par l'application réelle seulement (la feuille « Enregistrer
+  /// ou partager » en a besoin). Les parcours de test montent l'application sans elle : une
+  /// clé globale garderait l'ancien écran d'un parcours au suivant.
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Le Comptoir',
-      navigatorKey: navigatorCle,
+      navigatorKey: navigatorKey,
       theme: themeComptoir(),
       home: accueil,
     );
