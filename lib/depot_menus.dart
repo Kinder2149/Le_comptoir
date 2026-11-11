@@ -531,6 +531,11 @@ class DepotMenus {
         'creeLe': FieldValue.serverTimestamp(),
       });
 
+  /// Document d'un produit du menu ([produitId] absent : identifiant neuf). Sert à écrire
+  /// un produit du menu dans le même lot qu'une écriture d'événement (décision 78).
+  DocumentReference<Map<String, dynamic>> refProduit(String menuId, [String? produitId]) =>
+      _produits(menuId).doc(produitId);
+
   Future<void> modifierProduit(
     String menuId,
     String produitId, {

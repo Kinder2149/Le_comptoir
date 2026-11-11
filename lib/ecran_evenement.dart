@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show setEquals;
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/material.dart';
 
 import 'actualisation.dart';
@@ -14,7 +15,8 @@ import 'ecran_bilan.dart';
 import 'ecran_courses.dart';
 import 'ecran_caisse.dart';
 import 'ecran_gymnases.dart';
-import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
+import 'ecran_menu.dart'
+    show SelecteurPhoto, demanderImageProduit, demanderProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
 import 'ecran_classeur.dart';
 import 'ecran_import.dart';
@@ -1651,7 +1653,8 @@ class _EtatSuivi extends State<SuiviEnDirect> {
 }
 
 /// « Produits et images » (gestion, décision 61) : la liste des produits de l'événement,
-/// et la correction de leur image. Le nom et le prix ne changent pas ici.
+/// la correction de leur image et, tant que l'événement n'est pas clôturé, l'ajout d'un
+/// produit (décision 78). Le nom et le prix d'un produit déjà là ne changent pas.
 class EcranProduitsEvenement extends StatelessWidget {
   const EcranProduitsEvenement({
     super.key,
@@ -1681,6 +1684,33 @@ class EcranProduitsEvenement extends StatelessWidget {
         icone: r.icone, photo: r.photo);
   }
 
+  Future<void> _ajouter(BuildContext context) async {
+    final messager = ScaffoldMessenger.of(context);
+    final r = await demanderProduit(context, selecteurPhoto: selecteurPhoto);
+    if (r == null) return;
+    String message;
+    try {
+      final res = await depot.ajouterProduit(evenementId,
+          nom: r.nom,
+          prixCentimes: r.prixCentimes,
+          icone: r.icone,
+          photo: r.photo,
+          fiche: r.fiche);
+      message = res.auMenu
+          ? "« ${r.nom} » est ajouté à l'événement et au menu."
+          : "« ${r.nom} » est ajouté à l'événement seulement : le menu d'origine "
+              "est introuvable ou complet.";
+    } on ProduitDejaPresent {
+      message = 'Un produit « ${r.nom} » existe déjà dans cet événement.';
+    } on FirebaseException {
+      message = "Le produit n'a pas pu être ajouté. Réessayez.";
+    }
+    messager.showSnackBar(SnackBar(
+      key: const Key('message_ajout_produit'),
+      content: Text(message),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1692,38 +1722,77 @@ class EcranProduitsEvenement extends StatelessWidget {
           if (produits == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                modifiable
-                    ? 'Touchez un produit pour corriger son image. Son nom et son '
-                        'prix ne changent pas.'
-                    : 'L\'événement est clôturé : les images se lisent seulement.',
-                key: const Key('aide_produits'),
-              ),
-              const SizedBox(height: 8),
-              for (final p in produits)
-                ListTile(
-                  key: Key('produit_evenement_${p.id}'),
-                  leading: VignetteProduit(
-                    key: Key('vignette_evenement_${p.id}'),
-                    icone: p.icone,
-                    photo: p.photo,
-                  ),
-                  title: Text(p.nom),
-                  subtitle: Text(
-                    formaterEuros(p.prixCentimes) +
-                        (p.stock == null ? '' : ' · Stock : ${p.stock}') +
-                        resumeFiche(p.fiche),
-                  ),
-                  trailing: modifiable ? const Icon(Icons.image_outlined) : null,
-                  onTap: modifiable ? () => _changerImage(context, p) : null,
-                ),
-            ],
+          return ListeProduitsEvenement(
+            produits: produits,
+            modifiable: modifiable,
+            onAjouter: () => _ajouter(context),
+            onImage: (p) => _changerImage(context, p),
           );
         },
       ),
+    );
+  }
+}
+
+/// La liste de « Produits et images », sans accès à la base : testable seule.
+/// Le bouton « Ajouter un produit » n'existe que si [modifiable] (événement non clôturé).
+class ListeProduitsEvenement extends StatelessWidget {
+  const ListeProduitsEvenement({
+    super.key,
+    required this.produits,
+    required this.modifiable,
+    required this.onAjouter,
+    required this.onImage,
+  });
+
+  final List<ProduitEvenement> produits;
+  final bool modifiable;
+  final VoidCallback onAjouter;
+  final void Function(ProduitEvenement produit) onImage;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          modifiable
+              ? 'Touchez un produit pour corriger son image. Son nom et son '
+                  'prix ne changent pas.'
+              : "L'événement est clôturé : les images se lisent seulement.",
+          key: const Key('aide_produits'),
+        ),
+        if (modifiable) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              key: const Key('ajouter_produit_evenement'),
+              onPressed: onAjouter,
+              icon: const Icon(Icons.add),
+              label: const Text('Ajouter un produit'),
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        for (final p in produits)
+          ListTile(
+            key: Key('produit_evenement_${p.id}'),
+            leading: VignetteProduit(
+              key: Key('vignette_evenement_${p.id}'),
+              icone: p.icone,
+              photo: p.photo,
+            ),
+            title: Text(p.nom),
+            subtitle: Text(
+              formaterEuros(p.prixCentimes) +
+                  (p.stock == null ? '' : ' · Stock : ${p.stock}') +
+                  resumeFiche(p.fiche),
+            ),
+            trailing: modifiable ? const Icon(Icons.image_outlined) : null,
+            onTap: modifiable ? () => onImage(p) : null,
+          ),
+      ],
     );
   }
 }

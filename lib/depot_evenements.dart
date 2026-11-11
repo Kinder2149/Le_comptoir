@@ -9,6 +9,7 @@ import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'import_menu.dart' show produitsMenuMax;
 import 'import_classeur.dart';
 import 'mesure.dart';
 import 'previsions.dart';
@@ -21,6 +22,19 @@ enum ResultatLien { ok, evenementIntrouvable, gymnaseInconnu }
 /// Le menu choisi ne contient aucun produit.
 class MenuVide implements Exception {
   const MenuVide();
+}
+
+/// Un produit de l'événement porte déjà ce nom.
+class ProduitDejaPresent implements Exception {
+  const ProduitDejaPresent();
+}
+
+/// Ce qu'a fait [DepotEvenements.ajouterProduit].
+class ResultatAjoutProduit {
+  const ResultatAjoutProduit({required this.auMenu});
+
+  /// Le produit est aussi dans le menu d'origine.
+  final bool auMenu;
 }
 
 /// Événements d'une association (couche Données).
@@ -450,6 +464,63 @@ class DepotEvenements {
         'icone': icone ?? FieldValue.delete(),
         'photo': photo == null ? FieldValue.delete() : Blob(photo),
       });
+
+  /// Ajoute un produit à un événement en préparation ou en cours (décision 78) : dans
+  /// l'événement ET dans le menu d'origine (même identifiant), en un seul lot. Les produits
+  /// existants ne sont pas touchés (nom et prix figés). Le menu d'origine est retrouvé par le
+  /// nom copié à la création ; introuvable (supprimé, renommé, ou plusieurs du même nom), ou
+  /// plein, le produit n'est ajouté qu'à l'événement ([ResultatAjoutProduit.auMenu] faux).
+  /// Lève [ProduitDejaPresent] si un produit de l'événement porte déjà ce nom.
+  Future<ResultatAjoutProduit> ajouterProduit(
+    String evenementId, {
+    required String nom,
+    required int prixCentimes,
+    String? icone,
+    Uint8List? photo,
+    FicheProduit fiche = FicheProduit.unite,
+  }) async {
+    final existants = await suivreProduits(evenementId).first;
+    final cle = cleIngredient(nom);
+    if (existants.any((p) => cleIngredient(p.nom) == cle)) {
+      throw const ProduitDejaPresent();
+    }
+    final ev = await suivreEvenement(evenementId).first;
+    String? menuId;
+    var presentAuMenu = false;
+    if (ev != null) {
+      final menus = [
+        for (final m in await _menus.suivreMenus().first)
+          if (m.nom == ev.menuNom) m,
+      ];
+      if (menus.length == 1) {
+        final duMenu = await _menus.suivreProduits(menus.single.id).first;
+        presentAuMenu = duMenu.any((p) => cleIngredient(p.nom) == cle);
+        if (!presentAuMenu && duMenu.length < produitsMenuMax) menuId = menus.single.id;
+      }
+    }
+    final ref = _evenements.doc(evenementId).collection('produits').doc();
+    final lot = _db.batch();
+    lot.set(ref, {
+      'nom': nom.trim(),
+      'prixCentimes': prixCentimes,
+      'icone': ?icone,
+      if (photo != null) 'photo': Blob(photo),
+      ...fiche.versMap(),
+      'creeLe': FieldValue.serverTimestamp(),
+    });
+    if (menuId != null) {
+      lot.set(_menus.refProduit(menuId, ref.id), {
+        'nom': nom.trim(),
+        'prixCentimes': prixCentimes,
+        'icone': ?icone,
+        ...fiche.versMap(),
+        if (photo != null) 'photo': Blob(photo),
+        'creeLe': FieldValue.serverTimestamp(),
+      });
+    }
+    await lot.commit();
+    return ResultatAjoutProduit(auMenu: menuId != null || presentAuMenu);
+  }
 
   DocumentReference<Map<String, dynamic>> _gymnase(String id, String gymnaseId) =>
       _evenements.doc(id).collection('gymnases').doc(gymnaseId);
