@@ -929,6 +929,9 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| F1 | Close | 11/11/2026 | 5 critères sur 5 par test de code (440 tests de logique et d'écrans, analyse sans erreur) |
+
+**Cadrage F1 (11/11/2026)** : l'avertissement n'est plus un état mémorisé mais se calcule d'après le ticket (`_EtatCaisse._alerte` devient un accesseur) : il nomme tous les produits suivis dont la quantité au ticket atteint ou dépasse le stock, et disparaît avec la ligne. Fichiers touchés : `lib/ecran_caisse.dart`, `test/caisse_evenement_test.dart`. On ne touche pas : la vente (jamais bloquée), les couleurs de rupture, le stock. Critères : ceux du tableau (F1, 1 à 5). Note : l'ancien comportement n'avertissait qu'au dépassement ; la décision 69 dit « atteint ou dépasse » (critère 1 : le dernier exemplaire déclenche le message), le test existant a été mis à jour en conséquence.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

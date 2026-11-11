@@ -165,26 +165,27 @@ class EcranCaisse extends StatefulWidget {
 class _EtatCaisse extends State<EcranCaisse> {
   final Ticket _ticket = Ticket();
 
-  // Avertissement de stock : affiché au-dessus du total (jamais par-dessus les
-  // boutons de paiement) ; il ne bloque rien.
-  String? _alerte;
+  // Avertissement de stock : calculé d'après le contenu du ticket (décision 69),
+  // affiché au-dessus du total (jamais par-dessus les boutons de paiement) ;
+  // il ne bloque rien.
+  String? get _alerte {
+    final epuises = [
+      for (final e in _ticket.lignes.entries)
+        if (e.key.stock != null && e.value >= e.key.stock!) e.key.nom,
+    ];
+    if (epuises.isEmpty) return null;
+    return 'Stock épuisé : ${epuises.join(', ')}. Vous pouvez quand même vendre.';
+  }
 
   /// Vente annulée que le ticket en cours remplace (correction).
   String? _corrigeDe;
 
   void _ajouter(Produit p) {
-    final dejaAuTicket = _ticket.lignes[p] ?? 0;
-    setState(() {
-      if (p.stock != null && p.stock! - dejaAuTicket <= 0) {
-        _alerte = 'Stock épuisé : ${p.nom}. Vous pouvez quand même vendre.';
-      }
-      _ticket.ajouter(p);
-    });
+    setState(() => _ticket.ajouter(p));
   }
 
   void _vider() => setState(() {
     _ticket.vider();
-    _alerte = null;
     _corrigeDe = null;
   });
 
@@ -201,7 +202,6 @@ class _EtatCaisse extends State<EcranCaisse> {
     if (c == null || !mounted) return;
     setState(() {
       _ticket.vider();
-      _alerte = null;
       for (final l in c.lignes) {
         final p = widget.produits.where((x) => x.id == l.produitId).firstOrNull;
         if (p == null) continue;
@@ -350,11 +350,11 @@ class _EtatCaisse extends State<EcranCaisse> {
                 key: Key('correction_en_cours'),
               ),
             ),
-          if (_alerte != null)
+          if (_alerte case final alerte?)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               child: Text(
-                _alerte!,
+                alerte,
                 key: const Key('alerte_stock'),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),

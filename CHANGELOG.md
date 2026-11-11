@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F1 : avertissement de stock
+- Le message « Stock épuisé » suit le contenu du ticket : il s'affiche dès que la quantité au ticket atteint le stock, nomme tous les produits concernés et disparaît quand la ligne est retirée ; la vente n'est jamais bloquée. Tests : 440 de logique et d'écrans, analyse sans erreur. Écart signalé : cette étape, très courte, a été réalisée directement par la session mère et non par une sous-session (R13) ; les suivantes passent par des sous-sessions.
+
 ## 11/11/2026 — Mission « Ergonomie de la gestion » close
 - Close et fusionnée dans `main` sur décision écrite de Kinder, **sans vérification par une autre IA** (le texte de vérification E9 de la section 14 n'a pas été passé) : écart à la méthode assumé par Kinder. Version 1.3.0. Le cadrage de « Retours du terrain » est fusionné avec elle ; c'est désormais la seule mission active.
 
