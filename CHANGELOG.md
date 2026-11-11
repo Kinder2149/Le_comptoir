@@ -1,5 +1,9 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F7 : clôture technique et résumé final
+- Parcours automatique du critère de fin (`parcours_retours_terrain_test`) vert sur émulateur : deux téléphones, caisse sans message fantôme, ventes de l'autre téléphone, membres dans les Paramètres, Extraction et modèle, comparaison de deux tournois. Les captures y sont facultatives : sur l'émulateur du poste, la conversion de la surface en image fige les parcours qui photographient (constaté aussi sur `parcours_ergonomie_test`, rouge de ce fait, sans exception de code). Suite des parcours rejouée un à un : verts, sauf `evenements_test`, `menus_test`, `images_test` (déjà rouges avant la mission, libellés périmés) et ceux qui photographient. `google_test` adapté à la liste des membres déplacée. Version 1.4.0+5, APK de recette reconstruit. Graphify mis à jour.
+- **Résumé de la mission (F1 à F7)** : l'avertissement de stock suit le ticket ; actualisation entre téléphones (un défaut corrigé : le bilan restait « provisoire ») et glisser vers le bas ; membres et droits dans les Paramètres avec note « Qui peut quoi » ; modèle générique sans marque avec exemples ; écran « Extraction et modèle » ; comparateur de deux tournois. 466 tests de logique et d'écrans, 255 tests de règles. Règles d'accès inchangées. Aucune dépendance ajoutée. Écart noté : F1 réalisée directement par la session mère.
+
 ## 11/11/2026 — Mission « Retours du terrain », F6 : comparateur d'événements
 - Carte « Comparer deux tournois » : deux tournois clôturés côte à côte (personnes, jours, ventes, total, coût des courses, résultat), puis par produit retrouvé par son nom les quantités vendues et la consommation par personne et par jour avec l'écart (« — » si absent d'un côté), export Excel aux couleurs de l'application. Aucun nouveau calcul de bilan, aucune dépendance. Tests : 466, parcours Android vert.
 

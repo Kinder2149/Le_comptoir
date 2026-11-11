@@ -5,7 +5,7 @@
 ```
 STATUT DU PROJET : En développement
 MISSION : Ergonomie de la gestion (décisions 61 à 67, figée le 07/11/2026) — Close le 11/11/2026 sur décision de Kinder, SANS vérification par une autre IA (écart à R9 assumé par Kinder) — E1 à E9 implémentées et testées le 08/11/2026 (PLAN_STOCK_COURSES.md section 14 ; version 1.3.0), fusionnée dans `main` le 11/11/2026 sur accord écrit de Kinder — critère : j'ouvre un tournoi et je vois tout de suite où j'en suis (Avant, Pendant ou Après) et ce qu'il me reste à faire ; je saisis mon stock de départ gymnase par gymnase, produits rangés par familles ; je vérifie la prévision en une page ; je fais les courses en magasin avec une liste rangée par rayons que je coche ; je télécharge l'Excel : il est propre, expliqué et aux couleurs de l'application, et je peux le remplir puis le réimporter
-MISSION : Retours du terrain (décisions 68 à 74, plan et critères validés par Kinder le 11/11/2026) — Plan prêt — seule mission active, à lancer (plan F1 à F7, PLAN_STOCK_COURSES.md section 15) — critère : sur deux téléphones, je vends sans message de stock fantôme, je vois les ventes de l'autre téléphone, je gère mes membres depuis les Paramètres, et depuis l'écran Extraction et modèle je télécharge le modèle, les données de l'association et l'export d'un tournoi, et je compare deux tournois
+MISSION : Retours du terrain (décisions 68 à 74, plan et critères validés par Kinder le 11/11/2026) — Implémentée et testée par Claude le 11/11/2026 sur la branche `claude/retours-terrain` (F1 à F7, PLAN_STOCK_COURSES.md section 15 ; règles d'accès inchangées, rien à déployer ; APK de recette 1.4.0 dans `recette/`), vérification par une autre IA en cours, puis test et capture de Kinder — seule mission active — critère : sur deux téléphones, je vends sans message de stock fantôme, je vois les ventes de l'autre téléphone, je gère mes membres depuis les Paramètres, et depuis l'écran Extraction et modèle je télécharge le modèle, les données de l'association et l'export d'un tournoi, et je compare deux tournois
 MISSION : Plan initial (étapes 1 à 14) — En attente (1) — application complète (étapes 1 à 15), mais le test unique de Kinder sur téléphones (RECETTE.md) n'est pas fait et aucun critère de fin n'est écrit : pas close
 MISSION : Publication Play Store — En attente (2) — reste : fiche et questionnaires de la Play Console, test fermé (12 testeurs, 14 jours), accès à la production (voir section 12)
 MISSION : Stock et courses (étapes 1 à 8) — En attente de ma capture
@@ -18,7 +18,7 @@ MISSION : Menu, événement et courses (B1 à B6, plan validé le 29/10/2026) �
   Étape : B6 Clôture de mission — Vérification par une autre IA faite le 05/11/2026 (B1 à B5 et C1 réussis, texte en PLAN_STOCK_COURSES.md section 12), en attente du test et de la capture de Kinder — critère : verdict réussi/échoué par critère rendu par une autre IA
 MISSION : C1 Courses en plusieurs validations et partage de la liste (décision 52, tri du 30/10/2026) — En attente de ma capture — Implémentée et testée par Claude le 30/10/2026, fusionnée dans `main` (règles déployées le 30/10/2026), vérifiée par une autre IA le 05/11/2026, reste le test et la capture de Kinder — critère : je valide 40 croques le matin puis 40 de plus l'après-midi, le stock affiche 80 et le coût cumulé ; la liste de courses se partage en texte ou CSV
 MISSION : Préparer l'événement (décisions 53 à 60, figée le 06/11/2026) — Implémentée et testée par Claude les 06 et 07/11/2026 sur la branche `claude/preparation-evenement` (P1 à P11, PLAN_STOCK_COURSES.md section 13 ; règles déployées ; APK de recette 1.2.0 dans `recette/`), vérifiée par une autre IA le 07/11/2026 (tous critères réussis), testée et validée par Kinder le 07/11/2026, fusionnée dans `main` le 07/11/2026 — Close — critère : je crée un événement, je télécharge le modèle Excel, je le remplis avec les chiffres de l'an passé et je l'importe ; dans Préparation, je retrouve mon stock de départ et une prévision calculée d'après l'an passé, je corrige un chiffre, je lance les courses ; à la fin du tournoi, j'exporte le même classeur rempli
-PHASE : 5 Cadrage à lancer (Retours du terrain, Plan prêt ; prompt de lancement en PLAN_STOCK_COURSES.md section 15)
+PHASE : 6 Clôture de la mission Retours du terrain (vérification par une autre IA, puis test final de Kinder)
 IDÉES PARQUÉES :
   - Bloc « matériel » (après la mission Ergonomie de la gestion, case « Matériel » réservée)
   - Paiement carte avec Monetico (exploration, rien de figé)
@@ -70,8 +70,13 @@ les buvettes de la saison.
   caisses ouvertes et fermées, dernière mise à jour de chaque caisse.
 - Bilan : total, détail par produit, par mode de paiement, par caisse et
   par jour, heures de pointe, produits les plus et les moins vendus.
-- Membres : liste des membres de l'association, avec leur statut
-  (bénévole, gestionnaire en attente, gestionnaire).
+- Membres : liste des membres de l'association dans les Paramètres (responsable : avec les actions ;
+  gestionnaire : en lecture seule ; bénévole : pas de liste), avec leur statut (bénévole, gestionnaire en
+  attente, gestionnaire) et une note « Qui peut quoi » (décision 71).
+- Extraction et modèle (gestion, depuis l'écran de l'association, décisions 72 à 74) : modèle Excel vierge
+  générique, données d'un menu de l'association, export d'un tournoi clôturé, comparateur de deux tournois
+  (côte à côte, écarts, export Excel). Glisser vers le bas relit les données sur les écrans principaux
+  (décision 70) ; l'avertissement de stock suit le ticket (décision 69).
 
 ## 5. Hors périmètre
 - Notifications push.
@@ -434,6 +439,7 @@ Ordre : l'étape 3 précède la 4 (l'alerte a besoin du total de référence). M
   thème a1, logo et icône). Vérifié le 05/10/2026 : analyse sans erreur, 141 tests de logique et d'écrans,
   132 tests de règles, 19 parcours Android, tous verts. Règles d'accès déployées sur le vrai projet.
 - APK de recette à jour (`recette/le-comptoir-recette.apk`, non suivi par git : à reconstruire, voir plus bas).
+- Mission Retours du terrain (11/11/2026) : F1 à F7, 466 tests de logique et d'écrans, 255 tests de règles, parcours Android de chaque étape verts (parcours `parcours_retours_terrain_test` vert ; ses captures sont facultatives : sur l'émulateur du poste, la conversion de la surface en image fige les parcours à captures, `parcours_ergonomie_test` y compris). Rouges déjà présents avant la mission : `evenements_test`, `menus_test`, `images_test` (libellés périmés). APK 1.4.0+5.
 - Mission Ergonomie de la gestion (08/11/2026) : 439 tests, 254 tests de règles, analyse sans erreur, parcours `parcours_ergonomie_test.dart` réussi ; APK 1.3.0+4. Pour lancer les émulateurs Firebase : Java 21 ou plus (celui d'Android Studio : `C:\Program Files\Android\Android Studio\jbr`), car Java 8 passe en premier sur ce poste.
 - **Reste à faire, dans cet ordre** : (1) test unique de Kinder sur téléphones (`RECETTE.md`) puis corrections ;
   (2) publication Play Store (en cours, 06/10/2026) : **fait** : application créée dans la Play Console

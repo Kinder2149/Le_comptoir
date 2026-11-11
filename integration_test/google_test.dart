@@ -37,7 +37,19 @@ void main() {
     await creerAssociationParLInterface(tester, nom: 'Club Retrouvé');
     expect(auth.currentUser!.uid, uidAvant);
     expect(aGoogle(auth.currentUser), isTrue);
-    await attendre(tester, find.text('Responsable'));
+    // La liste des membres est dans Paramètres (décision 71) : le statut s'y lit.
+    // Le bouton reste inactif tant que le membre n'est pas chargé : on retente le geste.
+    for (var i = 0; i < 60; i++) {
+      if (find.byKey(const Key('mon_statut')).evaluate().isNotEmpty) break;
+      if (find.byKey(const Key('parametres')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('parametres')));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await attendre(tester, find.byKey(const Key('mon_statut')));
+    expect(texte(tester, 'mon_statut'), 'Statut : Responsable');
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump(const Duration(milliseconds: 500));
     final code = texte(tester, 'code');
 
     // Nouveau téléphone : appareil neuf (nouvel anonyme) + même compte Google.
@@ -52,9 +64,14 @@ void main() {
     expect(auth.currentUser!.uid, uidAvant);
     expect(texte(tester, 'nom'), 'Club Retrouvé');
     expect(texte(tester, 'code'), code);
-    await attendre(tester, find.text('Responsable'));
     // Le responsable retrouvé a bien ses outils : Paramètres propose « Changer le code ».
-    await tester.tap(find.byKey(const Key('parametres')));
+    for (var i = 0; i < 60; i++) {
+      if (find.byKey(const Key('regenerer')).evaluate().isNotEmpty) break;
+      if (find.byKey(const Key('parametres')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('parametres')));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+    }
     await attendre(tester, find.byKey(const Key('regenerer')));
   });
 }
