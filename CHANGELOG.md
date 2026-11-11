@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T3 : classeur du club
+- `recette/classeur-notre-club.xlsx` produit d'après l'historique de l'an passé : menu vide (le menu du week-end existe déjà), historique repris, stock de départ prêt à remplir (2 gymnases × 19 produits). Importé par l'assistant sur émulateur sans erreur ; consommations égales au relevé (section « Relevé T3 » du plan). Piège : un classeur refait avec openpyxl doit réécrire ses liens internes en relatif, sinon l'application le juge illisible.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T2 : assistant d'import unique
 - Une carte « Importer » dans « Extraction et modèle » : départ (modèle ou classeur), menu (créé, ou menu existant de même nom repris sans modification), anciens tournois en références de prévision, tournoi en préparation facultatif (stock par noms, prévision réglée), résumé complet avant écriture. « Importer un menu » et « Importer un classeur » y renvoient ; réservé à la gestion ; ancien format de classeur toujours lu. Aucune dépendance, règles inchangées. Tests : 486 de logique et d'écrans, parcours Android vert.
 
