@@ -7,18 +7,66 @@ import 'classeur.dart';
 import 'depot_associations.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
+import 'courses.dart';
 import 'depot_menus.dart';
+import 'ecran_comparateur.dart';
 import 'evenement.dart';
 import 'export_bilan.dart';
 import 'gymnase.dart';
 import 'partage.dart';
 import 'theme.dart';
 
-/// Le classeur d'un tournoi clôturé, lu comme l'écran Après (EcranBilan) : mêmes données,
-/// même portée. Un gestionnaire limité n'a que ses gymnases (et pas les courses, qui
-/// concernent tout l'événement). Le classeur est construit par [construireExport], comme
-/// le bouton d'export de l'onglet Après.
-Future<Uint8List> construireExportTournoi({
+/// Ce qu'on lit d'un tournoi clôturé selon la portée de la personne : la lecture de
+/// l'export (F5) et celle du comparateur (F6) sont la même.
+class DonneesTournoi {
+  const DonneesTournoi({
+    required this.evenement,
+    required this.produits,
+    required this.gymnases,
+    required this.stocksReference,
+    required this.stocks,
+    required this.tableau,
+    required this.courses,
+    required this.apports,
+    required this.portee,
+  });
+
+  final Evenement evenement;
+  final List<ProduitEvenement> produits;
+
+  /// Les gymnases que la personne gère (tous, pour le responsable).
+  final List<Gymnase> gymnases;
+  final Map<String, Map<String, int>> stocksReference;
+  final Map<String, Map<String, int>> stocks;
+  final TableauDeBord tableau;
+
+  /// Null quand la personne n'a pas accès à tout l'événement (pas de courses).
+  final ListeCourses? courses;
+  final List<Apport> apports;
+  final PorteeGestion portee;
+}
+
+/// La portée de la personne sur un tournoi : tout pour le responsable, ses gymnases sinon.
+Future<PorteeGestion> porteeDe({
+  required DepotEvenements depot,
+  required Evenement evenement,
+  required String uid,
+  required bool responsable,
+}) async {
+  final mesGymnases = responsable
+      ? const <String>{}
+      : await depot.suivreMesGymnases(evenement.id, uid).first;
+  return PorteeGestion(
+    responsable: responsable,
+    gymnases: mesGymnases,
+    nbGymnases: evenement.nbGymnases,
+  );
+}
+
+/// Lit un tournoi comme l'écran Après (EcranBilan) : mêmes données, même portée. Un
+/// gestionnaire limité n'a que ses gymnases (et pas les courses, qui concernent tout
+/// l'événement).
+Future<DonneesTournoi> lireTournoi({
   required DepotEvenements depot,
   required Evenement evenement,
   required PorteeGestion portee,
@@ -50,20 +98,40 @@ Future<Uint8List> construireExportTournoi({
       portee.toutVoir ? await depot.suivreListeCourses(id).first : null;
   final tousApports = await depot.suivreApports(id).first;
   final visibles = {for (final g in gymnases) g.id};
-  return construireExport(
+  return DonneesTournoi(
     evenement: evenement,
     produits: produits,
     gymnases: gymnases,
     stocksReference: reference,
-    stocksActuels: stocks,
+    stocks: stocks,
     tableau: tableau,
     courses: courses,
-    coursesVisibles: portee.toutVoir,
-    limite: !portee.toutVoir,
     apports: [
       for (final a in tousApports)
         if (visibles.contains(a.gymnaseId)) a
     ],
+    portee: portee,
+  );
+}
+
+/// Le classeur d'un tournoi clôturé, comme le bouton d'export de l'onglet Après.
+Future<Uint8List> construireExportTournoi({
+  required DepotEvenements depot,
+  required Evenement evenement,
+  required PorteeGestion portee,
+}) async {
+  final d = await lireTournoi(depot: depot, evenement: evenement, portee: portee);
+  return construireExport(
+    evenement: d.evenement,
+    produits: d.produits,
+    gymnases: d.gymnases,
+    stocksReference: d.stocksReference,
+    stocksActuels: d.stocks,
+    tableau: d.tableau,
+    courses: d.courses,
+    coursesVisibles: d.portee.toutVoir,
+    limite: !d.portee.toutVoir,
+    apports: d.apports,
   );
 }
 
@@ -144,13 +212,11 @@ class _EtatExtraction extends State<EcranExtraction> {
 
   Future<void> _exporterTournoi(Evenement ev) => _executer(() async {
         final dev = widget.depot.evenements(widget.assoId);
-        final mesGymnases = widget.responsable
-            ? const <String>{}
-            : await dev.suivreMesGymnases(ev.id, widget.uid).first;
-        final portee = PorteeGestion(
+        final portee = await porteeDe(
+          depot: dev,
+          evenement: ev,
+          uid: widget.uid,
           responsable: widget.responsable,
-          gymnases: mesGymnases,
-          nbGymnases: ev.nbGymnases,
         );
         final octets = await construireExportTournoi(
             depot: dev, evenement: ev, portee: portee);
@@ -270,16 +336,45 @@ class _EtatExtraction extends State<EcranExtraction> {
             ),
             titreStyle: titre,
           ),
-          _Carte(
-            cle: const Key('carte_comparateur'),
-            titre: 'Comparer deux tournois',
-            texte: 'Deux tournois clôturés côte à côte. Bientôt disponible.',
-            enfant: const OutlinedButton(
-              key: Key('comparateur'),
-              onPressed: null,
-              child: Text('Comparer deux tournois'),
-            ),
-            titreStyle: titre,
+          StreamBuilder<List<Evenement>>(
+            stream: widget.depot
+                .evenements(widget.assoId)
+                .suivreEvenements(enCoursSeulement: false),
+            builder: (context, s) {
+              final clotures = [
+                for (final e in s.data ?? const <Evenement>[])
+                  if (e.cloture) e
+              ];
+              final assez = clotures.length >= 2;
+              return _Carte(
+                cle: const Key('carte_comparateur'),
+                titre: 'Comparer deux tournois',
+                texte: 'Deux tournois clôturés côte à côte : personnes, ventes, '
+                    'résultat, puis chaque produit. Export en Excel possible.',
+                enfant: OutlinedButton.icon(
+                  key: const Key('comparateur'),
+                  style: TypeAction.gerer.contour,
+                  onPressed: _occupe || !assez
+                      ? null
+                      : () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => EcranComparateur(
+                                depot: widget.depot.evenements(widget.assoId),
+                                uid: widget.uid,
+                                responsable: widget.responsable,
+                                tournois: clotures,
+                                partager: widget.partager,
+                              ),
+                            ),
+                          ),
+                  icon: const Icon(Icons.compare_arrows),
+                  label: Text(assez
+                      ? 'Comparer deux tournois'
+                      : 'Il faut deux tournois clôturés'),
+                ),
+                titreStyle: titre,
+              );
+            },
           ),
           if (_erreur != null)
             Padding(

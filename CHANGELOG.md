@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F6 : comparateur d'événements
+- Carte « Comparer deux tournois » : deux tournois clôturés côte à côte (personnes, jours, ventes, total, coût des courses, résultat), puis par produit retrouvé par son nom les quantités vendues et la consommation par personne et par jour avec l'écart (« — » si absent d'un côté), export Excel aux couleurs de l'application. Aucun nouveau calcul de bilan, aucune dépendance. Tests : 466, parcours Android vert.
+
 ## 11/11/2026 — Mission « Retours du terrain », F5 : écran « Extraction et modèle »
 - Nouveau bouton « Extraction et modèle » à côté de « Menus » (responsable et gestionnaires seulement). Quatre cartes : modèle vierge, données de l'association (menu, recettes, prévision d'un menu choisi), export d'un tournoi clôturé (même classeur que l'onglet Après, limité aux gymnases de la personne), comparateur (désactivé jusqu'à F6). Aucune dépendance ajoutée. Tests : 456, 2 parcours Android verts.
 

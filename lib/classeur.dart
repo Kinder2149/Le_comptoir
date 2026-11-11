@@ -5,6 +5,7 @@ import 'package:archive/archive.dart' show Archive, ArchiveFile, ZipDecoder, Zip
 
 import 'package:excel/excel.dart';
 
+import 'comparaison.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
 import 'depot_menus.dart';
@@ -665,6 +666,7 @@ const _voletsFiges = {
   feuilleStock: 6,
   feuilleHistorique: 6,
   feuilleCourses: 6,
+  feuilleComparaisonProduits: 6,
 };
 
 /// Lignes Excel couvertes par les listes déroulantes (de la première donnée à la 500e).
@@ -974,6 +976,108 @@ Uint8List construireExport({
       courses, coursesVisibles, limite, apports);
   return _octets(classeur);
 }
+
+/// Feuilles du classeur du comparateur (décision 74).
+const feuilleComparaisonSynthese = 'Synthèse';
+const feuilleComparaisonProduits = 'Produits';
+
+/// Le classeur du comparateur : la feuille Synthèse (les deux tournois côte à côte) et la
+/// feuille Produits (ventes, consommation et écart de chaque produit), aux couleurs de
+/// l'application comme les autres classeurs.
+Uint8List construireComparaison({
+  required String nomA,
+  required String nomB,
+  required List<LigneSynthese> synthese,
+  required List<ComparaisonProduit> produits,
+}) {
+  final classeur = Excel.createExcel();
+  final defaut = classeur.getDefaultSheet() ?? 'Sheet1';
+  classeur.rename(defaut, feuilleComparaisonSynthese);
+  _ecrireSynthese(classeur, nomA, nomB, synthese);
+  _feuilleDonnees(
+    classeur,
+    feuilleComparaisonProduits,
+    titre: 'Produits',
+    sousTitre: '$nomA contre $nomB',
+    aide: 'Ventes et consommation par personne et par jour de chaque produit, '
+        'retrouvé par son nom. « — » : produit absent de ce tournoi, ou chiffre non '
+        'calculable (personnes ou jours non réglés). Écart : second tournoi moins premier.',
+    entetes: [
+      'Produit',
+      'Vendus : $nomA',
+      'Vendus : $nomB',
+      'Par personne et par jour : $nomA',
+      'Par personne et par jour : $nomB',
+      'Écart (B moins A)',
+    ],
+    largeurs: const [28, 16, 16, 22, 22, 18],
+    calcul: const {3, 4, 5},
+    formats: {3: _formatDecimal, 4: _formatDecimal, 5: _formatDecimal},
+    lignes: [
+      for (final p in produits)
+        [
+          TextCellValue(p.nom),
+          _ouTiret(p.vendusA == null ? null : IntCellValue(p.vendusA!)),
+          _ouTiret(p.vendusB == null ? null : IntCellValue(p.vendusB!)),
+          _ouTiret(p.consoA == null ? null : DoubleCellValue(p.consoA!)),
+          _ouTiret(p.consoB == null ? null : DoubleCellValue(p.consoB!)),
+          _ouTiret(p.ecart == null ? null : DoubleCellValue(p.ecart!)),
+        ],
+    ],
+  );
+  classeur.setDefaultSheet(feuilleComparaisonSynthese);
+  final octets = classeur.encode();
+  if (octets == null) {
+    throw const ClasseurIllisible('Le classeur n\'a pas pu être construit.');
+  }
+  return _avecVolets(Uint8List.fromList(octets));
+}
+
+CellValue _ouTiret(CellValue? v) => v ?? TextCellValue('—');
+
+/// La feuille Synthèse : un indicateur par ligne, les deux tournois en colonnes.
+void _ecrireSynthese(
+    Excel classeur, String nomA, String nomB, List<LigneSynthese> lignes) {
+  final f = classeur[feuilleComparaisonSynthese];
+  const largeur = 3;
+  _bandeau(f, largeur, 'Comparaison de deux tournois', '$nomA contre $nomB');
+  _aideLigne(
+      f,
+      largeur,
+      'Les chiffres de chaque tournoi, comme au bilan. « — » : chiffre non disponible '
+      '(courses non visibles ou non validées, personnes ou jours non réglés).');
+  f.setRowHeight(5, 30);
+  final entetes = ['Indicateur', nomA, nomB];
+  final largeurs = [30.0, 24.0, 24.0];
+  for (var c = 0; c < largeur; c++) {
+    _poser(f, 5, c, TextCellValue(entetes[c]), _styleEntete());
+    f.setColumnWidth(c, largeurs[c]);
+  }
+  for (var r = 0; r < lignes.length; r++) {
+    final l = lignes[r];
+    final ligne = _premiereLigne + r;
+    _poser(f, ligne, 0, TextCellValue(l.libelle), _styleSaisie());
+    _poser(f, ligne, 1, _valeurSynthese(l.a, l.unite),
+        _styleCalcul(nombre: l.a != null, format: _formatSynthese(l.unite)));
+    _poser(f, ligne, 2, _valeurSynthese(l.b, l.unite),
+        _styleCalcul(nombre: l.b != null, format: _formatSynthese(l.unite)));
+  }
+}
+
+CellValue _valeurSynthese(num? v, Unite unite) {
+  if (v == null) return TextCellValue('—');
+  return switch (unite) {
+    Unite.nombre => IntCellValue(v.toInt()),
+    Unite.decimal => DoubleCellValue(v.toDouble()),
+    Unite.euros => DoubleCellValue(v / 100),
+  };
+}
+
+NumFormat _formatSynthese(Unite unite) => switch (unite) {
+      Unite.nombre => NumFormat.standard_0,
+      Unite.decimal => _formatDecimal,
+      Unite.euros => _formatEuros,
+    };
 
 /// Les lignes de l'Historique de l'export : une par gymnase et par produit.
 List<List<CellValue?>> _lignesHistoriqueExport(Evenement evenement,
