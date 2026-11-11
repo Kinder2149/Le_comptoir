@@ -627,6 +627,8 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             revenirAuMenu: () => widget.depot.revenirAuMenu(ev.id),
             chargerReferences: widget.depot.lireReferences,
             appliquerReference: (r) => widget.depot.appliquerReference(ev.id, r),
+            annulable: widget.depot.suivreAnnulation(ev.id),
+            annulerChangement: () => widget.depot.annulerChangementPrevision(ev.id),
             definirPrevisionVerifiee: (v) =>
                 widget.depot.definirPrevisionVerifiee(ev.id, v),
             onVoirCourses: portee.toutVoir

@@ -603,19 +603,57 @@ class DepotEvenements {
     }
   }
 
-  Future<Set<String>> _idsPrevisions(String evenementId) async => {
-        for (final d in (await _previsions(evenementId)
-                .get(const GetOptions(source: Source.server)))
-            .docs)
-          d.id,
-      };
+  /// Les prévisions lues sur le serveur (produit -> chiffre et source).
+  Future<Map<String, Prevision>> _lirePrevisions(String evenementId) async {
+    final s = await _previsions(evenementId).get(const GetOptions(source: Source.server));
+    return {
+      for (final d in s.docs)
+        if (d.data()['conso'] is num && d.data()['source'] is String)
+          d.id: Prevision(
+              (d.data()['conso'] as num).toDouble(), d.data()['source'] as String),
+    };
+  }
 
-  /// Remet tous les produits au chiffre du menu (efface les prévisions).
-  Future<void> revenirAuMenu(String evenementId) async => _appliquerPrevisions(
-        evenementId,
-        ecrire: const {},
-        effacer: await _idsPrevisions(evenementId),
-      );
+  /// Le document d'annulation : l'état d'avant le dernier changement de source (un seul,
+  /// « dernier »). Décision 79 a, mission « Annuler un changement de source » (T5).
+  DocumentReference<Map<String, dynamic>> _annulation(String evenementId) =>
+      _evenements.doc(evenementId).collection('previsions_annulation').doc('dernier');
+
+  /// Range l'état d'avant un changement de source. Liste vide = aucune prévision.
+  Future<void> _rangerAnnulation(String evenementId, Map<String, Prevision> avant) =>
+      _annulation(evenementId).set({
+        'lignes': lignesAnnulation(avant),
+        'creeLe': FieldValue.serverTimestamp(),
+      });
+
+  /// Remet tous les produits au chiffre du menu (efface les prévisions). Ce n'est pas un
+  /// changement annulable : le document d'annulation d'un changement précédent est effacé.
+  Future<void> revenirAuMenu(String evenementId) async {
+    final avant = await _lirePrevisions(evenementId);
+    await _appliquerPrevisions(evenementId, ecrire: const {}, effacer: avant.keys);
+    await _annulation(evenementId).delete();
+  }
+
+  /// « Annuler ce changement » : remet exactement les prévisions d'avant le dernier
+  /// changement de source (corrections à la main comprises), puis efface le document.
+  /// Sans document, rien à annuler : ne fait rien.
+  Future<void> annulerChangementPrevision(String evenementId) async {
+    final s = await _annulation(evenementId).get(const GetOptions(source: Source.server));
+    if (!s.exists) return;
+    final voulues = previsionsDepuisAnnulation(s.data()?['lignes']);
+    final actuelles = await _lirePrevisions(evenementId);
+    await _appliquerPrevisions(
+      evenementId,
+      ecrire: voulues,
+      effacer: actuelles.keys.where((id) => !voulues.containsKey(id)),
+    );
+    await _annulation(evenementId).delete();
+  }
+
+  /// Le document d'annulation en direct : un autre téléphone voit le bouton « Annuler ce
+  /// changement » apparaître ou disparaître.
+  Stream<bool> suivreAnnulation(String evenementId) =>
+      _annulation(evenementId).snapshots().compte('annulation').map((d) => d.exists);
 
   /// Produits d'un événement, lus une fois sur le serveur (sans stock).
   Future<List<ProduitEvenement>> _lireProduits(String evenementId) async {
@@ -677,11 +715,12 @@ class DepotEvenements {
       jours: passe.jours,
     );
     final source = sourceEvenement(passe.nom);
-    final existantes = await _idsPrevisions(evenementId);
+    final avant = await _lirePrevisions(evenementId);
+    await _rangerAnnulation(evenementId, avant);
     await _appliquerPrevisions(
       evenementId,
       ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
-      effacer: existantes.where((id) => !conso.containsKey(id)),
+      effacer: avant.keys.where((id) => !conso.containsKey(id)),
     );
   }
 
@@ -733,11 +772,12 @@ class DepotEvenements {
     final source = reference.nom.length <= sourceLongueurMax
         ? reference.nom
         : reference.nom.substring(0, sourceLongueurMax);
-    final existantes = await _idsPrevisions(evenementId);
+    final avant = await _lirePrevisions(evenementId);
+    await _rangerAnnulation(evenementId, avant);
     await _appliquerPrevisions(
       evenementId,
       ecrire: {for (final e in conso.entries) e.key: Prevision(e.value, source)},
-      effacer: existantes.where((id) => !conso.containsKey(id)),
+      effacer: avant.keys.where((id) => !conso.containsKey(id)),
     );
   }
 
@@ -1157,3 +1197,30 @@ class _Partage<T> {
         };
       }, isBroadcast: true);
 }
+
+// ---------- Annulation d'un changement de source (T5, décision 79 a) ----------
+
+/// Le champ `lignes` du document d'annulation : produit -> {conso, source}.
+Map<String, Map<String, Object>> lignesAnnulation(Map<String, Prevision> avant) => {
+      for (final e in avant.entries)
+        e.key: {'conso': e.value.conso, 'source': e.value.source},
+    };
+
+/// Les prévisions relues du champ `lignes`. Une entrée hors format est ignorée (les règles
+/// ne laissent jamais l'écrire).
+Map<String, Prevision> previsionsDepuisAnnulation(Object? lignes) {
+  if (lignes is! Map) return const {};
+  final res = <String, Prevision>{};
+  for (final e in lignes.entries) {
+    final v = e.value;
+    if (e.key is String &&
+        v is Map &&
+        v['conso'] is num &&
+        v['source'] is String) {
+      res[e.key as String] =
+          Prevision((v['conso'] as num).toDouble(), v['source'] as String);
+    }
+  }
+  return res;
+}
+

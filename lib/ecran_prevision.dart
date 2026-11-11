@@ -30,6 +30,8 @@ class EcranPrevision extends StatelessWidget {
     required this.appliquerReference,
     this.definirPrevisionVerifiee,
     this.onVoirCourses,
+    this.annulable,
+    this.annulerChangement,
   });
 
   final Stream<Evenement?> evenement;
@@ -57,6 +59,11 @@ class EcranPrevision extends StatelessWidget {
   /// Renvoi vers la liste de courses (null = pas de renvoi).
   final VoidCallback? onVoirCourses;
 
+  /// « Annuler ce changement » : le flux dit si un changement de source est annulable (il
+  /// suit les autres téléphones), et l'action qui le remet (null = pas de bouton).
+  final Stream<bool>? annulable;
+  final Future<void> Function()? annulerChangement;
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Evenement?>(
@@ -67,20 +74,25 @@ class EcranPrevision extends StatelessWidget {
           stream: produits,
           builder: (context, sP) => StreamBuilder<Map<String, Prevision>>(
             stream: previsions,
-            builder: (context, sPrev) {
-              final ev = sEv.data;
-              final tous = sG.data;
-              final liste = sP.data;
-              final charge = ev != null && tous != null && liste != null;
-              return Scaffold(
-                appBar: AppBar(title: const Text('Prévision')),
-                body: !charge
-                    ? const Center(child: CircularProgressIndicator())
-                    : _corps(context, ev, tous, liste, sPrev.data, sPrev.hasError),
-                bottomNavigationBar:
-                    !charge || !portee.toutVoir ? null : _pied(ev),
-              );
-            },
+            builder: (context, sPrev) => StreamBuilder<bool>(
+              stream: annulable ?? Stream.value(false),
+              builder: (context, sAnn) {
+                final ev = sEv.data;
+                final tous = sG.data;
+                final liste = sP.data;
+                final charge = ev != null && tous != null && liste != null;
+                final peutAnnuler = sAnn.data == true && annulerChangement != null;
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Prévision')),
+                  body: !charge
+                      ? const Center(child: CircularProgressIndicator())
+                      : _corps(context, ev, tous, liste, sPrev.data, sPrev.hasError,
+                          peutAnnuler),
+                  bottomNavigationBar:
+                      !charge || !portee.toutVoir ? null : _pied(ev),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -94,6 +106,7 @@ class EcranPrevision extends StatelessWidget {
     List<ProduitEvenement> liste,
     Map<String, Prevision>? enregistrees,
     bool erreur,
+    bool peutAnnuler,
   ) {
     if (!portee.toutVoir) {
       return ListView(
@@ -135,7 +148,7 @@ class EcranPrevision extends StatelessWidget {
       enTete: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _bandeau(context, ev, personnes, enregistrees, lignes, reglable),
+          _bandeau(context, ev, personnes, enregistrees, lignes, reglable, peutAnnuler),
           const SizedBox(height: 12),
           Text(
             reglable
@@ -170,6 +183,7 @@ class EcranPrevision extends StatelessWidget {
     Map<String, Prevision>? enregistrees,
     List<PrevisionProduit> lignes,
     bool reglable,
+    bool peutAnnuler,
   ) {
     final nPersonnes = '$personnes personne${personnes > 1 ? 's' : ''}';
     final nJours = '${formaterJours(ev.nbJours)} jour${ev.nbJours == 1 ? '' : 's'}';
@@ -227,6 +241,16 @@ class EcranPrevision extends StatelessWidget {
                       : () => _revenir(context, aLaMain),
                   child: const Text('Revenir au menu'),
                 ),
+                if (peutAnnuler)
+                  OutlinedButton(
+                    key: const Key('prevision_annuler_changement'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white70),
+                    ),
+                    onPressed: () => _annuler(context, aLaMain),
+                    child: const Text('Annuler ce changement'),
+                  ),
               ],
             ),
           ],
@@ -398,6 +422,25 @@ class EcranPrevision extends StatelessWidget {
 
   static const _perteCorrections =
       'Des chiffres corrigés à la main seront remplacés. Continuer ?';
+
+  static const _perteAnnulation =
+      'Les chiffres corrigés à la main depuis ce changement seront remplacés. Continuer ?';
+
+  /// « Annuler ce changement » : remet les chiffres d'avant le dernier changement de source.
+  Future<void> _annuler(BuildContext context, bool aLaMain) async {
+    final annuler = annulerChangement;
+    if (annuler == null) return;
+    if (aLaMain && !await _confirmer(context, _perteAnnulation)) return;
+    try {
+      await annuler();
+      if (context.mounted) {
+        _dire(context, 'Le changement de source est annulé : les chiffres d\'avant sont revenus.',
+            const Key('prevision_annulee'));
+      }
+    } catch (_) {
+      if (context.mounted) montrerErreurEnregistrement(context);
+    }
+  }
 
   Future<void> _revenir(BuildContext context, bool aLaMain) async {
     if (aLaMain && !await _confirmer(context, _perteCorrections)) return;

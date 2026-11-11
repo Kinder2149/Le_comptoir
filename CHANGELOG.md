@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T5 : annuler un changement de source
+- Prévision : « Annuler ce changement » remet exactement les chiffres d'avant le dernier changement de source (corrections à la main comprises), lisible aussi sur un autre téléphone ; une seule annulation (la dernière) ; « Revenir au menu » inchangé et efface l'annulation en attente. Nouveau document d'annulation côté serveur : règles déployées le 11/11/2026 (accord donné pour la mission), suppression de l'association mise à jour. Tests : 500 de logique et d'écrans, 266 de règles.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T4 : ajouter un produit
 - Bouton « Ajouter un produit » dans « Produits et images » (événement en préparation ou en cours, jamais clôturé) : le produit est créé dans l'événement et dans le menu d'origine en un seul lot (si le menu est introuvable ou plein, ajout à l'événement seulement, avec un message) ; nom en double refusé ; noms et prix existants inchangés. Visible en stock de départ, prévision, courses et caisse. Règles d'accès inchangées (6 tests de règles ajoutés, bénévole refusé). Tests : 491 de logique et d'écrans, 261 de règles, parcours Android vert.
 
