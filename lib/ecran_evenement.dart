@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
+import 'actualisation.dart';
+
 import 'courses.dart';
 import 'depot_associations.dart';
 import 'depot_caisses.dart';
@@ -372,7 +374,19 @@ class EcranEvenement extends StatelessWidget {
                 ),
             ],
           ),
-          body: ListView(
+          body: actualisable(
+            relire: () async {
+              Set<String>? gymnases;
+              if (peutModifier && !responsable) {
+                gymnases = await depot.suivreMesGymnases(ev.id, uid).first;
+              }
+              await depot.actualiser(ev.id,
+                  gymnases: gymnases,
+                  avecCaisses: peutModifier,
+                  avecCourses: peutModifier && responsable);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               Text(
@@ -479,6 +493,7 @@ class EcranEvenement extends StatelessWidget {
                 ),
               ],
             ],
+          ),
           ),
         );
       },
@@ -689,7 +704,10 @@ class _EtatBlocGestion extends State<_BlocGestion> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: const Text('Caisses en direct')),
-          body: ListView(
+          body: actualisable(
+            relire: () => widget.depot.actualiser(widget.evenement.id, gymnases: portee.filtre),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               SuiviEnDirect(
@@ -704,6 +722,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -712,10 +731,16 @@ class _EtatBlocGestion extends State<_BlocGestion> {
   void _ouvrirBilan(BuildContext context, Evenement ev, PorteeGestion portee) {
     // Le bilan a ses propres flux, pas ceux du suivi.
     final flux = _creerFlux();
+    final evenementEnDirect = widget.depot.suivreEvenement(ev.id);
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => EcranBilan(
           evenement: ev,
+          evenementEnDirect: evenementEnDirect,
+          actualiser: () => widget.depot.actualiser(ev.id,
+              gymnases: portee.filtre,
+              avecCourses: portee.toutVoir,
+              avecApports: true),
           tableau: flux.tableau,
           produits: flux.produits,
           gymnases: flux.gymnases,

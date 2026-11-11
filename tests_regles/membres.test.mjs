@@ -167,3 +167,22 @@ test('personne ne modifie le prénom d’un membre ; un bénévole ne se supprim
   assert.equal(await lot(admin, [mise(membre(id, lea.uid), { prenom: { stringValue: 'Lea' } }, ['prenom'])]), 200);
   assert.ok(randomUUID());
 });
+
+test('critère 6 : un gestionnaire ne retire aucun membre et ne nomme personne', async () => {
+  const { chef, gestionnaire, lea, id } = await assoAvecGestionnaire();
+  const zoe = await beneviloGoogle(id);
+  await lot(chef, [nommer(id, zoe.uid)]);
+  // Retrait (changement de rôle) : refusé pour un bénévole, un nommé, le responsable, soi-même.
+  assert.equal(await lot(gestionnaire, [retirer(id, lea.uid)]), 403);
+  assert.equal(await lot(gestionnaire, [retirer(id, zoe.uid)]), 403);
+  assert.equal(await lot(gestionnaire, [retirer(id, chef.uid)]), 403);
+  assert.equal(await lot(gestionnaire, [retirer(id, gestionnaire.uid)]), 403);
+  // Suppression du membre (retrait de l'association) : refusée.
+  assert.equal(await lot(gestionnaire, [{ delete: `${RACINE}/${membre(id, lea.uid)}` }]), 403);
+  assert.equal(await lot(gestionnaire, [{ delete: `${RACINE}/${membre(id, zoe.uid)}` }]), 403);
+  // Nomination : refusée, y compris pour un bénévole.
+  assert.equal(await lot(gestionnaire, [nommer(id, lea.uid)]), 403);
+  // Témoin : le responsable, lui, retire le nommé.
+  assert.equal(await lot(chef, [retirer(id, zoe.uid)]), 200);
+  assert.equal((await champ(id, zoe.uid, 'role')).stringValue, 'benevole');
+});

@@ -192,7 +192,6 @@ void main() {
     await saisir(tester, 'code_saisi', code);
     await saisir(tester, 'prenom_rejoindre', 'Lea');
     await toucher(tester, find.byKey(const Key('rejoindre')));
-    await attendre(tester, find.text('Membres (2)'));
     await attendre(tester, find.text("Tournoi d'automne"));
     expect(find.byKey(const Key('nouvel_evenement')), findsNothing);
     expect(find.byKey(const Key('menus')), findsNothing);

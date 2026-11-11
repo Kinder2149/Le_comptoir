@@ -22,11 +22,11 @@ import 'outils.dart';
 //   Modèle de 27 produits ; événement « Tournoi » : 2 jours, gymnase A = 40 personnes,
 //   gymnase B = 30 personnes (80 et 60 « personnes-jours »).
 //   Consommations du modèle : croque standard 0,65, végé 0,45, tartiflette 0,6, café 1,3
-//   (4 verres/L), Coca 0,32 (4 verres/L), tarte 1 (apportée).
+//   (4 verres/L), Cola 0,32 (4 verres/L), tarte 1 (apportée).
 //   Croques (arrondis au-dessus par gymnase) : A 52 + 36 + 48 = 136, B 39 + 27 + 36 = 102 = 238
 //            -> pain de mie 2×238 = 476 tranches ; jambon 0,45×(100+75) = 78,75 -> 79 ;
 //            gruyère 16 g×91 = 1,456 kg ; beurre 5 g×238 = 1,19 kg ; chèvre 25 g×63 = 1 575 g.
-//   Café   : 104 + 78 = 182 verres / 4 = 45,5 L.     Coca : 26 + 20 = 46 verres / 4 = 11,5 L.
+//   Café   : 104 + 78 = 182 verres / 4 = 45,5 L.     Cola : 26 + 20 = 46 verres / 4 = 11,5 L.
 //   Tarte  : apportée, hors courses ; stock de 80 posé à la main au gymnase A.
 //   Coût des courses : 40,00 €. Le stock gagne exactement les quantités prévues (le pain de mie,
 //   acheté pile, limite chaque croque).
@@ -99,7 +99,7 @@ void main() {
     final gB = gymnases.firstWhere((g) => g.nom == 'Gymnase B').id;
     final produits = await depotEv.suivreProduits(evtId).first;
     String id(String nom) => produits.firstWhere((p) => p.nom == nom).id;
-    final croque = id('Croque-monsieur'), cafe = id('Café'), coca = id('Coca');
+    final croque = id('Croque-monsieur'), cafe = id('Café'), coca = id('Cola');
     final tarte = id('Tarte'), crepe = id('Crêpes (3 petites)');
 
     Future<Map<String, dynamic>?> stock(String g, String p) async => (await db
@@ -134,7 +134,7 @@ void main() {
     expect(texte(tester, 'achat_beurre|g'), 'Beurre : 1,19 kg'); // 238 x 5 g
     expect(texte(tester, 'achat_buche de chevre|g'), 'Bûche de chèvre : 1,57 kg'); // 63 x 25 g = 1 575 g (1,575 s'affiche 1,57 : arrondi binaire)
     expect(texte(tester, 'achat_produit:$cafe'), 'Café : 45,5 L'); // (104 + 78) verres / 4
-    expect(texte(tester, 'achat_produit:$coca'), 'Coca : 11,5 L'); // (26 + 20) verres / 4
+    expect(texte(tester, 'achat_produit:$coca'), 'Cola : 11,5 L'); // (26 + 20) verres / 4
     await ongletCourses(tester, dejaAchete: false);
     await attendreTexte(tester, 'etat_courses', 'Enregistré');
 

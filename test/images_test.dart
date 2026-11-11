@@ -64,8 +64,8 @@ void main() {
           modele.map((p) => p.nom),
           containsAll([
             'Croque-monsieur', 'Croque végé', 'Croque tartiflette', 'Café', 'Thé',
-            'Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes',
-            'Bière', 'Mars', 'Twix', 'Snickers', 'Fruit', 'Tarte', 'Flan',
+            'Cola', 'Cola zéro', 'Soda à l\'orange', 'Thé glacé', 'Boisson fruitée', 'Jus de pommes',
+            'Bière', 'Barre caramel', 'Barre biscuitée', 'Barre cacahuète', 'Fruit', 'Tarte', 'Flan',
             'Gâteau salé (quiche)', 'Salade', 'Crêpes (3 petites)', 'Sucette',
             'Chocolat chaud', 'Bonbons (offerts)',
           ]));
@@ -105,7 +105,7 @@ void main() {
       expect(m['Café']!.fiche.conso, 1.3);
       expect(m['Café']!.prixCentimes, 50);
       // Boissons froides : 4 verres de 25 cl par litre ; la bière à 2 €.
-      for (final n in ['Coca', 'Coca Zéro', 'Fanta', 'Ice Tea', 'Oasis', 'Jus de pommes']) {
+      for (final n in ['Cola', 'Cola zéro', 'Soda à l\'orange', 'Thé glacé', 'Boisson fruitée', 'Jus de pommes']) {
         expect(m[n]!.fiche.verresParLitre, 4, reason: n);
         expect(m[n]!.prixCentimes, 100, reason: n);
       }

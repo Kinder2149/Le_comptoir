@@ -202,12 +202,12 @@ void main() {
         (tester) async {
       await ouvrir(tester, produits: const [Produit('croque', 'Croque-monsieur', 300, 1)]);
       expect(find.text('Stock : 1'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('produit_croque')));
-      await tester.pump();
-      expect(find.byKey(const Key('alerte_stock')), findsNothing); // 1 en stock, 1 vendu
+      // Le dernier exemplaire atteint le stock : le message s'affiche.
       await tester.tap(find.byKey(const Key('produit_croque')));
       await tester.pump();
       expect(find.byKey(const Key('alerte_stock')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('produit_croque')));
+      await tester.pump();
       expect(find.textContaining('Stock épuisé : Croque-monsieur'), findsOneWidget);
       // L'article est bien ajouté malgré l'avertissement.
       expect(total(tester), 'Total : 6,00 €');
@@ -216,6 +216,44 @@ void main() {
       await tester.tap(find.byKey(const Key('encaisser_carte')));
       await tester.pump();
       expect(find.byKey(const Key('alerte_stock')), findsNothing);
+      expect(total(tester), 'Total : 0,00 €');
+    });
+
+    testWidgets("l'avertissement suit le ticket : retirer la ligne l'efface, la remettre le ramène",
+        (tester) async {
+      await ouvrir(tester, produits: const [
+        Produit('croque', 'Croque-monsieur', 300, 1),
+        Produit('flan', 'Flan', 200, 1),
+        _cafe,
+      ]);
+      await tester.tap(find.byKey(const Key('produit_croque')));
+      await tester.pump();
+      expect(find.byKey(const Key('alerte_stock')), findsOneWidget);
+      // Je retire la ligne : plus de message, total à zéro.
+      await tester.tap(find.byKey(const Key('retirer_croque')));
+      await tester.pump();
+      expect(find.byKey(const Key('alerte_stock')), findsNothing);
+      expect(total(tester), 'Total : 0,00 €');
+      // Je la remets : il revient.
+      await tester.tap(find.byKey(const Key('produit_croque')));
+      await tester.pump();
+      expect(find.byKey(const Key('alerte_stock')), findsOneWidget);
+      // Deux produits en rupture : le message les nomme ; j'en retire un.
+      await tester.tap(find.byKey(const Key('produit_flan')));
+      await tester.pump();
+      expect(find.textContaining('Croque-monsieur, Flan'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('retirer_croque')));
+      await tester.pump();
+      expect(find.textContaining('Stock épuisé : Flan.'), findsOneWidget);
+      expect(find.textContaining('Stock épuisé : Croque'), findsNothing);
+      // Un produit sans suivi de stock n'a jamais d'alerte ; la vente n'est jamais bloquée.
+      await tester.tap(find.byKey(const Key('retirer_flan')));
+      await tester.tap(find.byKey(const Key('produit_cafe')));
+      await tester.pump();
+      expect(find.byKey(const Key('alerte_stock')), findsNothing);
+      await tester.tap(find.byKey(const Key('produit_flan')));
+      await tester.tap(find.byKey(const Key('encaisser_carte')));
+      await tester.pump();
       expect(total(tester), 'Total : 0,00 €');
     });
 

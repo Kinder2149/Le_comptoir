@@ -22,10 +22,15 @@ void main() {
     expect(texte(tester, 'nom'), 'Club Test');
     final code1 = texte(tester, 'code');
     expect(code1.length, 6);
+    // La liste des membres est dans Paramètres : on y vérifie le responsable.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byKey(const Key('parametres')));
     await attendre(tester, find.text('Chef'));
     expect(find.text('Responsable'), findsOneWidget);
     // « Changer le code » n'est plus sur l'écran principal : il est dans Paramètres.
     expect(find.byKey(const Key('regenerer')), findsNothing);
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump(const Duration(milliseconds: 500));
 
     // --- Le responsable change le code, depuis Paramètres.
     await tester.tap(find.byKey(const Key('parametres')));
@@ -68,10 +73,18 @@ void main() {
     await attendre(tester, find.byKey(const Key('code')));
     expect(texte(tester, 'nom'), 'Club Test');
     expect(texte(tester, 'code'), code2);
-    await attendre(tester, find.text('Membres (2)'));
-    expect(find.text('Chef'), findsOneWidget);
-    expect(find.text('Lea'), findsOneWidget);
-    expect(find.text('Bénévole'), findsOneWidget);
+    // Un bénévole ne voit pas la liste des membres (Paramètres : droits seulement).
+    // Le bouton reste inactif tant que le membre n'est pas chargé : on retente le geste.
+    for (var i = 0; i < 60; i++) {
+      if (find.byKey(const Key('qui_peut_quoi')).evaluate().isNotEmpty) break;
+      if (find.byKey(const Key('parametres')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('parametres')));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await attendre(tester, find.byKey(const Key('qui_peut_quoi')));
+    expect(find.text('Chef'), findsNothing);
+    expect(find.text('Bénévole'), findsNothing);
     // Un bénévole ne peut pas changer le code, et n'a pas de compte Google.
     expect(find.byKey(const Key('regenerer')), findsNothing);
     expect(auth.currentUser!.isAnonymous, isTrue);

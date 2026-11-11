@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'actualisation.dart';
+
 import 'depot_associations.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
@@ -80,7 +82,10 @@ class EcranGymnases extends StatelessWidget {
           appBar: AppBar(title: const Text('Gymnases et stocks')),
           body: gymnases == null
               ? const Center(child: CircularProgressIndicator())
-              : ListView(
+              : actualisable(
+                relire: () => depot.actualiser(evenementId, gymnases: portee.filtre),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
                   children: [
                     Padding(
@@ -172,6 +177,7 @@ class EcranGymnases extends StatelessWidget {
                     ],
                   ],
                 ),
+              ),
         );
       },
     );

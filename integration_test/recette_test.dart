@@ -273,10 +273,13 @@ void main() {
     // Gus est rattaché au gymnase A : sans cela il ne verrait aucune vente.
     await depotEv.definirRattachement(evt.id, gusUid, {gA});
     await ouvrir(tester, 'chef2', googleAnnule);
-    await attendre(tester, find.byKey(Key('nommer_$gusUid')));
+    await attendre(tester, find.byKey(const Key('parametres')));
+    await tester.pump(const Duration(seconds: 1));
+    await toucher(tester, find.byKey(const Key('parametres')));
+    await attendre(tester, find.byKey(Key('param_nommer_$gusUid')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(Key('nommer_$gusUid')));
-    await attendreTexte(tester, 'statut_$gusUid', 'Gestionnaire en attente');
+    await toucher(tester, find.byKey(Key('param_nommer_$gusUid')));
+    await attendreTexte(tester, 'param_statut_$gusUid', 'Gestionnaire en attente');
 
     await changerDeSession(tester, () async {
       await auth.signInWithEmailAndPassword(

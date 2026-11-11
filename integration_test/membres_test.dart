@@ -8,6 +8,7 @@ import 'outils.dart';
 
 // Léa est un compte e-mail créé par le test (pas Google, pas anonyme) : on peut
 // donc se reconnecter à son compte après avoir changé d'utilisateur.
+// La liste des membres est dans Paramètres (responsable et gestionnaires actifs).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(initialiser);
@@ -45,6 +46,25 @@ void main() {
     await connexion();
   }
 
+  /// Ouvre Paramètres depuis l'écran de l'association.
+  Future<void> ouvrirParametres(WidgetTester tester) async {
+    // Le bouton reste inactif tant que le membre n'est pas chargé : on retente le geste.
+    for (var i = 0; i < 60; i++) {
+      if (find.byKey(const Key('mon_statut')).evaluate().isNotEmpty) break;
+      if (find.byKey(const Key('parametres')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('parametres')));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await attendre(tester, find.byKey(const Key('mon_statut')));
+  }
+
+  /// Revient à l'écran de l'association.
+  Future<void> fermerParametres(WidgetTester tester) async {
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await finTransition(tester);
+  }
+
   testWidgets('gestionnaires : nommer, activer avec Google, retirer',
       (tester) async {
     final auth = FirebaseAuth.instance;
@@ -63,7 +83,7 @@ void main() {
     DocumentReference<Map<String, dynamic>> refLea(String uid) =>
         db.collection('associations').doc(assoId).collection('membres').doc(uid);
 
-    // --- Léa rejoint comme bénévole : rien à gérer, pas de pastille.
+    // --- Léa rejoint comme bénévole : pas de liste des membres, pas de pastille.
     await changerDeSession(tester, () async {
       await auth.createUserWithEmailAndPassword(
           email: 'lea@test.fr', password: 'secret12');
@@ -74,16 +94,16 @@ void main() {
     await tester.enterText(find.byKey(const Key('prenom_rejoindre')), 'Lea');
     await toucher(tester, find.byKey(const Key('rejoindre')));
     await attendre(tester, find.byKey(const Key('parametres')));
-    await attendre(tester, find.text('Membres (2)'));
     final leaUid = auth.currentUser!.uid;
     expect(find.text('+1'), findsNothing);
     expect(find.byKey(const Key('menus')), findsNothing);
-    expect(find.byKey(Key('nommer_$leaUid')), findsNothing); // pas son rôle
-    await toucher(tester, find.byKey(const Key('parametres')));
-    await attendre(tester, find.byKey(const Key('mon_statut')));
+    await ouvrirParametres(tester);
     expect(texte(tester, 'mon_statut'), 'Statut : Bénévole');
     expect(texte(tester, 'ma_connexion'), 'Connexion Google : non');
     expect(find.byKey(const Key('activer_gestionnaire')), findsNothing);
+    expect(find.byKey(Key('param_membre_$chefUid')), findsNothing); // pas de liste
+    expect(find.byKey(const Key('qui_peut_quoi')), findsOneWidget);
+    await fermerParametres(tester);
 
     // --- Le responsable nomme Léa : « en attente ».
     await changerDeSession(tester, () async {
@@ -91,15 +111,19 @@ void main() {
     });
     expect(auth.currentUser!.uid, chefUid);
     await ouvrir(tester, 'chef2', googleAnnule);
-    await attendre(tester, find.byKey(Key('nommer_$leaUid')));
+    await attendre(tester, find.byKey(const Key('parametres')));
+    await ouvrirParametres(tester);
+    await attendre(tester, find.byKey(Key('param_nommer_$leaUid')));
     await finTransition(tester);
-    expect(texte(tester, 'statut_$leaUid'), 'Bénévole');
-    expect(find.byKey(Key('nommer_$chefUid')), findsNothing); // pas sur soi
-    expect(find.byKey(Key('retirer_$chefUid')), findsNothing);
-    await toucher(tester, find.byKey(Key('nommer_$leaUid')));
-    await attendreTexte(tester, 'statut_$leaUid', 'Gestionnaire en attente');
-    expect(find.byKey(Key('nommer_$leaUid')), findsNothing);
-    expect(find.byKey(Key('retirer_$leaUid')), findsOneWidget);
+    expect(texte(tester, 'param_statut_$leaUid'), 'Bénévole');
+    expect(find.byKey(Key('param_nommer_$chefUid')), findsNothing); // pas sur soi
+    expect(find.byKey(Key('param_retirer_gestion_$chefUid')), findsNothing);
+    expect(find.byKey(Key('param_sortir_$chefUid')), findsNothing);
+    await toucher(tester, find.byKey(Key('param_nommer_$leaUid')));
+    await attendreTexte(tester, 'param_statut_$leaUid', 'Gestionnaire en attente');
+    expect(find.byKey(Key('param_nommer_$leaUid')), findsNothing);
+    expect(find.byKey(Key('param_retirer_gestion_$leaUid')), findsOneWidget);
+    expect(find.byKey(Key('param_sortir_$leaUid')), findsOneWidget);
     // Côté serveur : elle reste bénévole tant qu'elle n'a pas activé.
     var doc = (await refLea(leaUid).get(serveur)).data()!;
     expect(doc['role'], 'benevole');
@@ -121,6 +145,7 @@ void main() {
     await attendre(tester, find.byKey(const Key('activer_gestionnaire')));
     expect(texte(tester, 'mon_statut'), 'Statut : Gestionnaire en attente');
     expect(find.byKey(const Key('invitation_gestionnaire')), findsOneWidget);
+    expect(find.byKey(Key('param_membre_$chefUid')), findsNothing); // pas encore de liste
     await toucher(tester, find.byKey(const Key('activer_gestionnaire')));
     await attendreTexte(tester, 'mon_statut', 'Statut : Gestionnaire');
     expect(texte(tester, 'ma_connexion'), 'Connexion Google : active');
@@ -130,15 +155,17 @@ void main() {
     expect(doc['role'], 'gestionnaire');
     expect(doc.containsKey('nomme'), isFalse);
 
-    // --- Ses droits de gestion apparaissent ; mais elle ne gère pas les gestionnaires.
-    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
-    await finTransition(tester);
+    // --- Ses droits de gestion apparaissent ; elle voit la liste sans boutons.
+    await attendre(tester, find.byKey(Key('param_membre_$chefUid')));
+    expect(find.byKey(Key('param_nommer_$chefUid')), findsNothing);
+    expect(find.byKey(Key('param_retirer_gestion_$leaUid')), findsNothing);
+    expect(find.byKey(Key('param_sortir_$leaUid')), findsNothing);
+    expect(find.byKey(Key('param_sortir_$chefUid')), findsNothing);
+    expect(find.byKey(Key('param_nommer_$leaUid')), findsNothing);
+    await fermerParametres(tester);
     await attendre(tester, find.byKey(const Key('menus')));
     expect(find.text('+1'), findsNothing);
     expect(find.byKey(const Key('nouvel_evenement')), findsOneWidget);
-    expect(find.byKey(Key('nommer_$chefUid')), findsNothing);
-    expect(find.byKey(Key('retirer_$chefUid')), findsNothing);
-    expect(find.byKey(Key('retirer_$leaUid')), findsNothing);
     // Et elle peut réellement gérer un menu (droit effectif côté serveur).
     await toucher(tester, find.byKey(const Key('menus')));
     await attendre(tester, find.byKey(const Key('nouveau_menu')));
@@ -150,11 +177,13 @@ void main() {
       await auth.signInWithCredential((await fauxGoogle('chef_membres')())!);
     });
     await ouvrir(tester, 'chef3', googleAnnule);
-    await attendreTexte(tester, 'statut_$leaUid', 'Gestionnaire');
-    await toucher(tester, find.byKey(Key('retirer_$leaUid')));
+    await attendre(tester, find.byKey(const Key('parametres')));
+    await ouvrirParametres(tester);
+    await attendreTexte(tester, 'param_statut_$leaUid', 'Gestionnaire');
+    await toucher(tester, find.byKey(Key('param_retirer_gestion_$leaUid')));
     await toucher(tester, find.byKey(const Key('confirmer_retrait')));
-    await attendreTexte(tester, 'statut_$leaUid', 'Bénévole');
-    expect(find.byKey(Key('nommer_$leaUid')), findsOneWidget); // renommable
+    await attendreTexte(tester, 'param_statut_$leaUid', 'Bénévole');
+    expect(find.byKey(Key('param_nommer_$leaUid')), findsOneWidget); // renommable
     doc = (await refLea(leaUid).get(serveur)).data()!;
     expect(doc['role'], 'benevole');
     expect(doc.containsKey('nomme'), isFalse);
@@ -166,8 +195,9 @@ void main() {
     });
     await ouvrir(tester, 'lea3', googleAnnule);
     await attendre(tester, find.byKey(const Key('parametres')));
-    await attendre(tester, find.text('Membres (2)'));
     expect(find.byKey(const Key('menus')), findsNothing);
     expect(find.byKey(const Key('nouvel_evenement')), findsNothing);
+    await ouvrirParametres(tester);
+    expect(find.byKey(Key('param_membre_$chefUid')), findsNothing); // plus de liste
   });
 }

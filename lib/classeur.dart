@@ -5,6 +5,7 @@ import 'package:archive/archive.dart' show Archive, ArchiveFile, ZipDecoder, Zip
 
 import 'package:excel/excel.dart';
 
+import 'comparaison.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
 import 'depot_menus.dart';
@@ -155,6 +156,31 @@ const _aides = {
           'achetée, coût en euros et rayon. Remplie à l\'export du tournoi ; ignorée à '
           'l\'import.',
 };
+
+/// Un exemple rempli par feuille, ajouté à l'aide du MODÈLE seulement (décision 73).
+/// Il est écrit dans la ligne d'aide, au-dessus des en-têtes : jamais lu à l'import.
+/// Noms génériques : aucune marque, aucun club, aucune personne.
+const _exemples = {
+  feuilleMenu:
+      'Exemple : Famille « Boissons fraîches », Produit « Cola », Prix 1,00, Type '
+          '« Au litre », Provenance « Acheté par l\'association », Verres par litre 4, '
+          'Rayon « Boissons », Consommation 0,3.',
+  feuilleRecettes:
+      'Exemple : Produit « Croque-monsieur », Ingrédient « Pain de mie », Quantité '
+          'par produit 2, Unité « tranche », Rayon « Boulangerie ».',
+  feuilleStock:
+      'Exemple : Gymnase « Gymnase 1 », Produit « Cola », Quantité 24.',
+  feuilleHistorique:
+      'Exemple : Événement « Tournoi de l\'an passé », Gymnase « Gymnase 1 », '
+          'Personnes 40, Jours 2, Produit « Cola », Quantité vendue 48 : la dernière '
+          'colonne affiche 0,60 par personne et par jour.',
+  feuilleCourses:
+      'Exemple : Série 1, Produit « Cola », Quantité achetée 12, Coût 18,00, '
+          'Rayon « Boissons ».',
+};
+
+/// L'aide du modèle d'une feuille : l'explication, puis son exemple rempli.
+String _aideModele(String feuille) => '${_aides[feuille]!}\n${_exemples[feuille]!}';
 
 // Aides propres à l'export du tournoi (les autres feuilles gardent celle du modèle).
 const _aidesExport = {
@@ -375,7 +401,7 @@ void _bandeau(Sheet f, int largeur, String titre, String sousTitre) {
 
 /// Ligne d'aide (ligne 5), étirée sur la largeur de la feuille.
 void _aideLigne(Sheet f, int largeur, String texte) {
-  f.setRowHeight(4, 32);
+  f.setRowHeight(4, texte.contains('\n') ? 62 : 32);
   for (var c = 0; c < largeur; c++) {
     _poser(f, 4, c, null, _styleAide());
   }
@@ -434,7 +460,7 @@ Excel _nouveauClasseur() {
   return classeur;
 }
 
-void _feuilleAccueil(Excel classeur) {
+void _feuilleAccueil(Excel classeur, {bool avecExemple = false}) {
   const largeur = 6;
   final f = classeur[feuilleAccueil];
   _bandeau(f, largeur, 'Le Comptoir : classeur de l\'association',
@@ -530,6 +556,27 @@ void _feuilleAccueil(Excel classeur) {
     f.setMergedCellStyle(
         CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: r), styleLegende);
   }
+  if (avecExemple) {
+    final re = rl + 1 + lignesLegende.length + 1;
+    _poser(f, re, 0, TextCellValue('Un exemple'), _styleSection());
+    f.setRowHeight(re, 26);
+    f.setRowHeight(re + 1, 48);
+    f.merge(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: re + 1),
+      CellIndex.indexByColumnRow(columnIndex: largeur - 1, rowIndex: re + 1),
+      customValue: TextCellValue(
+          'Au Tournoi de l\'an passé : 40 personnes, 2 jours, 48 Cola vendus, soit '
+          '0,60 par personne et par jour. Chaque feuille donne, sous son titre, '
+          'son exemple de ligne rempli : il sert à comprendre, il n\'est jamais importé.'),
+    );
+    f.setMergedCellStyle(
+        CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: re + 1),
+        CellStyle(
+          fontColorHex: _couleur(_anthracite),
+          textWrapping: TextWrapping.WrapText,
+          verticalAlign: VerticalAlign.Center,
+        ));
+  }
 }
 
 // ------------------------------------------------------------------ écriture
@@ -619,6 +666,7 @@ const _voletsFiges = {
   feuilleStock: 6,
   feuilleHistorique: 6,
   feuilleCourses: 6,
+  feuilleComparaisonProduits: 6,
 };
 
 /// Lignes Excel couvertes par les listes déroulantes (de la première donnée à la 500e).
@@ -783,15 +831,15 @@ Uint8List construireModele({
   required Map<String, Map<String, StockDepart>> stocks,
 }) {
   final classeur = _nouveauClasseur();
-  _feuilleAccueil(classeur);
-  _feuilleMenu(classeur, produits, _aides[feuilleMenu]!);
-  _feuilleRecettes(classeur, produits, _aides[feuilleRecettes]!);
+  _feuilleAccueil(classeur, avecExemple: true);
+  _feuilleMenu(classeur, produits, _aideModele(feuilleMenu));
+  _feuilleRecettes(classeur, produits, _aideModele(feuilleRecettes));
   _feuilleDonnees(
     classeur,
     feuilleStock,
     titre: 'Stock de départ',
     sousTitre: 'Ce que vous avez déjà avant le tournoi. Vide = produit non suivi.',
-    aide: _aides[feuilleStock]!,
+    aide: _aideModele(feuilleStock),
     entetes: entetesStock,
     largeurs: const [26, 32, 14],
     lignes: [
@@ -810,7 +858,7 @@ Uint8List construireModele({
     titre: 'Historique',
     sousTitre:
         'Les ventes d\'un tournoi passé : l\'application en tire la prévision du prochain.',
-    aide: _aides[feuilleHistorique]!,
+    aide: _aideModele(feuilleHistorique),
     entetes: entetesHistorique,
     largeurs: const [26, 24, 13, 10, 32, 16, 24],
     calcul: const {6},
@@ -834,12 +882,26 @@ Uint8List construireModele({
     titre: 'Courses',
     sousTitre:
         'Rempli par l\'application à l\'export du tournoi : ce qui a été acheté, rayon par rayon.',
-    aide: _aides[feuilleCourses]!,
+    aide: _aideModele(feuilleCourses),
     entetes: entetesCourses,
     largeurs: const [10, 40, 18, 14, 26],
     lignes: const [],
     formats: {3: _formatEuros},
   );
+  return _octets(classeur);
+}
+
+// ------------------------------------- extraction « Données de l'association » (F5)
+
+/// Le classeur d'un menu de l'association (écran « Extraction et modèle ») : l'accueil, la
+/// feuille Menu (la consommation par personne et par jour de chaque produit est la
+/// prévision du menu) et la feuille Recettes (la composition). Pas de stock, pas de
+/// ventes : seulement ce qui décrit le menu.
+Uint8List construireDonneesMenu({required List<ProduitEvenement> produits}) {
+  final classeur = _nouveauClasseur();
+  _feuilleAccueil(classeur);
+  _feuilleMenu(classeur, produits, _aides[feuilleMenu]!);
+  _feuilleRecettes(classeur, produits, _aides[feuilleRecettes]!);
   return _octets(classeur);
 }
 
@@ -914,6 +976,108 @@ Uint8List construireExport({
       courses, coursesVisibles, limite, apports);
   return _octets(classeur);
 }
+
+/// Feuilles du classeur du comparateur (décision 74).
+const feuilleComparaisonSynthese = 'Synthèse';
+const feuilleComparaisonProduits = 'Produits';
+
+/// Le classeur du comparateur : la feuille Synthèse (les deux tournois côte à côte) et la
+/// feuille Produits (ventes, consommation et écart de chaque produit), aux couleurs de
+/// l'application comme les autres classeurs.
+Uint8List construireComparaison({
+  required String nomA,
+  required String nomB,
+  required List<LigneSynthese> synthese,
+  required List<ComparaisonProduit> produits,
+}) {
+  final classeur = Excel.createExcel();
+  final defaut = classeur.getDefaultSheet() ?? 'Sheet1';
+  classeur.rename(defaut, feuilleComparaisonSynthese);
+  _ecrireSynthese(classeur, nomA, nomB, synthese);
+  _feuilleDonnees(
+    classeur,
+    feuilleComparaisonProduits,
+    titre: 'Produits',
+    sousTitre: '$nomA contre $nomB',
+    aide: 'Ventes et consommation par personne et par jour de chaque produit, '
+        'retrouvé par son nom. « — » : produit absent de ce tournoi, ou chiffre non '
+        'calculable (personnes ou jours non réglés). Écart : second tournoi moins premier.',
+    entetes: [
+      'Produit',
+      'Vendus : $nomA',
+      'Vendus : $nomB',
+      'Par personne et par jour : $nomA',
+      'Par personne et par jour : $nomB',
+      'Écart (B moins A)',
+    ],
+    largeurs: const [28, 16, 16, 22, 22, 18],
+    calcul: const {3, 4, 5},
+    formats: {3: _formatDecimal, 4: _formatDecimal, 5: _formatDecimal},
+    lignes: [
+      for (final p in produits)
+        [
+          TextCellValue(p.nom),
+          _ouTiret(p.vendusA == null ? null : IntCellValue(p.vendusA!)),
+          _ouTiret(p.vendusB == null ? null : IntCellValue(p.vendusB!)),
+          _ouTiret(p.consoA == null ? null : DoubleCellValue(p.consoA!)),
+          _ouTiret(p.consoB == null ? null : DoubleCellValue(p.consoB!)),
+          _ouTiret(p.ecart == null ? null : DoubleCellValue(p.ecart!)),
+        ],
+    ],
+  );
+  classeur.setDefaultSheet(feuilleComparaisonSynthese);
+  final octets = classeur.encode();
+  if (octets == null) {
+    throw const ClasseurIllisible('Le classeur n\'a pas pu être construit.');
+  }
+  return _avecVolets(Uint8List.fromList(octets));
+}
+
+CellValue _ouTiret(CellValue? v) => v ?? TextCellValue('—');
+
+/// La feuille Synthèse : un indicateur par ligne, les deux tournois en colonnes.
+void _ecrireSynthese(
+    Excel classeur, String nomA, String nomB, List<LigneSynthese> lignes) {
+  final f = classeur[feuilleComparaisonSynthese];
+  const largeur = 3;
+  _bandeau(f, largeur, 'Comparaison de deux tournois', '$nomA contre $nomB');
+  _aideLigne(
+      f,
+      largeur,
+      'Les chiffres de chaque tournoi, comme au bilan. « — » : chiffre non disponible '
+      '(courses non visibles ou non validées, personnes ou jours non réglés).');
+  f.setRowHeight(5, 30);
+  final entetes = ['Indicateur', nomA, nomB];
+  final largeurs = [30.0, 24.0, 24.0];
+  for (var c = 0; c < largeur; c++) {
+    _poser(f, 5, c, TextCellValue(entetes[c]), _styleEntete());
+    f.setColumnWidth(c, largeurs[c]);
+  }
+  for (var r = 0; r < lignes.length; r++) {
+    final l = lignes[r];
+    final ligne = _premiereLigne + r;
+    _poser(f, ligne, 0, TextCellValue(l.libelle), _styleSaisie());
+    _poser(f, ligne, 1, _valeurSynthese(l.a, l.unite),
+        _styleCalcul(nombre: l.a != null, format: _formatSynthese(l.unite)));
+    _poser(f, ligne, 2, _valeurSynthese(l.b, l.unite),
+        _styleCalcul(nombre: l.b != null, format: _formatSynthese(l.unite)));
+  }
+}
+
+CellValue _valeurSynthese(num? v, Unite unite) {
+  if (v == null) return TextCellValue('—');
+  return switch (unite) {
+    Unite.nombre => IntCellValue(v.toInt()),
+    Unite.decimal => DoubleCellValue(v.toDouble()),
+    Unite.euros => DoubleCellValue(v / 100),
+  };
+}
+
+NumFormat _formatSynthese(Unite unite) => switch (unite) {
+      Unite.nombre => NumFormat.standard_0,
+      Unite.decimal => _formatDecimal,
+      Unite.euros => _formatEuros,
+    };
 
 /// Les lignes de l'Historique de l'export : une par gymnase et par produit.
 List<List<CellValue?>> _lignesHistoriqueExport(Evenement evenement,

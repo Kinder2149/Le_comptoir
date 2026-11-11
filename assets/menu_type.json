@@ -120,7 +120,7 @@
     "rayon": "epicerie"
   },
   {
-    "nom": "Coca",
+    "nom": "Cola",
     "prixCentimes": 100,
     "famille": "boissons_fraiches",
     "icone": "soda",
@@ -130,7 +130,7 @@
     "rayon": "boissons"
   },
   {
-    "nom": "Coca Zéro",
+    "nom": "Cola zéro",
     "prixCentimes": 100,
     "famille": "boissons_fraiches",
     "icone": "soda",
@@ -140,7 +140,7 @@
     "rayon": "boissons"
   },
   {
-    "nom": "Fanta",
+    "nom": "Soda à l'orange",
     "prixCentimes": 100,
     "famille": "boissons_fraiches",
     "icone": "soda",
@@ -150,7 +150,7 @@
     "rayon": "boissons"
   },
   {
-    "nom": "Ice Tea",
+    "nom": "Thé glacé",
     "prixCentimes": 100,
     "famille": "boissons_fraiches",
     "icone": "soda",
@@ -160,7 +160,7 @@
     "rayon": "boissons"
   },
   {
-    "nom": "Oasis",
+    "nom": "Boisson fruitée",
     "prixCentimes": 100,
     "famille": "boissons_fraiches",
     "icone": "soda",
@@ -190,7 +190,7 @@
     "rayon": "boissons"
   },
   {
-    "nom": "Mars",
+    "nom": "Barre caramel",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
     "icone": "barre",
@@ -198,7 +198,7 @@
     "rayon": "epicerie"
   },
   {
-    "nom": "Twix",
+    "nom": "Barre biscuitée",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
     "icone": "barre",
@@ -206,7 +206,7 @@
     "rayon": "epicerie"
   },
   {
-    "nom": "Snickers",
+    "nom": "Barre cacahuète",
     "prixCentimes": 100,
     "famille": "snacks_fruits",
     "icone": "barre",

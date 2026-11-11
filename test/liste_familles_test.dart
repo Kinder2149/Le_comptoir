@@ -85,7 +85,7 @@ void main() {
       expect(find.text('Barre de céréales chocolat'), findsOneWidget);
       expect(find.text('Chocolat chaud'), findsOneWidget);
       expect(find.text('Barre de céréales pomme'), findsNothing);
-      expect(find.text('Mars'), findsNothing);
+      expect(find.text('Barre caramel'), findsNothing);
       expect(find.text('Croque-monsieur'), findsNothing);
       expect(find.byKey(const Key('compteur_famille_snacks_fruits')), findsOneWidget);
       expect(tester.widget<Text>(find.byKey(const Key('compteur_famille_snacks_fruits'))).data, '1');
@@ -116,12 +116,12 @@ void main() {
       expect(icone('Barre de céréales fraise-framboise'), isNull);
       expect(icone('Bonbons (offerts)'), isNull);
       // Les barres chocolatées gardent leur icône, qui est juste.
-      expect(icone('Mars'), 'barre');
+      expect(icone('Barre caramel'), 'barre');
     });
 
     test('initiales : « CM », « Co », « BC », « BO »', () {
       expect(initialesDe('Croque-monsieur'), 'CM');
-      expect(initialesDe('Coca'), 'Co');
+      expect(initialesDe('Cola'), 'Co');
       expect(initialesDe('Barre de céréales pomme'), 'BC');
       expect(initialesDe('Bonbons (offerts)'), 'BO');
     });
@@ -143,12 +143,12 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('Mars garde son icône, sans pastille', (tester) async {
+    testWidgets('Barre caramel garde son icône, sans pastille', (tester) async {
       await pomper(tester, menu());
       await tester.tap(find.byKey(const Key('entete_famille_snacks_fruits')));
       await tester.pump();
-      expect(find.byKey(Key('vignette_${idDe('Mars')}')), findsOneWidget);
-      expect(find.byKey(Key('pastille_${idDe('Mars')}')), findsNothing);
+      expect(find.byKey(Key('vignette_${idDe('Barre caramel')}')), findsOneWidget);
+      expect(find.byKey(Key('pastille_${idDe('Barre caramel')}')), findsNothing);
     });
   });
 

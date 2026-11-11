@@ -1,5 +1,30 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain » : vérification par une autre IA
+- Critères 1 à 4 réussis à l'écran, contrôle rapide réussi, aucun défaut visuel (captures du vérificateur, hors dépôt). Remise réelle des trois classeurs à la feuille de partage d'Android vue. Réserves : coût et résultat du comparateur non vus avec de vrais achats ; comparaison lente en version de développement. En attente : test et capture de Kinder avec l'APK 1.4.0, puis son accord de fusion.
+
+## 11/11/2026 — Mission « Retours du terrain », F7 : clôture technique et résumé final
+- Parcours automatique du critère de fin (`parcours_retours_terrain_test`) vert sur émulateur : deux téléphones, caisse sans message fantôme, ventes de l'autre téléphone, membres dans les Paramètres, Extraction et modèle, comparaison de deux tournois. Les captures y sont facultatives : sur l'émulateur du poste, la conversion de la surface en image fige les parcours qui photographient (constaté aussi sur `parcours_ergonomie_test`, rouge de ce fait, sans exception de code). Suite des parcours rejouée un à un : verts, sauf `evenements_test`, `menus_test`, `images_test` (déjà rouges avant la mission, libellés périmés) et ceux qui photographient. `google_test` adapté à la liste des membres déplacée. Version 1.4.0+5, APK de recette reconstruit. Graphify mis à jour.
+- **Résumé de la mission (F1 à F7)** : l'avertissement de stock suit le ticket ; actualisation entre téléphones (un défaut corrigé : le bilan restait « provisoire ») et glisser vers le bas ; membres et droits dans les Paramètres avec note « Qui peut quoi » ; modèle générique sans marque avec exemples ; écran « Extraction et modèle » ; comparateur de deux tournois. 466 tests de logique et d'écrans, 255 tests de règles. Règles d'accès inchangées. Aucune dépendance ajoutée. Écart noté : F1 réalisée directement par la session mère.
+
+## 11/11/2026 — Mission « Retours du terrain », F6 : comparateur d'événements
+- Carte « Comparer deux tournois » : deux tournois clôturés côte à côte (personnes, jours, ventes, total, coût des courses, résultat), puis par produit retrouvé par son nom les quantités vendues et la consommation par personne et par jour avec l'écart (« — » si absent d'un côté), export Excel aux couleurs de l'application. Aucun nouveau calcul de bilan, aucune dépendance. Tests : 466, parcours Android vert.
+
+## 11/11/2026 — Mission « Retours du terrain », F5 : écran « Extraction et modèle »
+- Nouveau bouton « Extraction et modèle » à côté de « Menus » (responsable et gestionnaires seulement). Quatre cartes : modèle vierge, données de l'association (menu, recettes, prévision d'un menu choisi), export d'un tournoi clôturé (même classeur que l'onglet Après, limité aux gymnases de la personne), comparateur (désactivé jusqu'à F6). Aucune dépendance ajoutée. Tests : 456, 2 parcours Android verts.
+
+## 11/11/2026 — Mission « Retours du terrain », F4 : modèle générique
+- Plus aucune marque dans le modèle de menu ni dans le modèle Excel : Coca→Cola, Coca Zéro→Cola zéro, Fanta→Soda à l'orange, Ice Tea→Thé glacé, Oasis→Boisson fruitée, Mars/Twix/Snickers→Barre caramel / biscuitée / cacahuète. Prix, consommations, recettes, rayons et familles inchangés (testé). Chaque feuille du modèle vierge a une explication et un exemple rempli, jamais importé. Menus et événements existants inchangés. Tests : 452.
+
+## 11/11/2026 — Mission « Retours du terrain », F3 : membres et droits dans les Paramètres
+- Une seule liste des membres, dans les Paramètres (plus en bas de l'écran de l'association) : le responsable nomme, retire le statut de gestionnaire ou retire de l'association ; un gestionnaire voit la liste sans bouton ; un bénévole ne la voit pas. Note « Qui peut quoi ». Un test de règles confirme qu'un gestionnaire ne peut pas retirer un membre. Tests : 447, 255 de règles, 5 parcours Android verts. Constat : les parcours `evenements_test` et `menus_test` étaient déjà rouges sur `main` (libellés périmés depuis l'ergonomie), non corrigés ici.
+
+## 11/11/2026 — Mission « Retours du terrain », F2 : actualisation entre téléphones
+- Scénario reproduit sur deux téléphones simulés : 25 relevés sur 26 se mettaient déjà à jour seuls ; seul défaut, le bilan qui restait « provisoire » quand un autre téléphone clôturait l'événement : corrigé (le bilan suit l'événement en direct). « Glisser vers le bas pour actualiser » ajouté sur association, événement, caisses en direct, stock et bilan (relecture serveur ; hors réseau, message « Hors réseau : affichage des dernières données reçues »). Le geste relit les ventes des caisses visibles (quelques centaines de lectures sur un gros tournoi, jugé acceptable). Tests : 447, parcours dédié vert.
+
+## 11/11/2026 — Mission « Retours du terrain », F1 : avertissement de stock
+- Le message « Stock épuisé » suit le contenu du ticket : il s'affiche dès que la quantité au ticket atteint le stock, nomme tous les produits concernés et disparaît quand la ligne est retirée ; la vente n'est jamais bloquée. Tests : 440 de logique et d'écrans, analyse sans erreur. Écart signalé : cette étape, très courte, a été réalisée directement par la session mère et non par une sous-session (R13) ; les suivantes passent par des sous-sessions.
+
 ## 11/11/2026 — Mission « Ergonomie de la gestion » close
 - Close et fusionnée dans `main` sur décision écrite de Kinder, **sans vérification par une autre IA** (le texte de vérification E9 de la section 14 n'a pas été passé) : écart à la méthode assumé par Kinder. Version 1.3.0. Le cadrage de « Retours du terrain » est fusionné avec elle ; c'est désormais la seule mission active.
 

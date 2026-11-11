@@ -131,7 +131,7 @@ void main() {
       for (final n in ['Gâteau salé (quiche)', 'Crêpes (3 petites)', 'Sucette', 'Chocolat chaud']) {
         expect(prov(n), 'apporte', reason: n);
       }
-      for (final n in ['Croque-monsieur', 'Croque tartiflette', 'Café', 'Coca', 'Bière']) {
+      for (final n in ['Croque-monsieur', 'Croque tartiflette', 'Café', 'Cola', 'Bière']) {
         expect(prov(n), 'achete', reason: n);
       }
     });

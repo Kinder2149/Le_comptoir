@@ -716,6 +716,32 @@ class DepotCaisses {
     return sortie.stream;
   }
 
+  /// « Glisser pour actualiser » : relit sur le serveur les caisses (celles de
+  /// [gymnaseIds], ou toutes si null) et leurs ventes. Les écoutes en cours s'affichent
+  /// d'après ces données. Échoue (code « unavailable ») hors réseau.
+  Future<void> actualiser({Set<String>? gymnaseIds}) async {
+    const serveur = GetOptions(source: Source.server);
+    final caisses = <String>[];
+    if (gymnaseIds == null) {
+      for (final d in (await _evenement.collection('caisses').get(serveur)).docs) {
+        caisses.add(d.id);
+      }
+    } else {
+      for (final g in gymnaseIds) {
+        final s = await _evenement
+            .collection('caisses')
+            .where('gymnaseId', isEqualTo: g)
+            .get(serveur);
+        for (final d in s.docs) {
+          caisses.add(d.id);
+        }
+      }
+    }
+    for (final id in caisses) {
+      await _caisse(id).collection('ventes').get(serveur);
+    }
+  }
+
   /// Le tableau de bord lu une seule fois, complet : toutes les caisses et toutes leurs
   /// ventes, relues sur le serveur. Sert à un événement passé (prévision). Nécessite le
   /// réseau ; les droits de lecture sont ceux des caisses (permission-denied sinon).

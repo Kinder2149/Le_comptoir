@@ -97,6 +97,39 @@ class DepotEvenements {
       .snapshots().compte('evenement')
       .map((d) => d.exists ? _depuis(d) : null);
 
+  /// « Glisser pour actualiser » : relit sur le serveur la liste des événements.
+  Future<void> actualiserListe({required bool enCoursSeulement}) async {
+    Query<Map<String, dynamic>> q = _evenements;
+    if (enCoursSeulement) q = q.where('statut', isEqualTo: 'en_cours');
+    await q.get(const GetOptions(source: Source.server));
+  }
+
+  /// « Glisser pour actualiser » : relit sur le serveur ce que les écrans d'un événement
+  /// affichent (l'événement, ses produits, les stocks et signaux « vide » des [gymnases]
+  /// voulus ou de tous, et si [avecCaisses] les caisses et leurs ventes). Les écoutes en
+  /// cours s'affichent d'après ces données. Échoue (code « unavailable ») hors réseau.
+  Future<void> actualiser(
+    String id, {
+    Set<String>? gymnases,
+    bool avecCaisses = true,
+    bool avecCourses = false,
+    bool avecApports = false,
+  }) async {
+    const serveur = GetOptions(source: Source.server);
+    final evenement = _evenements.doc(id);
+    await evenement.get(serveur);
+    await evenement.collection('produits').get(serveur);
+    final liste = await evenement.collection('gymnases').get(serveur);
+    for (final g in liste.docs) {
+      if (gymnases != null && !gymnases.contains(g.id)) continue;
+      await g.reference.collection('stocks').get(serveur);
+      await g.reference.collection('vides').get(serveur);
+    }
+    if (avecCourses) await evenement.collection('courses').doc('liste').get(serveur);
+    if (avecApports) await evenement.collection('apports').get(serveur);
+    if (avecCaisses) await caisses(id).actualiser(gymnaseIds: gymnases);
+  }
+
   /// Gymnases de l'événement, par ordre alphabétique. Vide = événement créé
   /// avant les gymnases (ancien format).
   Stream<List<Gymnase>> suivreGymnases(String id) =>

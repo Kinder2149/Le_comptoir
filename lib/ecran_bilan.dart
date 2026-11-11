@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'actualisation.dart';
+
 import 'classeur.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
@@ -73,9 +75,18 @@ class EcranBilan extends StatefulWidget {
     this.commun = true,
     this.limite = false,
     this.partager = partagerFichier,
+    this.evenementEnDirect,
+    this.actualiser,
   });
 
   final Evenement evenement;
+
+  /// L'événement en direct : le bilan passe de « provisoire » à « définitif » quand un autre
+  /// téléphone clôture l'événement. Sans lui, [evenement] reste tel qu'à l'ouverture.
+  final Stream<Evenement?>? evenementEnDirect;
+
+  /// « Glisser vers le bas pour actualiser » : relit les données sur le serveur.
+  final Future<void> Function()? actualiser;
   final Stream<TableauDeBord> tableau;
   final Stream<List<ProduitEvenement>> produits;
 
@@ -109,7 +120,8 @@ class EcranBilan extends StatefulWidget {
 }
 
 class _EtatBilan extends State<EcranBilan> {
-  Evenement get evenement => widget.evenement;
+  Evenement? _courant;
+  Evenement get evenement => _courant ?? widget.evenement;
   bool get limite => widget.limite;
   String? _vue;
   bool _choisie = false;
@@ -195,6 +207,19 @@ class _EtatBilan extends State<EcranBilan> {
 
   @override
   Widget build(BuildContext context) {
+    final direct = widget.evenementEnDirect;
+    if (direct == null) return _ecran(context);
+    return StreamBuilder<Evenement?>(
+      stream: direct,
+      initialData: widget.evenement,
+      builder: (context, e) {
+        _courant = e.data ?? widget.evenement;
+        return _ecran(context);
+      },
+    );
+  }
+
+  Widget _ecran(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
           title: Text('Bilan — ${evenement.nom}', key: const Key('titre_bilan'))),
@@ -284,7 +309,10 @@ class _EtatBilan extends State<EcranBilan> {
                 b.produits.fold<int>(0, (m, l) => l.quantite > m ? l.quantite : m);
             final maxPointe =
                 b.heuresDePointe.fold<int>(0, (m, h) => h.nbVentes > m ? h.nbVentes : m);
-            return ListView(
+            return actualisable(
+              relire: widget.actualiser,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
                 multiple && choix >= 2
@@ -507,6 +535,7 @@ class _EtatBilan extends State<EcranBilan> {
                     ],
                   ),
               ],
+            ),
             );
           },
         ),
