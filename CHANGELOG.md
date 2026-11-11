@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Ergonomie de la gestion » close
+- Close et fusionnée dans `main` sur décision écrite de Kinder, **sans vérification par une autre IA** (le texte de vérification E9 de la section 14 n'a pas été passé) : écart à la méthode assumé par Kinder. Version 1.3.0. Le cadrage de « Retours du terrain » est fusionné avec elle ; c'est désormais la seule mission active.
+
 ## 11/11/2026 — Mission « Retours du terrain » : figeage et plan (phases 1 à 4)
 - Retours de Kinder après l'usage réel d'une caisse sur deux téléphones : message « Stock épuisé » qui reste après le retrait de la ligne, liste des membres absente des Paramètres, pas d'actualisation entre deux téléphones, pas d'endroit unique pour le modèle, les extractions et la comparaison de tournois.
 - Constats dans le code : défaut du message confirmé ; liste des membres réservée au responsable dans les Paramètres ; tous les écrans sont en direct (le défaut d'actualisation est à reproduire) ; modèle sans nom de club mais avec des marques.
