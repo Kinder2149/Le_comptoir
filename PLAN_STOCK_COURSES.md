@@ -881,6 +881,42 @@ RENDU :
 
 **Preuve** : N1 (`flutter analyze`, `flutter test`) ; critère 4 : les tests de calcul des courses (`test/courses_test.dart` et voisins) passent sans modification de leur contenu ; critère 5 : les trois captures existent et montrent les cartes.
 
+### Texte de vérification T9 (pour une autre IA, conversation neuve sur Sonnet, sur le PC)
+
+```
+PROMPT DE VÉRIFICATION — Prêt pour le tournoi — projet Le Comptoir (branche claude/pret-tournoi, version 1.5.0+6)
+TYPE : finale
+
+Tu es l'IA de vérification. Tu n'as pas codé cette mission. Tu ne corriges rien.
+
+CRITÈRES DE FIN DE MISSION (validés par Kinder le 11/11/2026), un écran chacun, une capture chacune (R32) :
+1. Départ de l'import : dans l'association test, depuis « Extraction et modèle », la carte « Importer » ouvre l'assistant (choix : modèle générique ou mon classeur).
+2. Import du classeur du club (recette/classeur-notre-club.xlsx) : le résumé avant écriture montre l'an passé (référence), le menu existant de même nom repris sans modification (ou « aucun menu à créer »), le tournoi en préparation choisi avec stock de départ et prévision réglée sur la référence ; après « Appliquer », la prévision du tournoi montre les chiffres de l'an passé.
+3. Enregistrement d'un fichier : « Enregistrer sur le téléphone » (et « Partager ») propose le choix du dossier ; le fichier est dans Téléchargements (vue par l'application Fichiers ou par adb).
+4. Ajout d'un produit : « Produits et images » > « Ajouter un produit » ; le produit se voit en caisse.
+5. Ce même produit se voit dans le menu d'origine.
+6. Prévision : après « D'après une source », « Annuler ce changement » rend les chiffres d'avant.
+7. Une ligne « Actualisé le JJ/MM à HH:MM » est visible sous le titre d'un écran actualisable (ex. écran de l'événement).
+8. Paramètres : cartes Mon compte, Association et code, Membres, Qui peut quoi, Zone dangereuse ; chaque membre porte un badge ; « Changer le statut » (bénévole, gestionnaire, retirer) s'ouvre sur un autre membre.
+9. Courses : bandeau résumé, rayons en cartes repliables avec compteur, actions fixées en bas.
+
+CONTRÔLE RAPIDE (R31) : 1. l'application se lance et l'écran d'arrivée s'affiche ; 2. l'écran de caisse d'un événement en cours s'affiche et une vente s'encaisse.
+
+CE QUI A ÉTÉ FAIT ET TESTÉ : T1 enregistrer ou partager (N1, N2) ; T2 assistant d'import unique (N1, N2) ; T3 classeur du club (N2) ; T4 ajout d'un produit (N1, règles, N2) ; T5 annulation d'un changement de source (N1, règles) ; T6 heure d'actualisation (N1) ; T7 Paramètres en cartes (N1) ; T8 page Courses en cartes (N1, captures avant/après) ; N3 de clôture : voir le CHANGELOG.
+
+NOUVEAUTÉS À VÉRIFIER EN PRIORITÉ (à l'intérieur des critères) : l'assistant remplace « Importer un menu » et « Importer un classeur » (ils y renvoient) ; le nom et le prix des produits existants ne changent pas après l'ajout d'un produit ; un bénévole ne voit ni « Extraction et modèle », ni « Importer », ni la liste des membres. Voisins : export et comparateur d'Extraction et modèle ; validation des courses.
+
+COMMENT LANCER : Java 21 (jbr d'Android Studio) devant le PATH ; émulateur Android LC2 (`-gpu swiftshader_indirect -no-snapshot -no-audio`, jamais Medium_Phone) ; `firebase emulators:start --only auth,firestore --project le-comptoir-60ba8` ; application en débogage sur l'émulateur contre ces émulateurs. Le moyen le plus simple de mettre l'application dans l'état voulu : un court parcours d'intégration qui prépare les données avec le vrai moteur local puis attend 60 s (modèles : integration_test/capture_courses.dart, assistant_import_test.dart, classeur_club_test.dart, ajout_produit_test.dart, outils.dart) pendant que tu captures par `adb -s emulator-5554 exec-out screencap -p` (jamais de capture prise dans un test : la conversion de la surface en image fige les parcours sur ce poste). Ne touche jamais au vrai projet Firebase ni à l'appareil réel connecté. Aucune migration de base de données ; règles d'accès modifiées par cette mission (nouveau document previsions_annulation) déjà déployées.
+
+TON TRAVAIL :
+1. Lance l'application selon la procédure ci-dessus.
+2. Utilise-la comme un utilisateur.
+3. Pour chaque critère : une seule capture `critere-N.png`, regardée une fois, verdict noté aussitôt (réussi / échoué / non vérifié avec la raison).
+4. Ne rejoue pas les tests des étapes.
+
+RENDU : tableau critère | capture | verdict | ce que tu as vu (en français) ; l'écran exact que Kinder utilise pour son test final.
+```
+
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
 ```
