@@ -70,6 +70,14 @@ class DepotAssociations {
       .map((d) => d.data()?['assoId'] as String?)
       .distinct();
 
+  /// « Glisser pour actualiser » : relit sur le serveur l'association, ses membres et la
+  /// liste de ses événements. Échoue (code « unavailable ») hors réseau.
+  Future<void> actualiser(String assoId, {required bool enCoursSeulement}) async {
+    await _asso(assoId).get(_serveur);
+    await _asso(assoId).collection('membres').get(_serveur);
+    await evenements(assoId).actualiserListe(enCoursSeulement: enCoursSeulement);
+  }
+
   Stream<Association?> suivreAssociation(String id) =>
       _asso(id).snapshots().map((d) {
         final data = d.data();

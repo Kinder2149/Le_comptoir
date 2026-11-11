@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'actualisation.dart';
+
 import 'code_association.dart';
 import 'connexion.dart';
 import 'depot_associations.dart';
@@ -267,7 +269,10 @@ class EcranAssociation extends StatelessWidget {
                   ),
                 ],
               ),
-              body: ListView(
+              body: actualisable(
+                relire: () => depot.actualiser(assoId, enCoursSeulement: moi == null || moi.role == 'benevole'),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
                   const Text("Code d'accès"),
@@ -345,6 +350,7 @@ class EcranAssociation extends StatelessWidget {
                                 ),
                     ),
                 ],
+              ),
               ),
             );
           },

@@ -930,8 +930,28 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 | Étape | État | Date | Critères |
 |---|---|---|---|
 | F1 | Close | 11/11/2026 | 5 critères sur 5 par test de code (440 tests de logique et d'écrans, analyse sans erreur) |
+| F2 | Close | 11/11/2026 | 1 à 4 réussis : un seul défaut reproduit (bilan resté « provisoire » après clôture par un autre téléphone), corrigé ; glisser vers le bas sur 5 écrans, hors réseau géré ; 447 tests, parcours `actualisation_test` vert (45 relevés). Parcours ergonomie/gymnases/événements à rejouer à la clôture |
 
 **Cadrage F1 (11/11/2026)** : l'avertissement n'est plus un état mémorisé mais se calcule d'après le ticket (`_EtatCaisse._alerte` devient un accesseur) : il nomme tous les produits suivis dont la quantité au ticket atteint ou dépasse le stock, et disparaît avec la ligne. Fichiers touchés : `lib/ecran_caisse.dart`, `test/caisse_evenement_test.dart`. On ne touche pas : la vente (jamais bloquée), les couleurs de rupture, le stock. Critères : ceux du tableau (F1, 1 à 5). Note : l'ancien comportement n'avertissait qu'au dépassement ; la décision 69 dit « atteint ou dépasse » (critère 1 : le dernier exemplaire déclenche le message), le test existant a été mis à jour en conséquence.
+
+**Cadrage F2 (11/11/2026) : relevé sur deux téléphones simulés**
+
+Méthode : parcours `integration_test/actualisation_test.dart` sur l'émulateur Android et la copie locale de Firebase. Le téléphone B est l'application affichée (le responsable) ; le téléphone A est une seconde connexion indépendante (autre instance Firebase, compte de Léa) qui rejoint, ouvre sa caisse, vend, ajoute du stock (apport) et clôture. Pour chaque écran de B, on relève s'il se met à jour seul.
+
+| Écran de B | Ce que fait A | Se met à jour seul ? |
+|---|---|---|
+| Association | rejoint ; un autre téléphone ouvre un événement | Oui : le membre apparaît, la pastille passe de « En préparation » à « En cours » |
+| Événement, onglet Pendant | ouvre sa caisse, vend, vend le dernier, ajoute du stock, clôture | Oui : « Caisses ouvertes », « Ventes », « À surveiller » (apparaît puis disparaît) |
+| Caisses en direct | rouvre, vend, ajoute du stock, clôture | Oui : total, produit vendu et stock, carte de la caisse (Ouverte, Clôturée) |
+| Stock | vend, ajoute du stock | Oui : « Stock » et « Vendu » |
+| Bilan | rouvre, vend, clôture | Oui : total, nombre de ventes, bandeau « caisses ouvertes ». **Non** : quand un autre téléphone clôture l'événement, le bilan reste « provisoire » |
+| Caisse de B | vend, ajoute du stock | Oui : le stock sur la tuile du produit |
+
+Cause du seul défaut (bilan) : l'écran du bilan recevait l'événement tel qu'il était à l'ouverture (copie) au lieu de le suivre. Tous les autres écrans lisent en direct et se mettent à jour (25 relevés sur 26 réussis). Le défaut exact vu par Kinder n'est pas reproductible autrement : rien d'autre ne s'est figé. S'il revient sur un écran précis, sa capture dira lequel. Reste non suivi, sans conséquence aujourd'hui : le nom de l'événement rappelé en tête de l'écran Stock (copie à l'ouverture).
+
+Correction : `EcranBilan` reçoit en plus le flux de l'événement (`evenementEnDirect`) et passe de « provisoire » à « définitif » dès la clôture (tests `test/actualisation_test.dart` et parcours).
+
+« Glisser vers le bas pour actualiser » (`lib/actualisation.dart`) : sur l'association, l'événement, les caisses en direct, le stock et le bilan. Il relit sur le serveur (lectures `Source.server` : `DepotAssociations.actualiser`, `DepotEvenements.actualiser`, `DepotCaisses.actualiser`) ; les écoutes en direct affichent aussitôt ce qui a été relu. Hors réseau (ou sans réponse en 10 s), un message court « Hors réseau : affichage des dernières données reçues » s'affiche, rien n'est bloqué et le geste se termine. Coût : le geste relit aussi les ventes des caisses visibles (même volume qu'une ouverture du bilan) ; un geste par écran, jamais en boucle. Règles d'accès : inchangées.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

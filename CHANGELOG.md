@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F2 : actualisation entre téléphones
+- Scénario reproduit sur deux téléphones simulés : 25 relevés sur 26 se mettaient déjà à jour seuls ; seul défaut, le bilan qui restait « provisoire » quand un autre téléphone clôturait l'événement : corrigé (le bilan suit l'événement en direct). « Glisser vers le bas pour actualiser » ajouté sur association, événement, caisses en direct, stock et bilan (relecture serveur ; hors réseau, message « Hors réseau : affichage des dernières données reçues »). Le geste relit les ventes des caisses visibles (quelques centaines de lectures sur un gros tournoi, jugé acceptable). Tests : 447, parcours dédié vert.
+
 ## 11/11/2026 — Mission « Retours du terrain », F1 : avertissement de stock
 - Le message « Stock épuisé » suit le contenu du ticket : il s'affiche dès que la quantité au ticket atteint le stock, nomme tous les produits concernés et disparaît quand la ligne est retirée ; la vente n'est jamais bloquée. Tests : 440 de logique et d'écrans, analyse sans erreur. Écart signalé : cette étape, très courte, a été réalisée directement par la session mère et non par une sous-session (R13) ; les suivantes passent par des sous-sessions.
 
