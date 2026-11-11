@@ -735,6 +735,48 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 
 **Cadrage F7 (11/11/2026)** : (1) un parcours automatique du critère de fin sur émulateur, `integration_test/parcours_retours_terrain_test.dart`, sur le modèle de `parcours_ergonomie_test.dart` et `captures.dart`, captures rangées dans `audit_front/retours_terrain/apres/` : deux téléphones simulés (deux connexions) ; le premier vend, retire une ligne du ticket (message de stock qui disparaît puis revient), le second voit les ventes ; glisser vers le bas ; les membres dans les Paramètres du responsable (nommer, retirer un bénévole) puis en gestionnaire (sans bouton) ; l'écran « Extraction et modèle » (modèle vierge, données de l'association, export d'un tournoi clôturé, comparaison de deux tournois). (2) Tous les parcours Android existants rejoués un à un (pas la suite d'un bloc), tableau vert/rouge, en distinguant les rouges déjà présents sur `main` avant la mission (`evenements_test`, `menus_test`, `images_test`) ; `parcours_ergonomie_test`, figé à la connexion à F4, doit être expliqué ou corrigé s'il vient d'un défaut de la mission. (3) Version 1.4.0+5 dans `pubspec.yaml` et APK de recette reconstruit puis copié dans `recette/` (non suivi par git). Les règles d'accès n'ont pas changé dans cette mission : rien à déployer. Ensuite, par la mère : checklist C1 à C8, texte de vérification pour une autre IA, documentation, graphify, envoi de la branche.
 
+**Texte de vérification pour une autre IA (rédigé le 11/11/2026, à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETSpplications_mobile\Le_Comptoir`)**
+
+```
+PROMPT DE VÉRIFICATION — Retours du terrain — projet Le Comptoir
+TYPE : finale
+
+Tu es l'IA de vérification. Tu n'as pas codé cette mission. Tu ne corriges rien.
+
+CRITÈRES DE FIN DE MISSION (validés par Kinder le 11/11/2026) :
+1. Sur deux téléphones, je vends sans message de stock fantôme : l'avertissement « Stock épuisé » suit le ticket (il s'affiche quand un produit du ticket atteint le stock, disparaît quand la ligne est retirée, revient si je la remets) et la vente n'est jamais bloquée.
+2. Je vois les ventes de l'autre téléphone : ce que fait un téléphone (vente, stock, caisse, clôture) apparaît sur l'autre sans rien faire, et « glisser vers le bas » relit les données (hors réseau : message clair, rien de bloqué), sur association, événement, caisses en direct, stock et bilan.
+3. Je gère mes membres depuis les Paramètres : le responsable voit tous les membres avec leur statut et, sur chaque ligne, nomme / retire le statut de gestionnaire / retire de l'association ; un gestionnaire voit la liste sans aucun bouton ; un bénévole ne voit pas de liste ; plus de liste en bas de l'écran de l'association ; la note « Qui peut quoi » est présente.
+4. Depuis l'écran « Extraction et modèle » (bouton à côté de « Menus », jamais visible d'un bénévole), je télécharge le modèle (sans aucune marque ni nom de club, un exemple et une explication par feuille), les données de l'association (menu, recettes, prévision), l'export d'un tournoi clôturé (identique à celui de l'onglet Après), et je compare deux tournois clôturés (côte à côte, avec écarts, export Excel).
+
+Si TYPE = nouvelle : ne liste ici que les critères échoués. Dans tous les cas, ajoute :
+CONTRÔLE RAPIDE (R31) : 1. le projet se lance et l'écran d'arrivée s'affiche ; 2. la caisse d'un événement en cours encaisse une vente.
+
+CE QUI A ÉTÉ FAIT ET TESTÉ (test de code réussi à chaque étape) :
+- F1 avertissement de stock qui suit le ticket ; F2 actualisation entre téléphones (un défaut corrigé : le bilan restait « provisoire ») et glisser vers le bas ; F3 membres et droits dans les Paramètres ; F4 modèle générique sans marque ; F5 écran « Extraction et modèle » ; F6 comparateur de deux tournois.
+- Tests de la mission : 466 tests de logique et d'écrans, 255 tests de règles, parcours Android de chaque étape ; parcours complet : `integration_test/parcours_retours_terrain_test.dart` (captures dans `audit_front/retours_terrain/apres/`). Règles d'accès inchangées.
+- Parcours déjà rouges sur `main` avant la mission, hors périmètre (libellés périmés) : evenements_test, menus_test, images_test.
+
+NOUVEAUTÉS À VÉRIFIER EN PRIORITÉ (mission de modification : le nouveau comportement et l'absence de l'ancien) :
+- Caisse : le message de stock suit le ticket (plus de message resté après retrait de la ligne). Voisins : couleur de rupture du produit, encaissement.
+- Paramètres : liste des membres et note ; l'écran de l'association n'a plus la liste des membres. Voisins : code d'accès, suppression de l'association (responsable).
+- Extraction et modèle : quatre cartes ; classeurs ouvrables dans un tableur ; comparateur sur deux tournois clôturés. Voisins : bouton Excel de l'onglet Avant, export de l'onglet Après (inchangés).
+- Point connu non vérifié par le test de code : la remise réelle d'un fichier à la feuille de partage d'Android (simulée dans les parcours).
+
+COMMENT LANCER LE PROJET :
+Mobile Flutter + Firebase, copie locale de Firebase. Émulateur Android `LC2` démarré (`-gpu swiftshader_indirect -no-snapshot -no-audio`), Java 21 d'Android Studio (`C:\Program Files\Android\Android Studio\jbr`) en tête du PATH, puis `flutter pub get` si besoin et, pour les parcours : `firebase emulators:exec --only "auth,firestore" --project le-comptoir-60ba8 "flutter test integration_test/<nom>_test.dart -d emulator-5554 --timeout 15m"`. Pas de migration ni de base de données à préparer. Un seul émulateur Firebase à la fois (ports 8080, 9099, 9150).
+
+TON TRAVAIL :
+1. Lance le projet selon son socle.
+2. Utilise-le en conditions réelles, comme un utilisateur (deux connexions pour les critères 1 et 2).
+3. Pour chaque critère de fin de mission : une seule capture d'écran, nommée `critere-N.png`, et un verdict, réussi ou échoué (non vérifié si tu n'as pas pu le voir, avec la raison).
+4. Ne rejoue pas les tests des étapes.
+
+RENDU :
+- Tableau : critère | capture | verdict (réussi / échoué) | ce que tu as vu, en français
+- L'écran exact que Kinder doit utiliser pour son test final.
+```
+
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
 ```
