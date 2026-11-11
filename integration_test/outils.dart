@@ -2,6 +2,7 @@
 // de Firebase ; 10.0.2.2 = le PC vu depuis l'émulateur).
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/connexion.dart';
 import 'package:le_comptoir/depot_associations.dart';
 import 'package:le_comptoir/depot_evenements.dart';
+import 'package:le_comptoir/ecran_import.dart';
 import 'package:le_comptoir/ecran_menu.dart' show SelecteurPhoto, selecteurPhotoReel;
 import 'package:le_comptoir/ecran_qr.dart' show LecteurQr, lecteurQrReel;
 import 'package:le_comptoir/ecran_racine.dart';
@@ -295,4 +297,49 @@ Future<void> _hautDesCourses(WidgetTester tester, String cle) async {
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 1500));
     await tester.pump(const Duration(milliseconds: 300));
   }
+}
+
+// ---------------------------------------------------------------------------
+// Assistant d'import (T2, décision 77) sur les vrais dépôts. Le sélecteur de fichier du
+// système ne se pilote pas : [classeur] rend les octets « choisis ».
+// ---------------------------------------------------------------------------
+WidgetBuilder assistantImport({
+  required DepotAssociations depot,
+  required String assoId,
+  required String uid,
+  required Uint8List? Function() classeur,
+  String? evenementId,
+  String? menuPropose,
+  bool responsable = true,
+}) =>
+    (_) => EcranImport(
+          sources: SourcesImport.depuis(
+            menus: depot.menus(assoId),
+            evenements: depot.evenements(assoId),
+            uid: uid,
+            responsable: responsable,
+          ),
+          evenementId: evenementId,
+          menuPropose: menuPropose,
+          choisirClasseur: () async => classeur(),
+        );
+
+/// Touche l'élément de clé [cle] (le fait défiler jusqu'à lui d'abord).
+Future<void> toucherCle(WidgetTester tester, String cle) async {
+  final cible = find.byKey(Key(cle));
+  await tester.ensureVisible(cible);
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.tap(cible);
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
+/// Dans l'assistant : choisit le classeur puis ouvre le résumé (attend « Appliquer »).
+Future<void> assistantJusquAuResume(WidgetTester tester) async {
+  await attendre(tester, find.byKey(const Key('import_choisir_classeur')));
+  await toucherCle(tester, 'import_choisir_classeur');
+  await attendre(tester, find.byKey(const Key('import_voir_resume')));
+  await toucherCle(tester, 'import_voir_resume');
+  await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump(const Duration(seconds: 1));
 }

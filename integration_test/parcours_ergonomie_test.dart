@@ -240,9 +240,14 @@ void main() {
         gymnases: depotEv.suivreGymnases(evt),
         produits: depotEv.suivreProduits(evt),
         stocks: depotEv.suivreStocksDepart(evt),
-        importer: (plan) => depotEv.appliquerImport(evt, plan),
+        assistant: assistantImport(
+            depot: depotAsso,
+            assoId: assoId,
+            uid: chefUid,
+            classeur: () => aImporter,
+            evenementId: evt,
+            menuPropose: 'Menu modèle'),
         partagerModele: (n, o, m) async => modele = Uint8List.fromList(o),
-        choisirClasseur: () async => aImporter,
       ),
     ));
     await pause(800);
@@ -260,11 +265,11 @@ void main() {
     }
     aImporter = Uint8List.fromList(x.encode()!);
     await toucher(find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
+    await assistantJusquAuResume(tester);
     await pause(800);
-    expect(contenuDe(tester, find.byKey(const Key('resume_stocks'))).contains('appliqu'), isTrue);
-    await toucher(find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
+    expect(find.textContaining('stock'), findsWidgets);
+    await toucher(find.byKey(const Key('appliquer_import_assistant')));
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
     await db.waitForPendingWrites();
     await retour();
     await attendre(tester, find.byKey(const Key('ouvrir_evenement')));

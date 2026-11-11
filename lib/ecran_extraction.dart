@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
 import 'classeur.dart';
 import 'depot_associations.dart';
@@ -10,6 +9,7 @@ import 'depot_evenements.dart';
 import 'courses.dart';
 import 'depot_menus.dart';
 import 'ecran_comparateur.dart';
+import 'ecran_import.dart';
 import 'evenement.dart';
 import 'export_bilan.dart';
 import 'gymnase.dart';
@@ -184,18 +184,7 @@ class _EtatExtraction extends State<EcranExtraction> {
   }
 
   Future<void> _modeleVierge() => _executer(() async {
-        final json = await rootBundle.loadString('assets/menu_type.json');
-        final modele = lireMenuType(json);
-        final produits = [
-          for (final (i, p) in modele.indexed)
-            ProduitEvenement('modele_$i', p.nom, p.prixCentimes, null,
-                icone: p.icone, fiche: p.fiche),
-        ];
-        final octets = construireModele(
-          produits: produits,
-          gymnases: const [],
-          stocks: const {},
-        );
+        final octets = await construireModeleVierge();
         await widget.partager('modele-vierge.xlsx', octets, typeMimeClasseur);
       }, 'Le modèle n\'a pas pu être préparé. Réessayez.');
 
@@ -375,6 +364,35 @@ class _EtatExtraction extends State<EcranExtraction> {
                 titreStyle: titre,
               );
             },
+          ),
+          _Carte(
+            cle: const Key('carte_import'),
+            titre: 'Importer',
+            texte: 'Un assistant pour importer un classeur : le menu, les anciens '
+                'tournois (références de prévision) et, si vous le voulez, le stock de '
+                'départ d\'un tournoi en préparation. Un résumé s\'affiche avant toute '
+                'écriture.',
+            enfant: OutlinedButton.icon(
+              key: const Key('importer'),
+              style: TypeAction.gerer.contour,
+              onPressed: _occupe
+                  ? null
+                  : () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => EcranImport(
+                            sources: SourcesImport.depuis(
+                              menus: widget.depot.menus(widget.assoId),
+                              evenements: widget.depot.evenements(widget.assoId),
+                              uid: widget.uid,
+                              responsable: widget.responsable,
+                            ),
+                          ),
+                        ),
+                      ),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Importer'),
+            ),
+            titreStyle: titre,
           ),
           if (_erreur != null)
             Padding(

@@ -100,9 +100,14 @@ void main() {
           gymnases: depotEv.suivreGymnases(evt),
           produits: depotEv.suivreProduits(evt),
           stocks: depotEv.suivreStocksDepart(evt),
-          importer: (plan) => depotEv.appliquerImport(evt, plan),
+          assistant: assistantImport(
+              depot: depotAsso,
+              assoId: assoId,
+              uid: chefUid,
+              classeur: () => aImporter,
+              evenementId: evt,
+              menuPropose: 'Menu 2026'),
           partagerModele: (n, o, m) async => modele = Uint8List.fromList(o),
-          choisirClasseur: () async => aImporter,
         ),
       ));
       await attendre(tester, find.byKey(const Key('importer_classeur')));
@@ -161,14 +166,13 @@ void main() {
 
     // ---------- 4. L'importer : résumé, puis « Appliquer ».
     await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
-    await finTransition(tester);
-    expect(find.byKey(const Key('erreur_import')), findsNothing);
-    expect(texteDe('resume_stocks'), '2 stocks seront appliqués.');
-    expect(texteDe('resume_reference_0'),
-        'Référence créée : Tournoi 2025 (Excel) — 2 produits');
-    await toucher(tester, find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
+    await assistantJusquAuResume(tester);
+    expect(find.byKey(const Key('erreur_import_assistant')), findsNothing);
+    expect(find.textContaining('2 stocks seront appliqués.'), findsOneWidget);
+    expect(find.textContaining('Référence créée : Tournoi 2025 (Excel) — 2 produits'),
+        findsOneWidget);
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
     await db.waitForPendingWrites();
 
     // ---------- 5. Dans la Préparation : le stock de départ est celui du fichier.

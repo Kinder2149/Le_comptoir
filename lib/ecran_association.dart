@@ -9,6 +9,7 @@ import 'depot_associations.dart';
 import 'depot_evenements.dart' show ResultatLien;
 import 'ecran_evenement.dart';
 import 'ecran_extraction.dart';
+import 'ecran_import.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, selecteurPhotoReel;
 import 'ecran_menus.dart';
 import 'ecran_nouvel_evenement.dart';
@@ -278,6 +279,14 @@ class EcranAssociation extends StatelessWidget {
                                 builder: (_) => EcranMenus(
                                   depot: depot.menus(assoId),
                                   selecteurPhoto: selecteurPhoto,
+                                  assistant: (_) => EcranImport(
+                                    sources: SourcesImport.depuis(
+                                      menus: depot.menus(assoId),
+                                      evenements: depot.evenements(assoId),
+                                      uid: uid,
+                                      responsable: moi.estResponsable,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

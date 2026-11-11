@@ -17,6 +17,7 @@ import 'ecran_gymnases.dart';
 import 'ecran_menu.dart' show SelecteurPhoto, demanderImageProduit, selecteurPhotoReel;
 import 'ecran_nouvel_evenement.dart';
 import 'ecran_classeur.dart';
+import 'ecran_import.dart';
 import 'ecran_personnes_duree.dart';
 import 'ecran_prevision.dart';
 import 'ecran_restes.dart';
@@ -333,6 +334,8 @@ class EcranEvenement extends StatelessWidget {
     PorteeGestion portee,
   ) => _BlocGestion(
     depot: depot,
+    depotMenus: depotMenus,
+    uid: uid,
     evenement: ev,
     portee: portee,
     membres: membres,
@@ -507,6 +510,8 @@ class EcranEvenement extends StatelessWidget {
 class _BlocGestion extends StatefulWidget {
   const _BlocGestion({
     required this.depot,
+    required this.depotMenus,
+    required this.uid,
     required this.evenement,
     required this.portee,
     required this.membres,
@@ -518,6 +523,8 @@ class _BlocGestion extends StatefulWidget {
   });
 
   final DepotEvenements depot;
+  final DepotMenus depotMenus;
+  final String uid;
   final Evenement evenement;
   final PorteeGestion portee;
   final Stream<List<Membre>> membres;
@@ -638,7 +645,16 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             produits: widget.depot.suivreProduits(ev.id),
             stocks:
                 widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
-            importer: (plan) => widget.depot.appliquerImport(ev.id, plan),
+            assistant: (_) => EcranImport(
+              sources: SourcesImport.depuis(
+                menus: widget.depotMenus,
+                evenements: widget.depot,
+                uid: widget.uid,
+                responsable: portee.responsable,
+              ),
+              evenementId: ev.id,
+              menuPropose: ev.menuNom,
+            ),
           ),
         ),
       );

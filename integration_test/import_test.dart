@@ -109,8 +109,13 @@ void main() {
           gymnases: depotEv.suivreGymnases(evenementId),
           produits: depotEv.suivreProduits(evenementId),
           stocks: depotEv.suivreStocksDepart(evenementId),
-          importer: (plan) => depotEv.appliquerImport(evenementId, plan),
-          choisirClasseur: () async => aChoisir,
+          assistant: assistantImport(
+              depot: depotAsso,
+              assoId: assoId,
+              uid: chefUid,
+              classeur: () => aChoisir,
+              evenementId: evenementId,
+              menuPropose: 'Menu 2026'),
         ),
       ));
       await attendre(tester, find.byKey(const Key('importer_classeur')));
@@ -141,8 +146,10 @@ void main() {
     // ---------- 5. Un fichier illisible : message clair, rien n'est appliqué.
     aChoisir = Uint8List.fromList(List.filled(500, 9));
     await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('erreur_import')));
-    expect(texte(tester, 'erreur_import'), messageClasseurIllisible);
+    await attendre(tester, find.byKey(const Key('import_choisir_classeur')));
+    await toucherCle(tester, 'import_choisir_classeur');
+    await attendre(tester, find.byKey(const Key('erreur_import_assistant')));
+    expect(texte(tester, 'erreur_import_assistant'), messageClasseurIllisible);
     expect(find.byKey(const Key('resume_import')), findsNothing);
     expect(await stocksDepart(evt), {
       gA: <String, StockDepart>{},
@@ -151,19 +158,17 @@ void main() {
     expect(await nbReferences(), 0);
     // Un vrai classeur Excel d'un autre format : même message.
     aChoisir = classeurAutreFormat();
-    await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('erreur_import')));
-    expect(texte(tester, 'erreur_import'), messageClasseurIllisible);
+    await toucherCle(tester, 'import_choisir_classeur');
+    await attendre(tester, find.byKey(const Key('erreur_import_assistant')));
+    expect(texte(tester, 'erreur_import_assistant'), messageClasseurIllisible);
     expect(await nbReferences(), 0);
 
     // ---------- 1. Le résumé AVANT d'appliquer : rien n'est écrit.
     aChoisir = classeur;
-    await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('resume_stocks')));
-    await finTransition(tester);
-    expect(texte(tester, 'resume_stocks'), '2 stocks seront appliqués.');
-    expect(texte(tester, 'resume_reference_0'),
-        'Référence créée : Tournoi 2025 (Excel) — 2 produits');
+    await assistantJusquAuResume(tester);
+    expect(find.textContaining('2 stocks seront appliqués.'), findsOneWidget);
+    expect(find.textContaining('Référence créée : Tournoi 2025 (Excel) — 2 produits'),
+        findsOneWidget);
     // 4. Gymnase et produit inconnus : listés « ignorés ».
     expect(find.textContaining('« Gymnase A » / « Pizza » : produit inconnu'),
         findsOneWidget);
@@ -185,13 +190,13 @@ void main() {
     });
 
     // ---------- 2. Appliquer : le stock de départ est celui du fichier.
-    await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
+    await toucherCle(tester, 'import_voir_resume');
+    await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
-    expect(texte(tester, 'confirmation_import'),
-        'Stocks appliqués : 2. Références enregistrées : Tournoi 2025 (Excel).');
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
+    expect(texte(tester, 'confirmation_import_assistant'),
+        contains('stocks appliqués : 2'));
     await db.waitForPendingWrites();
     final depart = await stocksDepart(evt);
     expect(depart[gA]!.keys, {croque});
@@ -210,11 +215,12 @@ void main() {
     expect((refDoc.data()!['lignes'] as List).length, 2);
 
     // Rejouer l'import ne crée pas de doublon (même identifiant) et ne change rien.
-    await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
+    await toucherCle(tester, 'import_voir_resume');
+    await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
     await finTransition(tester);
-    await toucher(tester, find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await tester.pump(const Duration(seconds: 1));
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
     await db.waitForPendingWrites();
     expect(await nbReferences(), 1);
     expect((await stocksDepart(evt))[gA]![croque]!.quantite, 20);
@@ -244,9 +250,11 @@ void main() {
     await afficherPrevision();
 
     // ---------- 3. La référence est dans les sources de la prévision : 160 ÷ 40 ÷ 2 = 2,0.
-    for (final p in [croque, soda, salade]) {
-      expect(texte(tester, 'source_$p'), 'Source : Menu');
+    // L\'assistant a déjà réglé la prévision du tournoi sur la référence importée.
+    for (final p in [croque, soda]) {
+      expect(texte(tester, 'source_$p'), 'Source : Tournoi 2025 (Excel)');
     }
+    expect(texte(tester, 'source_$salade'), 'Source : Menu');
     await toucher(tester, find.byKey(const Key('prevision_evenement_passe')));
     await attendre(
         tester, find.byKey(const Key('choix_reference_tournoi-2025-excel')));
@@ -321,14 +329,14 @@ void main() {
     ]);
     await afficherPreparation(evtOuvert);
     await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
-    await finTransition(tester);
-    expect(texte(tester, 'resume_stocks'), 'Aucun stock ne sera appliqué.');
-    expect(texte(tester, 'resume_reference_0'),
-        'Référence créée : Tournoi 2024 (Excel) — 1 produit');
-    expect(find.textContaining(messageStockFerme), findsOneWidget);
-    await toucher(tester, find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
+    await assistantJusquAuResume(tester);
+    // Un tournoi déjà ouvert n\'est pas proposé : le stock n\'est pas utilisé, la référence si.
+    expect(find.textContaining('Aucun tournoi choisi'), findsOneWidget);
+    expect(find.textContaining('stocks seront appliqués'), findsNothing);
+    expect(find.textContaining('Référence créée : Tournoi 2024 (Excel) — 1 produit'),
+        findsOneWidget);
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
     await db.waitForPendingWrites();
     // Aucun stock réécrit ; la référence est créée.
     expect((await stocksDepart(evtOuvert))[gymOuvert], isEmpty);

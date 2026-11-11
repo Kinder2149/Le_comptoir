@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T2 : assistant d'import unique
+- Une carte « Importer » dans « Extraction et modèle » : départ (modèle ou classeur), menu (créé, ou menu existant de même nom repris sans modification), anciens tournois en références de prévision, tournoi en préparation facultatif (stock par noms, prévision réglée), résumé complet avant écriture. « Importer un menu » et « Importer un classeur » y renvoient ; réservé à la gestion ; ancien format de classeur toujours lu. Aucune dépendance, règles inchangées. Tests : 486 de logique et d'écrans, parcours Android vert.
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi », T1 : enregistrer sur le téléphone
 - Tout fichier produit (modèle, données de l'association, export, comparateur, classeur, liste de courses) propose « Enregistrer sur le téléphone » (choix du dossier, annulation sans erreur) et « Partager ». Aucune dépendance ajoutée. Tests : 471 de logique et d'écrans, parcours Android vert (le clic du sélecteur système est fait à la main par adb).
 

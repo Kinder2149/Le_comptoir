@@ -675,7 +675,9 @@ class DepotEvenements {
   /// « repris » disparaît). Rien d'autre n'est écrit : aucune vente, aucun bilan.
   /// Les stocks partent par groupes de 20 (limite d'évaluation des règles d'accès) ;
   /// en cas d'échec au milieu, recommencer donne le même résultat.
-  Future<void> appliquerImport(String evenementId, PlanImport plan) async {
+  /// [evenementId] peut être nul (assistant d'import, T2) quand aucun tournoi n'est choisi :
+  /// le plan n'a alors aucun stock, seules les références sont écrites.
+  Future<void> appliquerImport(String? evenementId, PlanImport plan) async {
     for (final r in plan.references) {
       await _references.doc(r.id).set({
         'nom': r.nom,
@@ -689,7 +691,7 @@ class DepotEvenements {
       final lot = _db.batch();
       for (final s in plan.stocks.skip(i).take(20)) {
         lot.set(
-          _gymnase(evenementId, s.gymnaseId).collection('stocks').doc(s.produitId),
+          _gymnase(evenementId!, s.gymnaseId).collection('stocks').doc(s.produitId),
           {'quantite': s.quantite, 'reference': s.quantite},
         );
       }

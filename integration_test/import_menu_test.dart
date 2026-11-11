@@ -48,24 +48,30 @@ void main() {
     final menus = depotAsso.menus(assoId);
 
     var octets = classeurDeTest(menu: lignes());
+    final uid = auth.currentUser!.uid;
     await tester.pumpWidget(MaterialApp(
-      home: EcranMenus(depot: menus, choisirClasseur: () async => octets),
+      home: EcranMenus(
+        depot: menus,
+        assistant: assistantImport(
+            depot: depotAsso, assoId: assoId, uid: uid, classeur: () => octets),
+      ),
     ));
     await attendre(tester, find.byKey(const Key('aucun_menu')));
 
-    // ---------- Un fichier illisible : message clair, rien de créé.
+    // ---------- « Importer un menu depuis Excel » ouvre l'assistant. Un fichier d'un
+    // autre format : message clair, rien de créé.
     octets = classeurAutreFormat();
     await tester.tap(find.byKey(const Key('importer_menu')));
-    await attendre(tester, find.byKey(const Key('erreur_import_menu')));
+    await attendre(tester, find.byKey(const Key('import_choisir_classeur')));
+    await toucherCle(tester, 'import_choisir_classeur');
+    await attendre(tester, find.byKey(const Key('erreur_import_assistant')));
     expect(find.byKey(const Key('resume_import')), findsNothing);
     expect(await menus.suivreMenus().first, isEmpty);
-    await tester.pump(const Duration(seconds: 5)); // la bannière disparaît
 
     // ---------- Le résumé s'affiche AVANT d'écrire ; « Annuler » ne crée rien.
     octets = classeurDeTest(menu: lignes());
-    await tester.tap(find.byKey(const Key('importer_menu')));
-    await attendre(tester, find.byKey(const Key('resume_import')));
-    expect(texte(tester, 'resume_menu'), 'Menu à créer : 4 produits');
+    await assistantJusquAuResume(tester);
+    expect(find.textContaining('sera créé (4 produits)'), findsOneWidget);
     final ignorees = contenuDe(tester, find.byKey(const Key('resume_ignorees')));
     expect(ignorees, contains('ligne 7'));
     expect(ignorees, contains('ligne 8'));
@@ -77,16 +83,15 @@ void main() {
     expect(find.byKey(const Key('resume_import')), findsNothing);
     expect(await menus.suivreMenus().first, isEmpty, reason: 'Annuler ne crée rien');
 
-    // ---------- « Créer le menu » : nom, puis un NOUVEAU menu avec ses produits.
-    await tester.tap(find.byKey(const Key('importer_menu')));
-    await attendre(tester, find.byKey(const Key('appliquer_import_menu')));
-    await tester.tap(find.byKey(const Key('appliquer_import_menu')));
-    await attendre(tester, find.byKey(const Key('nom_menu')));
-    await tester.enterText(find.byKey(const Key('nom_menu')), 'Menu Excel');
-    await tester.tap(find.byKey(const Key('valider_nom')));
-    await attendre(tester, find.byKey(const Key('confirmation_import_menu')));
-    expect(texte(tester, 'confirmation_import_menu'),
-        contains('Menu « Menu Excel » créé : 4 produits'));
+    // ---------- Un nom, puis « Appliquer » : un NOUVEAU menu avec ses produits.
+    await tester.enterText(find.byKey(const Key('nom_menu_import')), 'Menu Excel');
+    await tester.pump();
+    await toucherCle(tester, 'import_voir_resume');
+    await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
+    expect(texte(tester, 'confirmation_import_assistant'),
+        contains('Menu « Menu Excel » créé'));
     await db.waitForPendingWrites();
 
     final liste = await menus.suivreMenus().first;
@@ -134,13 +139,21 @@ void main() {
     expect(e('Tarte aux pommes').fiche.provenance, 'apporte');
     expect(e('Tarte aux pommes').fiche.conso, 0.75);
 
-    // ---------- Réimporter ne touche pas le menu existant : un second menu s'ajoute.
-    await tester.tap(find.byKey(const Key('importer_menu')));
-    await attendre(tester, find.byKey(const Key('appliquer_import_menu')));
-    await tester.tap(find.byKey(const Key('appliquer_import_menu')));
-    await attendre(tester, find.byKey(const Key('nom_menu')));
-    await tester.enterText(find.byKey(const Key('nom_menu')), 'Menu Excel 2');
-    await tester.tap(find.byKey(const Key('valider_nom')));
+    // ---------- Réimporter sous le même nom reprend le menu existant SANS le modifier ;
+    // sous un autre nom, un second menu s'ajoute.
+    await toucherCle(tester, 'import_voir_resume');
+    await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
+    expect(find.textContaining('repris sans aucune modification'), findsWidgets);
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
+    await db.waitForPendingWrites();
+    expect((await menus.suivreMenus().first).length, 1);
+    expect((await menus.suivreProduits(menuId).first).length, 4);
+    await tester.enterText(find.byKey(const Key('nom_menu_import')), 'Menu Excel 2');
+    await tester.pump();
+    await toucherCle(tester, 'import_voir_resume');
+    await attendre(tester, find.byKey(const Key('appliquer_import_assistant')));
+    await toucherCle(tester, 'appliquer_import_assistant');
     await tester.pump(const Duration(seconds: 1));
     await db.waitForPendingWrites();
     final deux = await menus.suivreMenus().first;

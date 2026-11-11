@@ -84,7 +84,6 @@ void main() {
         gymnases: depotEv.suivreGymnases(evt),
         produits: depotEv.suivreProduits(evt),
         stocks: depotEv.suivreStocksDepart(evt),
-        importer: (plan) => depotEv.appliquerImport(evt, plan),
         partagerModele: (n, o, m) async {
           nomFichier = n;
           octets = o;

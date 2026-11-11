@@ -101,8 +101,13 @@ void main() {
         gymnases: depotEv.suivreGymnases(evt),
         produits: depotEv.suivreProduits(evt),
         stocks: depotEv.suivreStocksDepart(evt),
-        importer: (plan) => depotEv.appliquerImport(evt, plan),
-        choisirClasseur: () async => classeur,
+        assistant: assistantImport(
+            depot: depotAsso,
+            assoId: assoId,
+            uid: chefUid,
+            classeur: () => classeur,
+            evenementId: evt,
+            menuPropose: 'Menu 2026'),
       ),
     ));
     await attendre(tester, find.byKey(const Key('importer_classeur')));
@@ -112,12 +117,14 @@ void main() {
 
     // ---------- Import sans erreur : le résumé annonce la référence.
     await toucher(tester, find.byKey(const Key('importer_classeur')));
-    await attendre(tester, find.byKey(const Key('appliquer_import')));
-    expect(find.byKey(const Key('erreur_import')), findsNothing);
-    expect(texte(tester, 'resume_reference_0'),
-        'Référence créée : Tournoi de l\'an passé (Excel) — ${attendu.length} produits');
-    await toucher(tester, find.byKey(const Key('appliquer_import')));
-    await attendre(tester, find.byKey(const Key('confirmation_import')));
+    await assistantJusquAuResume(tester);
+    expect(find.byKey(const Key('erreur_import_assistant')), findsNothing);
+    expect(
+        find.textContaining(
+            'Référence créée : Tournoi de l\'an passé (Excel) — ${attendu.length} produits'),
+        findsOneWidget);
+    await toucherCle(tester, 'appliquer_import_assistant');
+    await attendre(tester, find.byKey(const Key('confirmation_import_assistant')));
     await db.waitForPendingWrites();
 
     // ---------- La référence enregistrée = le calcul à la main (à 0,0001 près).

@@ -1,15 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show LengthLimitingTextInputFormatter, rootBundle;
 
-import 'classeur.dart';
 import 'depot_menus.dart';
 import 'ecran_menu.dart';
-import 'import_menu.dart';
-import 'resume_import.dart';
-import 'selecteur.dart';
 import 'theme.dart';
 
 /// Nom saisi, et d'où l'on part : le modèle, la copie d'un menu (son id), ou rien.
@@ -100,84 +94,15 @@ class EcranMenus extends StatelessWidget {
     super.key,
     required this.depot,
     this.selecteurPhoto = selecteurPhotoReel,
-    this.choisirClasseur = choisirClasseurSysteme,
+    this.assistant,
   });
 
   final DepotMenus depot;
   final SelecteurPhoto selecteurPhoto;
 
-  /// Choisit le classeur Excel à importer (remplaçable dans les tests).
-  final SelecteurClasseur choisirClasseur;
-
-  void _dire(BuildContext context, String phrase, Key cle) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(phrase, key: cle)));
-  }
-
-  /// Importer un menu : fichier, lecture, résumé AVANT écriture, nom, création d'un
-  /// NOUVEAU menu. Rien n'est écrit tant que « Créer le menu » n'est pas touché.
-  Future<void> _importer(BuildContext context) async {
-    final navigateur = Navigator.of(context);
-    final Uint8List? octets;
-    try {
-      octets = await choisirClasseur();
-    } catch (_) {
-      if (context.mounted) {
-        _dire(context, 'Le choix du fichier n\'a pas pu s\'ouvrir. Réessayez.',
-            const Key('erreur_import_menu'));
-      }
-      return;
-    }
-    if (octets == null || !context.mounted) return; // annulé : rien ne change
-    final ClasseurLu lu;
-    try {
-      lu = lireClasseur(octets);
-    } on ClasseurIllisible {
-      _dire(context, messageMenuIllisible, const Key('erreur_import_menu'));
-      return;
-    }
-    final plan = preparerMenu(lu);
-    if (plan.vide) {
-      _dire(context, plan.messageVide, const Key('erreur_import_menu'));
-      return;
-    }
-    final accepte = await navigateur.push<bool>(MaterialPageRoute(
-      builder: (_) => EcranResumeImport(
-        titre: 'Résumé de l\'import du menu',
-        cleAppliquer: const Key('appliquer_import_menu'),
-        libelleAppliquer: 'Créer le menu',
-        ignorees: plan.ignorees,
-        erreurs: plan.erreurs,
-        corps: [
-          Text(plan.phraseMenu,
-              key: const Key('resume_menu'),
-              style: Theme.of(context).textTheme.titleMedium),
-        ],
-      ),
-    ));
-    if (accepte != true || !context.mounted) return;
-    final menus = await depot.suivreMenus().first;
-    if (!context.mounted) return;
-    final n = await demanderNom(context, titre: 'Nom du nouveau menu', menus: menus);
-    if (n == null || !context.mounted) return;
-    try {
-      await depot.creerMenuDepuisClasseur(n.nom, plan.aCreer);
-      if (context.mounted) {
-        _dire(
-            context,
-            'Menu « ${n.nom} » créé : ${plan.produits.length} '
-            'produit${plan.produits.length > 1 ? 's' : ''}.',
-            const Key('confirmation_import_menu'));
-      }
-    } catch (_) {
-      if (context.mounted) {
-        _dire(
-            context,
-            'Le menu n\'a pas pu être créé. Vérifiez le réseau puis réessayez.',
-            const Key('erreur_import_menu'));
-      }
-    }
-  }
+  /// L'assistant d'import (T2, décision 77), fourni par l'écran de l'association : « Importer
+  /// un menu depuis Excel » y renvoie. Absent : pas de bouton d'import.
+  final WidgetBuilder? assistant;
 
   /// Crée le menu : copie d'un menu, modèle (assets/menu_type.json) ou vide.
   Future<void> _creer(BuildContext context, NomMenu n) async {
@@ -219,14 +144,16 @@ class EcranMenus extends StatelessWidget {
       ),
       body: Column(
         children: [
-          Padding(
+          if (assistant != null)
+            Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 key: const Key('importer_menu'),
                 style: TypeAction.gerer.contour,
-                onPressed: () => _importer(context),
+                onPressed: () => Navigator.of(context)
+                    .push<void>(MaterialPageRoute(builder: assistant!)),
                 icon: const Icon(Icons.upload_file),
                 label: const Text('Importer un menu depuis Excel'),
               ),
