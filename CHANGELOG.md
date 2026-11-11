@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Prêt pour le tournoi », T1 : enregistrer sur le téléphone
+- Tout fichier produit (modèle, données de l'association, export, comparateur, classeur, liste de courses) propose « Enregistrer sur le téléphone » (choix du dossier, annulation sans erreur) et « Partager ». Aucune dépendance ajoutée. Tests : 471 de logique et d'écrans, parcours Android vert (le clic du sélecteur système est fait à la main par adb).
+
 ## 11/11/2026 — Mission « Prêt pour le tournoi » : Plan prêt
 - Huit retours de Kinder avant le tournoi du week-end : partage au lieu de téléchargement, classeur du club pour l'association test, Paramètres non rangés, pas de retour en arrière après une source de prévision, page Courses non rangée, pas d'ajout de produit depuis « Produits et images », heure de la dernière actualisation, import dispersé.
 - Décisions 75 à 79 validées par Kinder : enregistrer ou partager chaque fichier ; un seul import, par un assistant dans « Extraction et modèle » (modifie la décision 72 pour l'import) ; ajout d'un produit à un événement en préparation ou en cours, repris dans le menu (modifie la décision 13, nom et prix existants toujours figés) ; annulation d'un changement de source ; heure de la dernière actualisation ; Paramètres et Courses en cartes.

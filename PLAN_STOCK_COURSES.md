@@ -507,6 +507,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| T1 Enregistrer sur le téléphone | Close (test de code) | 11/11/2026 | 1 à 4 réussis : N1 (analyse, 471 tests) ; N2 sur LC2 : fichier enregistré dans Téléchargements via le sélecteur Android, relu par adb ; le tap sur « Enregistrer » est fait par adb, pas par le test |
 | P1 | Close (testée par Claude) | 06/11/2026 | 1 à 7 réussis : règles 197/197 (10 nouveaux, `preparation.test.mjs`), `flutter test` 252/252, `flutter analyze` sans erreur, parcours Android LC2 `evenements_test` + `restes_test` 2/2. Règles déployées le 06/11/2026. Limite : le bouton « Ouvrir l'événement » est testé en logique et dans le parcours `evenements_test`, pas en test d'écran isolé |
 | P2 | Close (testée par Claude) | 06/11/2026 | 1 à 6 réussis : règles 204/204 (7 nouveaux, `stock_depart.test.mjs`), `flutter test` 261/261, analyse sans erreur, parcours Android LC2 `preparation_test` + `restes_test` + `gymnases_test` + `evenements_test` 4/4. Règles (champ `repris`) déployées le 06/11/2026 |
 | P3 | Close (testée par Claude) | 07/11/2026 | 1 à 4 réussis : `flutter test` 269/269 (8 nouveaux : limites de durée et de personnes, lecture seule), analyse sans erreur, règles inchangées (204/204 à P2), parcours Android LC2 `preparation_test` + `courses_test` + `chantier_complet_test` + `recette_test` 6/6 (80 personnes et 2 jours réglés dans la Préparation, Courses lit 80 et 2 et calcule 320 ; « Jour complet » dans Courses : durée de l'événement toujours 2). Limite : l'absence du champ « personnes » dans Courses est constatée par le parcours Android, pas par un test d'écran isolé (pas de faux Firestore) |
@@ -776,6 +777,18 @@ RENDU :
 - Tableau : critère | capture | verdict (réussi / échoué) | ce que tu as vu, en français
 - L'écran exact que Kinder doit utiliser pour son test final.
 ```
+
+### Cadrage T1 — Enregistrer sur le téléphone (décision 76)
+
+**Critères (repris du plan)** : (1) les six fichiers (modèle, données de l'association, export d'un tournoi, comparateur, classeur de l'événement, liste de courses) proposent « Enregistrer sur le téléphone » et « Partager » ; (2) « Enregistrer » ouvre le choix du dossier et le fichier y est, lisible ; (3) annuler le choix ne montre aucune erreur ; (4) aucune dépendance ajoutée.
+
+**Stratégie** : un seul point d'entrée dans `lib/partage.dart`. Les deux fonctions par défaut (`partagerFichier`, `partagerFichierTexte`) gardent leur signature (les écrans et les tests qui injectent un faux partageur ne changent pas) mais, au lieu d'ouvrir directement la feuille de partage, affichent une petite feuille de choix « Enregistrer sur le téléphone » / « Partager ». Pour avoir un contexte sans changer les signatures : clé de navigation globale `navigatorCle` déclarée dans `partage.dart` et branchée sur le `MaterialApp` de `lib/main.dart`. « Enregistrer » = `FilePicker.saveFile(fileName:, bytes:)` (file_picker 11.0.3, déjà accordé) ; fermeture sans choix (retour nul) = silence, jamais d'erreur ; échec réel = message simple. « Partager » = comportement actuel (`Share.shareXFiles`). Libellés en français, boutons aux couleurs de la décision 31.
+
+**Fichiers touchés** : `lib/partage.dart`, `lib/main.dart` (clé de navigation), `test/` (un test d'écran de la feuille de choix), un parcours N2 court dans `integration_test/`.
+
+**On ne fait pas** : aucune dépendance, aucun changement des contenus des fichiers, des écrans appelants ni des calculs ; pas de refonte des boutons existants (leurs libellés peuvent rester).
+
+**Preuve** : N1 (`flutter analyze`, `flutter test`) ; N2 : sur l'émulateur LC2, un fichier enregistré réellement via le sélecteur Android et retrouvé lisible ; annulation sans erreur.
 
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 

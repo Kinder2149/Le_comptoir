@@ -8,6 +8,7 @@ import 'depot_associations.dart';
 import 'ecran_caisse.dart';
 import 'ecran_racine.dart';
 import 'firebase_options.dart';
+import 'partage.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -31,6 +32,7 @@ class LeComptoir extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Le Comptoir',
+      navigatorKey: navigatorCle,
       theme: themeComptoir(),
       home: accueil,
     );
