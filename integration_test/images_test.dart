@@ -68,7 +68,7 @@ void main() {
     var produits = await menus.suivreProduits(menu.id).first;
     expect(produits.length, 27);
     expect(produits.map((p) => p.nom),
-        containsAll(['Croque-monsieur', 'Thé', 'Café', 'Crêpes (3 petites)', 'Coca']));
+        containsAll(['Croque-monsieur', 'Thé', 'Café', 'Crêpes (3 petites)', 'Cola']));
     // La sucette et les bonbons n'ont pas d'icône ; aucun produit du modèle n'a de photo.
     expect(
         produits
@@ -131,7 +131,7 @@ void main() {
         findsOneWidget);
 
     // --- Photo trop lourde : refusée avec un message, rien n'est enregistré.
-    final soda = produits.firstWhere((p) => p.nom == 'Coca');
+    final soda = produits.firstWhere((p) => p.nom == 'Cola');
     aRenvoyer = Uint8List(40000);
     await toucher(tester, find.byKey(Key('produit_${soda.id}')));
     await attendre(tester, find.byKey(const Key('ajouter_photo')));

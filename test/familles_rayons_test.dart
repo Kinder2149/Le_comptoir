@@ -36,8 +36,8 @@ void main() {
       String fam(String n) => modele().firstWhere((p) => p.nom == n).fiche.famille;
       expect(libellesFamilles[fam('Croque-monsieur')], 'Croques');
       expect(libellesFamilles[fam('Café')], 'Boissons chaudes');
-      expect(libellesFamilles[fam('Coca')], 'Boissons fraîches');
-      expect(libellesFamilles[fam('Mars')], 'Snacks et fruits');
+      expect(libellesFamilles[fam('Cola')], 'Boissons fraîches');
+      expect(libellesFamilles[fam('Barre caramel')], 'Snacks et fruits');
       expect(libellesFamilles[fam('Tarte')], 'Fait maison');
     });
     test('menu type : aucun produit sans famille précise', () {
@@ -65,7 +65,7 @@ void main() {
         }
       }
       expect(
-          libellesRayons[modele().firstWhere((p) => p.nom == 'Coca').fiche.rayon],
+          libellesRayons[modele().firstWhere((p) => p.nom == 'Cola').fiche.rayon],
           'Boissons');
     });
   });
@@ -214,7 +214,7 @@ void main() {
         (tester) async {
       late Future<ProduitSaisi?> futur;
       await ouvrir(tester, (f) => futur = f);
-      await tester.enterText(find.byKey(const Key('nom_produit')), 'Coca');
+      await tester.enterText(find.byKey(const Key('nom_produit')), 'Cola');
       await tester.enterText(find.byKey(const Key('prix_produit')), '1');
       await choisir(tester, 'famille_produit', 'famille_boissons_fraiches');
       await choisir(tester, 'rayon_produit', 'rayon_boissons');
@@ -224,7 +224,7 @@ void main() {
       expect(r.fiche.rayon, 'boissons');
 
       await ouvrir(tester, (f) => futur = f,
-          produit: ProduitMenu('p', 'Coca', 100, fiche: r.fiche));
+          produit: ProduitMenu('p', 'Cola', 100, fiche: r.fiche));
       expect(find.text('Boissons fraîches'), findsOneWidget);
       await valider(tester);
       final r2 = (await futur)!;

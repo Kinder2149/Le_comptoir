@@ -156,6 +156,31 @@ const _aides = {
           'l\'import.',
 };
 
+/// Un exemple rempli par feuille, ajouté à l'aide du MODÈLE seulement (décision 73).
+/// Il est écrit dans la ligne d'aide, au-dessus des en-têtes : jamais lu à l'import.
+/// Noms génériques : aucune marque, aucun club, aucune personne.
+const _exemples = {
+  feuilleMenu:
+      'Exemple : Famille « Boissons fraîches », Produit « Cola », Prix 1,00, Type '
+          '« Au litre », Provenance « Acheté par l\'association », Verres par litre 4, '
+          'Rayon « Boissons », Consommation 0,3.',
+  feuilleRecettes:
+      'Exemple : Produit « Croque-monsieur », Ingrédient « Pain de mie », Quantité '
+          'par produit 2, Unité « tranche », Rayon « Boulangerie ».',
+  feuilleStock:
+      'Exemple : Gymnase « Gymnase 1 », Produit « Cola », Quantité 24.',
+  feuilleHistorique:
+      'Exemple : Événement « Tournoi de l\'an passé », Gymnase « Gymnase 1 », '
+          'Personnes 40, Jours 2, Produit « Cola », Quantité vendue 48 : la dernière '
+          'colonne affiche 0,60 par personne et par jour.',
+  feuilleCourses:
+      'Exemple : Série 1, Produit « Cola », Quantité achetée 12, Coût 18,00, '
+          'Rayon « Boissons ».',
+};
+
+/// L'aide du modèle d'une feuille : l'explication, puis son exemple rempli.
+String _aideModele(String feuille) => '${_aides[feuille]!}\n${_exemples[feuille]!}';
+
 // Aides propres à l'export du tournoi (les autres feuilles gardent celle du modèle).
 const _aidesExport = {
   feuilleStock:
@@ -375,7 +400,7 @@ void _bandeau(Sheet f, int largeur, String titre, String sousTitre) {
 
 /// Ligne d'aide (ligne 5), étirée sur la largeur de la feuille.
 void _aideLigne(Sheet f, int largeur, String texte) {
-  f.setRowHeight(4, 32);
+  f.setRowHeight(4, texte.contains('\n') ? 62 : 32);
   for (var c = 0; c < largeur; c++) {
     _poser(f, 4, c, null, _styleAide());
   }
@@ -434,7 +459,7 @@ Excel _nouveauClasseur() {
   return classeur;
 }
 
-void _feuilleAccueil(Excel classeur) {
+void _feuilleAccueil(Excel classeur, {bool avecExemple = false}) {
   const largeur = 6;
   final f = classeur[feuilleAccueil];
   _bandeau(f, largeur, 'Le Comptoir : classeur de l\'association',
@@ -529,6 +554,27 @@ void _feuilleAccueil(Excel classeur) {
     );
     f.setMergedCellStyle(
         CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: r), styleLegende);
+  }
+  if (avecExemple) {
+    final re = rl + 1 + lignesLegende.length + 1;
+    _poser(f, re, 0, TextCellValue('Un exemple'), _styleSection());
+    f.setRowHeight(re, 26);
+    f.setRowHeight(re + 1, 48);
+    f.merge(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: re + 1),
+      CellIndex.indexByColumnRow(columnIndex: largeur - 1, rowIndex: re + 1),
+      customValue: TextCellValue(
+          'Au Tournoi de l\'an passé : 40 personnes, 2 jours, 48 Cola vendus, soit '
+          '0,60 par personne et par jour. Chaque feuille donne, sous son titre, '
+          'son exemple de ligne rempli : il sert à comprendre, il n\'est jamais importé.'),
+    );
+    f.setMergedCellStyle(
+        CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: re + 1),
+        CellStyle(
+          fontColorHex: _couleur(_anthracite),
+          textWrapping: TextWrapping.WrapText,
+          verticalAlign: VerticalAlign.Center,
+        ));
   }
 }
 
@@ -783,15 +829,15 @@ Uint8List construireModele({
   required Map<String, Map<String, StockDepart>> stocks,
 }) {
   final classeur = _nouveauClasseur();
-  _feuilleAccueil(classeur);
-  _feuilleMenu(classeur, produits, _aides[feuilleMenu]!);
-  _feuilleRecettes(classeur, produits, _aides[feuilleRecettes]!);
+  _feuilleAccueil(classeur, avecExemple: true);
+  _feuilleMenu(classeur, produits, _aideModele(feuilleMenu));
+  _feuilleRecettes(classeur, produits, _aideModele(feuilleRecettes));
   _feuilleDonnees(
     classeur,
     feuilleStock,
     titre: 'Stock de départ',
     sousTitre: 'Ce que vous avez déjà avant le tournoi. Vide = produit non suivi.',
-    aide: _aides[feuilleStock]!,
+    aide: _aideModele(feuilleStock),
     entetes: entetesStock,
     largeurs: const [26, 32, 14],
     lignes: [
@@ -810,7 +856,7 @@ Uint8List construireModele({
     titre: 'Historique',
     sousTitre:
         'Les ventes d\'un tournoi passé : l\'application en tire la prévision du prochain.',
-    aide: _aides[feuilleHistorique]!,
+    aide: _aideModele(feuilleHistorique),
     entetes: entetesHistorique,
     largeurs: const [26, 24, 13, 10, 32, 16, 24],
     calcul: const {6},
@@ -834,7 +880,7 @@ Uint8List construireModele({
     titre: 'Courses',
     sousTitre:
         'Rempli par l\'application à l\'export du tournoi : ce qui a été acheté, rayon par rayon.',
-    aide: _aides[feuilleCourses]!,
+    aide: _aideModele(feuilleCourses),
     entetes: entetesCourses,
     largeurs: const [10, 40, 18, 14, 26],
     lignes: const [],

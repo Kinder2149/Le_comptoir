@@ -434,4 +434,116 @@ void main() {
     expect(typeMimeClasseur,
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   });
+
+  // ---------------------------------------------- modèle générique (F4, décision 73)
+
+  // Marques et noms propres qui ne doivent jamais figurer dans le menu type ni dans
+  // le modèle Excel (liste fixe, à compléter si une marque s'y glisse).
+  final marques = RegExp(
+      r'\b(coca|cola-cola|fanta|ice ?tea|oasis|mars|twix|snickers|orangina|nutella|'
+      r'perrier|schweppes|pepsi|lipton|haribo|kinder|bounty|kitkat|lion|heineken|'
+      r'kronenbourg|nescafe|nespresso|red ?bull|capri-sun|evian|volvic)\b',
+      caseSensitive: false);
+
+  String sansAccents(String t) => t
+      .replaceAll(RegExp('[éèêë]'), 'e')
+      .replaceAll(RegExp('[àâ]'), 'a')
+      .replaceAll(RegExp('[ôö]'), 'o')
+      .replaceAll(RegExp('[ûù]'), 'u');
+
+  /// Tout le texte d'un classeur : une chaîne par cellule, toutes feuilles.
+  List<String> textesDe(List<int> octets) => [
+        for (final f in Excel.decodeBytes(octets).tables.values)
+          for (final ligne in f.rows)
+            for (final d in ligne)
+              if (d?.value != null) d!.value.toString()
+      ];
+
+  final produitsType = [
+    for (final p
+        in lireMenuType(File('assets/menu_type.json').readAsStringSync()))
+      ProduitEvenement(p.nom.toLowerCase(), p.nom, p.prixCentimes, null,
+          fiche: p.fiche)
+  ];
+
+  test('F4 critère 1 : aucune marque dans assets/menu_type.json', () {
+    final brut = sansAccents(File('assets/menu_type.json').readAsStringSync());
+    expect(marques.allMatches(brut).map((m) => m.group(0)).toList(), isEmpty);
+  });
+
+  test('F4 critère 1 : aucune marque dans le modèle Excel généré (menu type)', () {
+    final octets = construireModele(
+        produits: produitsType,
+        gymnases: const [Gymnase('g1', 'Gymnase 1')],
+        stocks: const {});
+    for (final t in textesDe(octets)) {
+      expect(marques.hasMatch(sansAccents(t)), isFalse, reason: t);
+    }
+    // Aucun nom de personne ni de club : seuls les gymnases génériques de l'exemple.
+    expect(textesDe(octets).any((t) => t.contains('Édith')), isFalse);
+  });
+
+  test('F4 critère 3 : chaque feuille du modèle a une explication et un exemple', () {
+    final x = Excel.decodeBytes(_modele());
+    for (final nom in feuillesModele.where((n) => n != 'Accueil')) {
+      final textes = [
+        for (final ligne in x[nom].rows.take(5))
+          for (final d in ligne)
+            if (d?.value != null) d!.value.toString()
+      ];
+      expect(textes.any((t) => t.contains('Exemple :')), isTrue, reason: nom);
+      // L'explication précède l'exemple dans la même case.
+      final aide = textes.firstWhere((t) => t.contains('Exemple :'));
+      expect(aide.indexOf('Exemple :') > 20, isTrue, reason: nom);
+    }
+    final accueil = textesDe(_modele());
+    expect(accueil.any((t) => t.contains('Chaque feuille donne')), isTrue);
+  });
+
+  test('F4 critère 4 : le modèle du menu type se réimporte sans erreur, mêmes produits',
+      () {
+    final octets = construireModele(
+        produits: produitsType,
+        gymnases: const [Gymnase('g1', 'Gymnase 1')],
+        stocks: const {});
+    final lu = lireClasseur(octets);
+    expect(lu.erreurs, isEmpty);
+    expect(lu.historique, isEmpty); // l'exemple n'est jamais importé
+    expect(lu.produits.length, produitsType.length);
+    for (var i = 0; i < produitsType.length; i++) {
+      final a = produitsType[i];
+      final b = lu.produits[i];
+      expect(b.nom, a.nom);
+      expect(b.prixCentimes, a.prixCentimes, reason: a.nom);
+      expect(b.fiche.type, a.fiche.type, reason: a.nom);
+      expect(b.fiche.conso, a.fiche.conso, reason: a.nom);
+      expect(b.fiche.famille, a.fiche.famille, reason: a.nom);
+      expect(b.fiche.ingredients, a.fiche.ingredients, reason: a.nom);
+      if (a.fiche.provenance == 'achete' && a.fiche.type != 'compose') {
+        expect(b.fiche.rayon, a.fiche.rayon, reason: a.nom);
+      }
+    }
+  });
+
+  test('F4 critère 2 : les chiffres de la décision 50 du menu type sont intacts', () {
+    final m = {for (final p in produitsType) p.nom: p};
+    const prixEtConso = {
+      'Cola': (100, 0.32),
+      'Cola zéro': (100, 0.05),
+      'Soda à l\'orange': (100, 0.16),
+      'Thé glacé': (100, 0.09),
+      'Boisson fruitée': (100, 0.11),
+      'Barre caramel': (100, 0.05),
+      'Barre biscuitée': (100, 0.05),
+      'Barre cacahuète': (100, 0.05),
+    };
+    prixEtConso.forEach((nom, v) {
+      expect(m[nom]!.prixCentimes, v.$1, reason: nom);
+      expect(m[nom]!.fiche.conso, v.$2, reason: nom);
+    });
+    expect(m['Cola']!.fiche.verresParLitre, 4);
+    expect(m['Cola']!.fiche.rayon, 'boissons');
+    expect(m['Barre caramel']!.fiche.rayon, 'epicerie');
+    expect(m['Barre caramel']!.fiche.famille, 'snacks_fruits');
+  });
 }

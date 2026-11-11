@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F4 : modèle générique
+- Plus aucune marque dans le modèle de menu ni dans le modèle Excel : Coca→Cola, Coca Zéro→Cola zéro, Fanta→Soda à l'orange, Ice Tea→Thé glacé, Oasis→Boisson fruitée, Mars/Twix/Snickers→Barre caramel / biscuitée / cacahuète. Prix, consommations, recettes, rayons et familles inchangés (testé). Chaque feuille du modèle vierge a une explication et un exemple rempli, jamais importé. Menus et événements existants inchangés. Tests : 452.
+
 ## 11/11/2026 — Mission « Retours du terrain », F3 : membres et droits dans les Paramètres
 - Une seule liste des membres, dans les Paramètres (plus en bas de l'écran de l'association) : le responsable nomme, retire le statut de gestionnaire ou retire de l'association ; un gestionnaire voit la liste sans bouton ; un bénévole ne la voit pas. Note « Qui peut quoi ». Un test de règles confirme qu'un gestionnaire ne peut pas retirer un membre. Tests : 447, 255 de règles, 5 parcours Android verts. Constat : les parcours `evenements_test` et `menus_test` étaient déjà rouges sur `main` (libellés périmés depuis l'ergonomie), non corrigés ici.
 

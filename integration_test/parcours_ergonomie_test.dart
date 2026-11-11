@@ -132,7 +132,7 @@ void main() {
     final gB = gymnases.firstWhere((g) => g.nom == 'Gymnase B').id;
     final produits = await depotEv.suivreProduits(evt).first;
     String id(String nom) => produits.firstWhere((p) => p.nom == nom).id;
-    final croque = id('Croque-monsieur'), cafe = id('Café'), coca = id('Coca');
+    final croque = id('Croque-monsieur'), cafe = id('Café'), coca = id('Cola');
 
     // ---------- 2. L'accueil de l'association, puis l'onglet Avant du tournoi.
     await attendre(tester, find.text('Tournoi 2026'));
