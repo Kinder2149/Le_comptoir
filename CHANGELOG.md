@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Méthode v7.2 : statuts remis à jour
+- « Retours du terrain » repasse en « En attente de ma capture » : sous la v7.2 (R11), la fusion peut précéder le test final, mais seule la capture de Kinder ferme la mission. Nouvelle mission « Banc d'essai » en attente (4), avec son critère de fin (durées relevées par le banc comparées aux 7 à 8 heures de « Retours du terrain »).
+
 ## 11/11/2026 — Mission « Retours du terrain » close et fusionnée
 - Fusionnée dans `main` sur accord écrit de Kinder (« tu peux fusionner »), après la vérification par une autre IA ; le test final de Kinder avec l'APK 1.4.0 n'est pas consigné (écart à R11 assumé par Kinder). Branche supprimée après fusion.
 
