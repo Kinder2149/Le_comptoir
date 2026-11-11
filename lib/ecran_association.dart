@@ -113,28 +113,6 @@ class EcranAssociation extends StatelessWidget {
     );
   }
 
-  Future<void> _retirer(BuildContext context, Membre x) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text('Retirer le statut de gestionnaire à ${x.prenom} ?'),
-        content: const Text(
-            'Il redevient bénévole : il ne voit plus les menus ni les bilans et ne gère plus les événements.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Annuler')),
-          FilledButton(
-              style: TypeAction.danger.plein,
-              key: const Key('confirmer_retrait'),
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Retirer')),
-        ],
-      ),
-    );
-    if (ok == true) await depot.retirerGestionnaire(assoId, x.uid);
-  }
-
   /// Événements : un bénévole ne voit que ceux en cours.
   Widget _evenements(BuildContext context, Membre moi) {
     final gestion = moi.role != 'benevole';
@@ -238,7 +216,6 @@ class EcranAssociation extends StatelessWidget {
             if (m.hasError) return _Quitte(depot: depot, uid: uid);
             final membres = m.data ?? const <Membre>[];
             final moi = membres.where((x) => x.uid == uid).firstOrNull;
-            final estResponsable = moi?.estResponsable ?? false;
             return Scaffold(
               appBar: AppBar(
                 title: Text(asso.nom, key: const Key('nom')),
@@ -322,33 +299,6 @@ class EcranAssociation extends StatelessWidget {
                         ),
                   const Divider(height: 40),
                   if (moi != null) _evenements(context, moi),
-                  const Divider(height: 40),
-                  Text('Membres (${membres.length})',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  for (final x in membres)
-                    ListTile(
-                      key: Key('membre_${x.uid}'),
-                      title: Text(x.prenom),
-                      subtitle: Text(libelleStatut(x),
-                          key: Key('statut_${x.uid}')),
-                      // Seul le responsable nomme et retire les gestionnaires.
-                      trailing: !estResponsable || x.estResponsable
-                          ? null
-                          : (x.role == 'benevole' && !x.enAttente)
-                              ? TextButton(
-                                  key: Key('nommer_${x.uid}'),
-                                  style: TypeAction.gerer.texte,
-                                  onPressed: () =>
-                                      depot.nommerGestionnaire(assoId, x.uid),
-                                  child: const Text('Nommer gestionnaire'),
-                                )
-                              : TextButton(
-                                  key: Key('retirer_${x.uid}'),
-                                  style: TypeAction.danger.texte,
-                                  onPressed: () => _retirer(context, x),
-                                  child: const Text('Retirer'),
-                                ),
-                    ),
                 ],
               ),
               ),
@@ -449,6 +399,35 @@ class _EtatParametres extends State<EcranParametres> {
     }
   }
 
+  Future<void> _retirerGestion(Membre x) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Retirer le statut de gestionnaire à ${x.prenom} ?'),
+        content: const Text(
+            'Il redevient bénévole : il ne voit plus les menus ni les bilans et ne gère plus les événements.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Annuler')),
+          FilledButton(
+              style: TypeAction.danger.plein,
+              key: const Key('confirmer_retrait'),
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Retirer')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.depot.retirerGestionnaire(widget.assoId, x.uid);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _erreurAutre = 'Changement impossible. Vérifiez le réseau.');
+      }
+    }
+  }
+
   /// Il faut retaper le nom de l'association pour confirmer.
   Future<bool> _confirmerSuppression(String nom) async {
     final champ = TextEditingController();
@@ -518,92 +497,157 @@ class _EtatParametres extends State<EcranParametres> {
     }
   }
 
-  /// Section réservée au responsable : association, membres, suppression.
-  List<Widget> _sectionResponsable(BuildContext context, List<Membre> membres) => [
-        const Divider(height: 40),
-        Text('Association', style: Theme.of(context).textTheme.titleMedium),
-        StreamBuilder<Association?>(
-          stream: widget.depot.suivreAssociation(widget.assoId),
-          builder: (context, a) {
-            final asso = a.data;
-            if (asso == null) return const SizedBox.shrink();
-            return Column(
+  /// Section réservée au responsable : nom et code de l'association.
+  Widget _sectionAssociation(BuildContext context) => StreamBuilder<Association?>(
+        stream: widget.depot.suivreAssociation(widget.assoId),
+        builder: (context, a) {
+          final asso = a.data;
+          if (asso == null) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Divider(height: 40),
+              Text('Association', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(asso.nom,
+                  key: const Key('param_nom'),
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              const Text("Code d'accès"),
+              Text(
+                asso.code,
+                key: const Key('param_code'),
+                style: const TextStyle(
+                    fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 4),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton(
+                  key: const Key('regenerer'),
+                  style: TypeAction.gerer.contour,
+                  onPressed: () => _regenerer(asso),
+                  child: const Text('Changer le code'),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+  /// Liste unique des membres, pour le responsable et les gestionnaires actifs.
+  /// Les boutons d'action ne sont montrés qu'au responsable.
+  Widget _sectionMembres(
+          BuildContext context, List<Membre> membres, bool responsable) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(height: 40),
+          Text('Membres (${membres.length})',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (final x in membres)
+            Column(
+              key: Key('param_membre_${x.uid}'),
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(asso.nom,
-                    key: const Key('param_nom'),
-                    style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                const Text("Code d'accès"),
-                Text(
-                  asso.code,
-                  key: const Key('param_code'),
-                  style: const TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 4),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(x.prenom),
+                  subtitle: Text(libelleStatut(x),
+                      key: Key('param_statut_${x.uid}')),
                 ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton(
-                    key: const Key('regenerer'),
-                    style: TypeAction.gerer.contour,
-                    onPressed: () => _regenerer(asso),
-                    child: const Text('Changer le code'),
-                  ),
-                ),
-                const Divider(height: 40),
-                Text('Membres', style: Theme.of(context).textTheme.titleMedium),
-                for (final x in membres)
-                  if (!x.estResponsable)
-                    ListTile(
-                      key: Key('param_membre_${x.uid}'),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(x.prenom),
-                      subtitle: Text(libelleStatut(x)),
-                      trailing: TextButton(
-                        key: Key('sortir_${x.uid}'),
+                if (responsable && !x.estResponsable)
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (x.role == 'benevole' && !x.enAttente)
+                        TextButton(
+                          key: Key('param_nommer_${x.uid}'),
+                          style: TypeAction.gerer.texte,
+                          onPressed: () => widget.depot
+                              .nommerGestionnaire(widget.assoId, x.uid),
+                          child: const Text('Nommer gestionnaire'),
+                        ),
+                      if (x.role == 'gestionnaire' || x.enAttente)
+                        TextButton(
+                          key: Key('param_retirer_gestion_${x.uid}'),
+                          style: TypeAction.danger.texte,
+                          onPressed: () => _retirerGestion(x),
+                          child: const Text('Retirer le statut de gestionnaire'),
+                        ),
+                      TextButton(
+                        key: Key('param_sortir_${x.uid}'),
                         style: TypeAction.danger.texte,
                         onPressed: () => _sortir(x),
                         child: const Text("Retirer de l'association"),
                       ),
-                    ),
-                if (membres.every((x) => x.estResponsable))
-                  const Text('Aucun autre membre.', key: Key('aucun_autre_membre')),
-                const Divider(height: 40),
-                Text('Zone dangereuse',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                if (_suppression)
-                  const Text('Suppression en cours…',
-                      key: Key('suppression_en_cours'))
-                else
-                  OutlinedButton(
-                    key: const Key('supprimer_association'),
-                    style: TypeAction.danger.contour,
-                    onPressed: () => _supprimer(asso),
-                    child: const Text("Supprimer l'association"),
-                  ),
-                if (_erreurSuppression != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(_erreurSuppression!,
-                        key: const Key('erreur_suppression'),
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
+                    ],
                   ),
               ],
-            );
-          },
-        ),
-        if (_erreurAutre != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(_erreurAutre!,
-                key: const Key('erreur_parametres'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+          if (membres.every((x) => x.estResponsable))
+            const Text('Aucun autre membre.',
+                key: Key('aucun_autre_membre')),
+        ],
+      );
+
+  /// Note « Qui peut quoi » : les droits des trois rôles.
+  Widget _quiPeutQuoi(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(height: 40),
+          Text('Qui peut quoi', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text(
+            "Responsable : nomme et retire les gestionnaires, retire un membre, "
+            "change le code d'accès et supprime l'association.\n"
+            'Gestionnaire : gère les menus, les événements, le stock et les bilans '
+            'des gymnases qui lui sont rattachés ; voit la liste des membres sans '
+            'pouvoir la modifier.\n'
+            'Bénévole : tient sa caisse et voit les événements en cours ; ne voit ni '
+            'les menus ni la liste des membres.',
+            key: Key('qui_peut_quoi'),
           ),
-      ];
+        ],
+      );
+
+  /// Zone réservée au responsable : suppression de l'association.
+  Widget _sectionZone(BuildContext context) => StreamBuilder<Association?>(
+        stream: widget.depot.suivreAssociation(widget.assoId),
+        builder: (context, a) {
+          final asso = a.data;
+          if (asso == null) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Divider(height: 40),
+              Text('Zone dangereuse',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (_suppression)
+                const Text('Suppression en cours…',
+                    key: Key('suppression_en_cours'))
+              else
+                OutlinedButton(
+                  key: const Key('supprimer_association'),
+                  style: TypeAction.danger.contour,
+                  onPressed: () => _supprimer(asso),
+                  child: const Text("Supprimer l'association"),
+                ),
+              if (_erreurSuppression != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(_erreurSuppression!,
+                      key: const Key('erreur_suppression'),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                ),
+            ],
+          );
+        },
+      );
 
   Future<void> _activer() async {
     setState(() {
@@ -634,13 +678,16 @@ class _EtatParametres extends State<EcranParametres> {
       body: StreamBuilder<List<Membre>>(
         stream: widget.depot.suivreMembres(widget.assoId),
         builder: (context, s) {
-          final moi = (s.data ?? const <Membre>[])
-              .where((x) => x.uid == widget.uid)
-              .firstOrNull;
+          final membres = s.data ?? const <Membre>[];
+          final moi = membres.where((x) => x.uid == widget.uid).firstOrNull;
           if (moi == null) {
             return const Center(child: CircularProgressIndicator());
           }
           final google = aGoogle(widget.auth.currentUser);
+          final responsable = moi.estResponsable;
+          // Liste des membres : responsable et gestionnaires actifs (pas les bénévoles).
+          final voirMembres =
+              responsable || (moi.role == 'gestionnaire' && !moi.enAttente);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -673,8 +720,18 @@ class _EtatParametres extends State<EcranParametres> {
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.error)),
                 ),
-              if (moi.estResponsable)
-                ..._sectionResponsable(context, s.data ?? const <Membre>[]),
+              if (responsable) _sectionAssociation(context),
+              if (voirMembres) _sectionMembres(context, membres, responsable),
+              _quiPeutQuoi(context),
+              if (responsable) _sectionZone(context),
+              if (_erreurAutre != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(_erreurAutre!,
+                      key: const Key('erreur_parametres'),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                ),
             ],
           );
         },

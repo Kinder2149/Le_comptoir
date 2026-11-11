@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 11/11/2026 — Mission « Retours du terrain », F3 : membres et droits dans les Paramètres
+- Une seule liste des membres, dans les Paramètres (plus en bas de l'écran de l'association) : le responsable nomme, retire le statut de gestionnaire ou retire de l'association ; un gestionnaire voit la liste sans bouton ; un bénévole ne la voit pas. Note « Qui peut quoi ». Un test de règles confirme qu'un gestionnaire ne peut pas retirer un membre. Tests : 447, 255 de règles, 5 parcours Android verts. Constat : les parcours `evenements_test` et `menus_test` étaient déjà rouges sur `main` (libellés périmés depuis l'ergonomie), non corrigés ici.
+
 ## 11/11/2026 — Mission « Retours du terrain », F2 : actualisation entre téléphones
 - Scénario reproduit sur deux téléphones simulés : 25 relevés sur 26 se mettaient déjà à jour seuls ; seul défaut, le bilan qui restait « provisoire » quand un autre téléphone clôturait l'événement : corrigé (le bilan suit l'événement en direct). « Glisser vers le bas pour actualiser » ajouté sur association, événement, caisses en direct, stock et bilan (relecture serveur ; hors réseau, message « Hors réseau : affichage des dernières données reçues »). Le geste relit les ventes des caisses visibles (quelques centaines de lectures sur un gros tournoi, jugé acceptable). Tests : 447, parcours dédié vert.
 

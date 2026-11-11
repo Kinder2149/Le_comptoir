@@ -170,8 +170,13 @@ void main() {
     await DepotAssociations(dbA)
         .rejoindre(uid: leaUid, codeSaisi: code, prenom: 'Lea');
     await dbA.waitForPendingWrites();
-    await verifiePresence(
-        tester, 'association', 'A rejoint : le membre apparaît', 'membre_$leaUid', true);
+    // La liste des membres est dans Paramètres (responsable).
+    await tester.tap(find.byKey(const Key('parametres')));
+    await tester.pump(const Duration(milliseconds: 500));
+    await verifiePresence(tester, 'association', 'A rejoint : le membre apparaît',
+        'param_membre_$leaUid', true);
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump(const Duration(milliseconds: 500));
     // Un autre téléphone (administrateur de la copie locale) ouvre l'événement « Plus tard ».
     expect(
         await restEcrire(
