@@ -892,3 +892,61 @@ Tu es la session mère de la mission « Ergonomie de la gestion » de Le Comptoi
 8. Fin : documentation à jour, résumé final dans CHANGELOG.md, branche poussée sur le dépôt, APK de recette 1.3.0 ; puis Kinder fait son test et sa capture. Fusion dans main seulement après son accord écrit.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+## 15. Mission « Retours du terrain » (décisions 68 à 74, plan et critères validés par Kinder le 11/11/2026)
+
+**Critère de fin de mission (validé par Kinder, 11/11/2026)** : « Sur deux téléphones, je vends sans message de stock fantôme, je vois les ventes de l'autre téléphone, je gère mes membres depuis les Paramètres, et depuis l'écran Extraction et modèle je télécharge le modèle, les données de l'association et l'export d'un tournoi, et je compare deux tournois. »
+
+**Origine** : usage réel d'une caisse sur deux téléphones (captures de Kinder du 11/11/2026 : « Caisse de sebastien », ligne « Barre de céréales pomme » retirée sans encaisser, le message « Stock épuisé … Vous pouvez quand même vendre. » reste affiché avec un total à 0,00 €).
+
+**Constats faits dans le code au cadrage (11/11/2026)** :
+- Caisse (`lib/ecran_caisse.dart`, `_EtatCaisse`) : `_alerte` est posée dans `_ajouter` et effacée seulement par `_vider` (encaissement, remise à zéro) et `_voirVentes` ; le bouton de retrait d'une ligne (`retirer_<id>`) ne la recalcule pas.
+- Membres : la liste complète avec « Retirer de l'association » n'existe dans les Paramètres (`EcranParametres._sectionResponsable`, `lib/ecran_association.dart`) que pour le responsable ; une autre liste (nommer / retirer le statut de gestionnaire) est en bas de l'écran de l'association, visible par tous, bénévoles compris.
+- Actualisation : tous les écrans lisent en direct (flux), aucun écran ne lit une seule fois ; le défaut vu entre deux téléphones n'est donc pas expliqué par le code et doit être reproduit (F2). Kinder n'a pas précisé l'écran concerné : on teste la caisse, l'événement (Pendant), les caisses en direct, le stock et le bilan.
+- Modèle : `assets/menu_type.json` (27 produits) ne contient aucun nom de club mais des marques (Coca, Coca Zéro, Fanta, Ice Tea, Oasis, Mars, Twix, Snickers). Le modèle Excel et l'export existent déjà (onglets Avant et Après de l'événement, `lib/ecran_classeur.dart`, `lib/classeur.dart`) ; le comparateur est nouveau.
+
+**Préalables (validés avec le plan)** : (1) la mission démarre après la clôture d'« Ergonomie de la gestion » (vérification par une autre IA, test et capture de Kinder, fusion dans `main`) ; (2) règles d'accès déployées sur le vrai projet dès que leurs tests passent, accord donné une fois pour toute la mission ; (3) une session mère (Sonnet) mène les étapes une par une, chacune dans une sous-session neuve, modèle selon R17 ; (4) aucune nouvelle dépendance sans accord de Kinder.
+
+**Ce qu'on ne touche pas** : les calculs (prévision, courses, calcul inverse, report), le contenu du bilan, les droits des rôles (décisions 19 et 23 : seul le responsable retire un membre et gère les gestionnaires), les menus et événements existants.
+
+**Étapes** (une à la fois, dans l'ordre ; chaque critère est vérifié par un test de code ou sur émulateur)
+
+| # | Étape | Ce que Kinder voit | Critères (test de code) |
+|---|---|---|---|
+| F1 | Avertissement de stock qui suit le ticket (décision 69) | Caisse | (1) j'ajoute le dernier exemplaire d'un produit : le message s'affiche ; (2) je retire la ligne : il disparaît ; (3) je la remets : il revient ; (4) deux produits en rupture, j'en retire un : le message ne nomme plus que l'autre ; (5) la vente n'est jamais bloquée |
+| F2 | Actualisation entre deux téléphones (décision 70) | Écrans principaux | (1) scénario reproduit sur deux téléphones simulés (deux appareils ou deux connexions sur la copie locale de Firebase) : le téléphone A vend, ajoute du stock, ouvre ou clôture une caisse ; on relève pour chaque écran du téléphone B (association, événement Pendant, caisses en direct, stock, bilan, caisse) s'il se met à jour seul ; (2) chaque défaut trouvé est corrigé à sa cause et couvert par un test ; (3) sur ces écrans, glisser vers le bas relit les données sur le serveur et affiche l'état à jour ; (4) hors réseau, glisser vers le bas ne bloque rien et le dit en clair |
+| F3 | Membres et droits dans les Paramètres (décision 71) | Paramètres | (1) en responsable : tous les membres avec leur statut, et sur chaque ligne nommer, retirer le statut de gestionnaire, retirer de l'association ; je retire un bénévole ; (2) en gestionnaire : la même liste, sans aucun bouton d'action ; (3) en bénévole : pas de liste ; (4) la liste n'est plus en bas de l'écran de l'association ; (5) la note « Qui peut quoi » liste les droits du responsable, du gestionnaire et du bénévole ; (6) les règles d'accès refusent toujours un retrait par un gestionnaire |
+| F4 « opus » | Modèle générique retravaillé (décision 73) | Modèle téléchargé, menu créé depuis le modèle | (1) aucun nom de marque ni de club dans `assets/menu_type.json` ni dans le modèle Excel ; (2) prix, consommations, recettes et rayons restent ceux recalés sur l'association réelle (décision 50), sauf correction justifiée ligne par ligne dans le cadrage ; (3) chaque feuille du modèle vierge a un exemple rempli et une explication ; (4) le modèle se réimporte sans erreur et redonne les mêmes produits ; (5) les menus et événements existants ne changent pas. Marquée « opus » : jugement sur des données réelles à rendre génériques sans perdre leur justesse |
+| F5 | Écran « Extraction et modèle » (décision 72) | Bouton depuis l'écran de l'association, à côté de « Menus » | (1) visible par le responsable et les gestionnaires, jamais par un bénévole ; (2) quatre cartes : modèle vierge, données de l'association, export d'un tournoi, comparateur ; (3) le modèle vierge se télécharge ; (4) « données de l'association » : je choisis un menu et je télécharge un classeur avec menu, composition (recettes) et prévision ; (5) « export d'un tournoi » liste les tournois clôturés et produit le même classeur que l'onglet Après ; (6) un gestionnaire limité ne voit que ses gymnases dans l'export |
+| F6 | Comparateur d'événements (décision 74) | Carte « Comparer deux tournois » | (1) je choisis deux tournois clôturés ; (2) je vois côte à côte personnes, jours, nombre de ventes, total, coût des courses, résultat ; (3) par produit (retrouvé par son nom) : quantités vendues et consommation par personne et par jour, avec l'écart ; un produit présent d'un seul côté est affiché avec « — » ; (4) les chiffres sont égaux à un calcul fait à la main sur deux tournois de test ; (5) export en Excel aux couleurs de l'application, qui s'ouvre sans erreur |
+| F7 | Clôture de mission | Parcours complet et texte de vérification | (1) parcours automatique du critère de fin sur émulateur, avec captures ; (2) texte de vérification pour une autre IA ; (3) APK de recette reconstruit, version 1.4.0 |
+
+**Dépendances entre étapes** : F1, F2 et F3 sont indépendantes ; F4 avant F5 (le modèle vierge téléchargé est celui de F4) ; F5 avant F6 (la carte du comparateur est sur l'écran de F5) ; F7 en dernier. Ordre retenu : F1 → F2 → F3 → F4 → F5 → F6 → F7.
+
+**Arrêts prévus** : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite à la vérification.
+
+**Suivi** (une ligne par étape close)
+
+| Étape | État | Date | Critères |
+|---|---|---|---|
+
+### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
+
+```
+Tu es la session mère de la mission « Retours du terrain » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi.
+
+1. Lis, dans cet ordre : V:\DEV\METHODO\3_CHANTIER.md, PROJET_CONTEXTE.md (bloc STATUT, décisions 68 à 74, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md section 15 (plan F1 à F7, critères, constats, préalables), CHANGELOG.md (dernière entrée), graphify-out/GRAPH_REPORT.md.
+2. Préalable 1 : vérifie que la mission « Ergonomie de la gestion » est fusionnée dans main et que la branche `claude/cadrage-retours-terrain` (ce plan) l'est aussi. Sinon, tu t'arrêtes là et tu le dis à Kinder.
+3. Hygiène git : rien de non enregistré, main à jour avec le dépôt en ligne, puis branche `claude/retours-terrain` depuis main. Jamais de travail sur main.
+4. Pour chaque étape, de F1 à F7, dans l'ordre :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 15 (« Cadrage Fn »), critères du plan repris tels quels.
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon R17 : Sonnet, sauf F4 marquée « opus ». Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie que le test de code ou sur émulateur de chaque critère est réussi (flutter analyze, flutter test, tests_regles/lancer.ps1, parcours Android utiles sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (préalable 2).
+   d. Ligne dans le tableau de suivi de la section 15, ligne dans CHANGELOG.md, commit sur la branche. Puis étape suivante, sans attendre Kinder.
+5. F2 : commence par reproduire le défaut sur deux téléphones simulés et relève écran par écran ce qui se met à jour seul ; corrige la cause avant d'ajouter « glisser vers le bas ».
+6. Aucune dépendance nouvelle sans accord de Kinder. Les calculs, le contenu du bilan et les droits des rôles ne changent pas (seul le responsable retire un membre).
+7. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
+8. Clôture (F7) : checklist C1 à C8, texte de vérification rangé en section 15, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère). En cas d'échec, retour en phase 6 sur les seuls critères échoués.
+9. Fin : documentation à jour, résumé final dans CHANGELOG.md, graphify à jour, branche poussée sur le dépôt, APK de recette 1.4.0 ; puis Kinder fait son test et sa capture. Fusion dans main seulement après son accord écrit.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
