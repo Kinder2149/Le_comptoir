@@ -1423,7 +1423,7 @@ Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temp
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
 
-### 18.7 Reprise au 12/11/2026 — état réel du lot A et plan corrigé (proposé par Claude Code, à valider par Kinder)
+### 18.7 Reprise au 12/11/2026 — état réel du lot A et plan corrigé — VALIDÉ par Kinder le 12/11/2026 (« Je valide »)
 
 **Constat.** Les étapes T1 à T8 ont été codées et enregistrées le 11/11/2026 sur le PC, sur une branche `claude/pret-tournoi` qui n'avait jamais été envoyée en ligne ; T9 avait commencé (version 1.5.0+6, texte de vérification, batterie complète des parcours interrompue sur `parcours_mission_test`). Le plan complet (sections 17 et 18) a été écrit le 12/11/2026 sur l'autre poste sans voir ce travail, d'où la phrase « aucune des étapes T1 à T9 n'est livrée », **fausse**. Le 12/11/2026, avec l'accord de Kinder : les parcours adaptés pendant le N3 sont enregistrés (commit d7cd723), le travail est envoyé en ligne, puis joint au plan de main sur la branche **`claude/lot-a-tournoi`** (un seul conflit, le CHANGELOG, résolu en gardant les deux côtés). Les cadrages T1 à T8, le relevé T3 et le texte de vérification T9, rangés par erreur dans la section 13, sont replacés en fin de section 16. Décisions 75 à 84 et critères 18.5 **inchangés** : seul le travail restant change.
 

@@ -1,6 +1,6 @@
 # CHANGELOG — Le Comptoir
 
-## 12/11/2026 — Lot A : reprise, état réel (à valider par Kinder)
+## 12/11/2026 — Lot A : reprise, état réel (validée par Kinder le 12/11/2026)
 - T1 à T8 avaient été faites le 11/11/2026 sur le PC, sur une branche jamais envoyée en ligne ; le plan complet du 12/11/2026 les croyait non livrées. Travail envoyé en ligne et joint au plan sur la branche `claude/lot-a-tournoi` ; parcours adaptés pendant le N3 enregistrés.
 - PLAN_STOCK_COURSES.md : cadrages T1 à T8, relevé T3 et texte de vérification T9 replacés en section 16 (ils étaient en section 13) ; suivi du lot A rempli pour A1, A4, A5, A6 ; 18.7 = ce qui reste (A2 et A3 : décision 84 ; A7 : badges, cartes par rôle, QR ; A9 entière ; A8 : décision 82 ; A10) ; 18.8 = prompt de reprise de la session mère (remplace 18.6).
 - Branches : `comptoir-app-refinement-cnuyb4` supprimée (déjà fusionnée) ; `doc-stock-management-dhutbe` archivée en `archive/doc-stock-management` (note du 01/11/2026 reprise depuis par « Préparer l'événement »).
