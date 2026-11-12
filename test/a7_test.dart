@@ -184,7 +184,8 @@ void main() {
   });
 
   Future<List<LienGymnase>> scanner(
-      WidgetTester tester, _Depot depot, String texteQr) async {
+      WidgetTester tester, _Depot depot, String texteQr,
+      String titreDialogue) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.5;
     addTearDown(tester.view.reset);
@@ -202,6 +203,8 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('scanner_qr')));
     await tester.tap(find.byKey(const Key('scanner_qr')));
     await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text(titreDialogue)),
+        findsOneWidget);
     await tester.enterText(find.byKey(const Key('prenom_qr')), 'Zoé');
     await tester.tap(find.byKey(const Key('valider_prenom_qr')));
     await tester.pumpAndSettle();
@@ -212,7 +215,8 @@ void main() {
       "accueil : scanner le QR de l'association = entrer comme bénévole, sans événement",
       (tester) async {
     final depot = _Depot(const []);
-    final liens = await scanner(tester, depot, ecrireLienAssociation('ABC234'));
+    final liens = await scanner(tester, depot, ecrireLienAssociation('ABC234'),
+        "Rejoindre l'association");
     expect(depot.appels, ['rejoindre:nouveau:ABC234:Zoé']);
     expect(liens, isEmpty, reason: "aucun événement ne doit s'ouvrir");
   });
@@ -221,7 +225,8 @@ void main() {
       (tester) async {
     final depot = _Depot(const []);
     final liens = await scanner(tester, depot,
-        ecrireLienGymnase(const LienGymnase('ABC234', 'evt1', 'g1')));
+        ecrireLienGymnase(const LienGymnase('ABC234', 'evt1', 'g1')),
+        'Rejoindre ce gymnase');
     expect(depot.appels, ['rejoindre:nouveau:ABC234:Zoé']);
     expect(liens, [const LienGymnase('ABC234', 'evt1', 'g1')]);
   });
