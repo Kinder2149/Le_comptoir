@@ -634,6 +634,12 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             onVoirCourses: portee.toutVoir
                 ? () => _ouvrirCourses(context, ev, portee)
                 : null,
+            quantites: portee.toutVoir
+                ? QuantitesParProduit(
+                    depot: widget.depot,
+                    evenementId: ev.id,
+                  )
+                : null,
           ),
         ),
       );

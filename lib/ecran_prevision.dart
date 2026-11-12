@@ -30,6 +30,7 @@ class EcranPrevision extends StatelessWidget {
     required this.appliquerReference,
     this.definirPrevisionVerifiee,
     this.onVoirCourses,
+    this.quantites,
     this.annulable,
     this.annulerChangement,
   });
@@ -58,6 +59,10 @@ class EcranPrevision extends StatelessWidget {
 
   /// Renvoi vers la liste de courses (null = pas de renvoi).
   final VoidCallback? onVoirCourses;
+
+  /// « Ce qu'on prévoit de vendre » : les quantités par produit (décision 82), à côté
+  /// de la prévision (null = pas de bloc).
+  final Widget? quantites;
 
   /// « Annuler ce changement » : le flux dit si un changement de source est annulable (il
   /// suit les autres téléphones), et l'action qui le remet (null = pas de bouton).
@@ -169,6 +174,10 @@ class EcranPrevision extends StatelessWidget {
                 key: Key('erreur_lecture_prevision'))
           else if (enregistrees == null)
             const Center(child: CircularProgressIndicator()),
+          if (quantites != null) ...[
+            const SizedBox(height: 16),
+            quantites!,
+          ],
         ],
       ),
     );

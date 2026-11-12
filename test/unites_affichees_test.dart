@@ -165,13 +165,17 @@ void main() {
       expect(_t(tester, 'unites_bilan_produit_tarte'), '2 gâteaux · 16 parts');
     });
 
-    testWidgets('Courses : « En stock » complété par les unités', (tester) async {
+    // A8 : le bloc « Quantités par produit » est en Préparation (même widget, même texte).
+    testWidgets('Préparation : « En stock » complété par les unités', (tester) async {
       tester.view.physicalSize = const Size(400, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
         theme: themeComptoir(),
-        home: EcranCourses(depot: _FauxDepot(), evenementId: 'e'),
+        home: Scaffold(
+          body: SingleChildScrollView(
+              child: QuantitesParProduit(depot: _FauxDepot(), evenementId: 'e')),
+        ),
       ));
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));

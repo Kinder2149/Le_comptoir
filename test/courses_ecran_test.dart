@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:le_comptoir/courses.dart';
@@ -5,6 +7,7 @@ import 'package:le_comptoir/depot_caisses.dart';
 import 'package:le_comptoir/depot_evenements.dart';
 import 'package:le_comptoir/depot_menus.dart';
 import 'package:le_comptoir/ecran_courses.dart';
+import 'package:le_comptoir/ecran_prevision.dart';
 import 'package:le_comptoir/evenement.dart';
 import 'package:le_comptoir/gymnase.dart';
 import 'package:le_comptoir/previsions.dart';
@@ -27,8 +30,15 @@ class _FausseCaisses implements DepotCaisses {
 class _FauxDepot implements DepotEvenements {
   _FauxDepot(this.liste);
 
-  final ListeCourses liste;
+  ListeCourses liste;
   final List<String> appels = [];
+  final _flux = StreamController<ListeCourses?>.broadcast();
+
+  /// Une autre page (ou un autre téléphone) écrit la liste : les écrans abonnés la relisent.
+  void ecrireAilleurs(ListeCourses l) {
+    liste = l;
+    _flux.add(l);
+  }
 
   static const croque = ProduitEvenement('croque', 'Croque', 300, null,
       fiche: FicheProduit(type: 'compose', conso: 2, ingredients: [
@@ -73,15 +83,20 @@ class _FauxDepot implements DepotEvenements {
       Stream.value(const {});
 
   @override
-  Stream<ListeCourses?> suivreListeCourses(String evenementId) =>
-      Stream.value(liste);
+  Stream<ListeCourses?> suivreListeCourses(String evenementId) async* {
+    yield liste;
+    yield* _flux.stream;
+  }
 
   @override
   DepotCaisses caisses(String evenementId) => _FausseCaisses();
 
   @override
-  Future<void> enregistrerListeCourses(String evenementId, ListeCourses l) async =>
-      appels.add('enregistrer');
+  Future<void> enregistrerListeCourses(String evenementId, ListeCourses l) async {
+    appels.add('enregistrer');
+    liste = l;
+    _flux.add(l);
+  }
 
   @override
   Future<void> cocherArticle(String evenementId, String cle, bool coche) async =>
@@ -214,5 +229,147 @@ void main() {
     expect(find.byKey(const Key('barre_actions')), findsNothing);
     expect(find.byKey(const Key('bandeau_resume')), findsOneWidget);
     expect(find.byKey(const Key('series_validees')), findsOneWidget);
+  });
+
+  // Mission « Lot A », A8 (décision 82).
+  group('A8 : En stock + Modifier, cocher ≠ valider, quantités en Préparation', () {
+    testWidgets('aucun champ « Il reste » : « En stock » et un bouton « Modifier »',
+        (tester) async {
+      await _afficher(tester);
+      expect(find.text('Il reste'), findsNothing);
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.byKey(const Key('reste_pain de mie|tranche')), findsNothing);
+      expect(_texte(tester, 'en_stock_pain de mie|tranche'), 'En stock : non renseigné');
+      expect(find.byKey(const Key('modifier_reste_pain de mie|tranche')), findsOneWidget);
+    });
+
+    testWidgets("« Modifier » garde la saisie : la quantité s'écrit et s'affiche",
+        (tester) async {
+      final depot = await _afficher(tester);
+      await tester.tap(find.byKey(const Key('modifier_reste_pain de mie|tranche')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('reste_pain de mie|tranche')), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('reste_pain de mie|tranche')), '100');
+      await tester.tap(find.byKey(const Key('valider_reste')));
+      await tester.pumpAndSettle();
+      expect(_texte(tester, 'en_stock_pain de mie|tranche'), 'En stock : 100 tranches');
+      await tester.pump(const Duration(seconds: 1));
+      expect(depot.liste.restes['pain de mie|tranche'], 100);
+      expect(depot.appels, contains('enregistrer'));
+    });
+
+    testWidgets('cocher ne change pas le stock ; le bouton dit combien sont cochés',
+        (tester) async {
+      final depot = await _afficher(tester);
+      expect(find.text('Valider les courses (0 / 3 cochés)'), findsOneWidget);
+      await tester.tap(find.descendant(
+          of: find.byKey(const Key('rayon_boulangerie')),
+          matching: find.byType(Checkbox)));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Valider les courses (1 / 3 cochés)'), findsOneWidget);
+      // Cocher n'écrit que la case : aucune validation, aucun stock saisi.
+      expect(depot.appels.where((a) => a.startsWith('cocher:')), hasLength(1));
+      expect(depot.appels.where((a) => a == 'valider'), isEmpty);
+      expect(depot.liste.restes, isEmpty);
+    });
+
+    testWidgets("« Quantités par produit » n'est plus dans Courses", (tester) async {
+      await _afficher(tester);
+      expect(find.byKey(const Key('quantites_produits')), findsNothing);
+      expect(find.text('Quantités par produit'), findsNothing);
+      expect(find.byKey(const Key('coche_g1_croque')), findsNothing);
+      expect(find.byKey(const Key('qte_g1_croque')), findsNothing);
+    });
+
+    testWidgets('les quantités se règlent en Préparation, les achats suivent dans Courses',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final depot = _FauxDepot(_liste);
+      await tester.pumpWidget(MaterialApp(
+        theme: themeComptoir(),
+        home: EcranCourses(depot: depot, evenementId: 'e'),
+      ));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Pain de mie : 200 tranches'), findsOneWidget);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: themeComptoir(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+              child: QuantitesParProduit(depot: depot, evenementId: 'e')),
+        ),
+      ));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text("Ce qu'on prévoit de vendre"), findsOneWidget);
+      expect(find.text('Quantités par produit'), findsOneWidget);
+      expect(find.byKey(const Key('qte_g1_croque')), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('qte_g1_croque')), '150');
+      await tester.pump(const Duration(seconds: 1));
+      expect(depot.liste.quantite('g1', 'croque'), 150);
+      // Le reste de la liste (série précédente) est gardé tel quel.
+      expect(depot.liste.precedent.series, 1);
+
+      // Retour sur la page Courses : elle relit la liste, l'achat a suivi.
+      await tester.pumpWidget(MaterialApp(
+        theme: themeComptoir(),
+        home: EcranCourses(depot: depot, evenementId: 'e'),
+      ));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Pain de mie : 300 tranches'), findsOneWidget);
+    });
+
+    testWidgets("la Préparation (écran Prévision) porte « Ce qu'on prévoit de vendre »",
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final depot = _FauxDepot(_liste);
+      await tester.pumpWidget(MaterialApp(
+        theme: themeComptoir(),
+        home: EcranPrevision(
+          evenement: depot.suivreEvenement('e'),
+          portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 1),
+          gymnases: depot.suivreGymnases('e'),
+          produits: depot.suivreProduits('e'),
+          previsions: depot.suivrePrevisions('e'),
+          definirPrevision: (p, c) async {},
+          chargerPasses: () async => throw UnimplementedError(),
+          appliquerPasse: (r) async {},
+          revenirAuMenu: () async {},
+          chargerReferences: () async => const [],
+          appliquerReference: (r) async {},
+          quantites: QuantitesParProduit(depot: depot, evenementId: 'e'),
+        ),
+      ));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byKey(const Key('titre_prevoit_vendre')), findsOneWidget);
+      expect(find.text("Ce qu'on prévoit de vendre"), findsOneWidget);
+      expect(find.byKey(const Key('quantites_produits')), findsOneWidget);
+      expect(find.text('Quantités par produit'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('qte_g1_cafe')), '60');
+      await tester.pump(const Duration(seconds: 1));
+      expect(depot.liste.quantite('g1', 'cafe'), 60);
+    });
+
+    testWidgets('Courses relit la liste en direct quand elle change ailleurs',
+        (tester) async {
+      final depot = await _afficher(tester);
+      expect(find.textContaining('Pain de mie : 200 tranches'), findsOneWidget);
+      depot.ecrireAilleurs(depot.liste.avecQuantite('g1', 'croque', 150));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('Pain de mie : 300 tranches'), findsOneWidget);
+    });
   });
 }

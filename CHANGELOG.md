@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Lot A, A8 : Courses, « En stock », cocher ≠ valider, quantités en Préparation
+- « Il reste » devient « En stock : n [unité] » avec un bouton « Modifier » (la saisie est gardée) ; cocher un article n'a aucun effet sur le stock, seul « Valider les courses (n / m cochés) » ouvre la validation ; « Quantités par produit » quitte les Courses pour la Préparation (écran Prévision, « Ce qu'on prévoit de vendre »), mêmes données et mêmes calculs, les Courses suivent en direct. Aucun calcul, règle ni dépendance. Tests : 549.
+
 ## 12/11/2026 — Lot A, A9 : unités affichées à côté de chaque stock
 - Sous chaque stock (Stock de départ, Gymnases et stock, caisse, Courses, Bilan) : l'unité d'achat et l'unité de vente (« 6 L · 24 verres », « 2 gâteaux · 16 parts »), unité de vente seule si la fiche est incomplète. Affichage seulement : aucun calcul, aucune écriture ni règle. Tests : 542.
 

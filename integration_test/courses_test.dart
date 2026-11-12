@@ -222,7 +222,11 @@ void main() {
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 1 080 tranches');
 
     // --- Il reste 100 tranches de pain : 980 à acheter.
+    // A8 : « En stock » + « Modifier » (le champ s'ouvre dans une petite feuille).
+    await toucher(tester, find.byKey(const Key('modifier_reste_pain de mie|tranche')));
+    await attendre(tester, find.byKey(const Key('reste_pain de mie|tranche')));
     await saisir(tester, 'reste_pain de mie|tranche', '100');
+    await toucher(tester, find.byKey(const Key('valider_reste')));
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 980 tranches');
 
     // --- Une tarte à A : cochée, puis quantité réglée.
@@ -297,7 +301,7 @@ void main() {
     await ouvrirReglagesCourses(tester);
     expect(texte(tester, 'lecture_personnes_$gA'),
         'Personnes attendues (Gymnase A) : 80');
-    expect(valeurChamp(tester, 'reste_pain de mie|tranche'), '100');
+    expect(texte(tester, 'en_stock_pain de mie|tranche'), 'En stock : 100 tranches');
     expect(texte(tester, 'achat_pain de mie|tranche'), 'Pain de mie : 980 tranches');
     expect(texte(tester, 'libre_0'), 'Liquide vaisselle × 2');
 

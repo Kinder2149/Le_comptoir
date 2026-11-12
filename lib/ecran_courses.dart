@@ -56,7 +56,6 @@ class _EtatCourses extends State<EcranCourses> {
   List<ProduitEvenement> _produits = const [];
   List<ProduitEvenement> _produitsMenu = const [];
   List<Gymnase> _gymnases = const [];
-  Map<String, List<String>> _suggeres = const {};
 
   /// Durée de l'événement (réglée dans la Préparation) et choix local de durée à
   /// couvrir : 'tout' (= durée de l'événement, par défaut), 'demi', 'jour' ou 'plus'.
@@ -74,11 +73,6 @@ class _EtatCourses extends State<EcranCourses> {
 
   /// Stock actuel (gymnase -> produit -> quantité), relu à chaque « Recalculer ».
   Map<String, Map<String, int>> _stocks = const {};
-
-  /// Le « vendu » de chaque gymnase, écouté une seule fois pour tout l'écran
-  /// (réécouter à chaque recalcul relancerait la lecture des ventes).
-  final Map<String, StreamSubscription<TableauDeBord>> _abonnementsVendus = {};
-  final Map<String, TableauDeBord> _tableaux = {};
 
   /// Cases cochées en magasin : lues en direct (flux de la liste), partagées entre les
   /// téléphones de la gestion.
@@ -107,9 +101,6 @@ class _EtatCourses extends State<EcranCourses> {
       _minuteur!.cancel();
       _enregistrer();
     }
-    for (final a in _abonnementsVendus.values) {
-      a.cancel();
-    }
     _abonnementCoches?.cancel();
     super.dispose();
   }
@@ -120,7 +111,6 @@ class _EtatCourses extends State<EcranCourses> {
       final evenement = await widget.depot.suivreEvenement(id).first;
       final produits = await widget.depot.suivreProduits(id).first;
       final gymnases = await widget.depot.suivreGymnases(id).first;
-      final etats = await widget.depot.suivreEtats(id).first;
       final stocks = await widget.depot.suivreStocksParGymnase(id).first;
       final enregistree = await widget.depot.suivreListeCourses(id).first;
       final previsions = await _lirePrevisions();
@@ -130,15 +120,6 @@ class _EtatCourses extends State<EcranCourses> {
         _produits = produitsAvecPrevisions(produits, previsions);
         _gymnases = gymnases;
         _stocks = stocks;
-        for (final g in gymnases) {
-          _abonnementsVendus[g.id] ??= widget.depot
-              .caisses(id)
-              .suivreTableauDeBord(gymnaseIds: {g.id})
-              .listen((t) {
-            if (mounted) setState(() => _tableaux[g.id] = t);
-          });
-        }
-        _suggeres = produitsSuggeres(etats, gymnases);
         _joursEvenement = evenement?.nbJours ?? joursParDefaut;
         for (final g in gymnases) {
           _personnes[g.id] = g.personnes;
@@ -154,7 +135,14 @@ class _EtatCourses extends State<EcranCourses> {
       });
       _abonnementCoches ??= widget.depot.suivreListeCourses(id).listen(
         (l) {
-          if (mounted && l != null) setState(() => _coches = l.coches);
+          if (!mounted || l == null) return;
+          // La liste suit en direct (les quantités se règlent dans la Préparation) ;
+          // une saisie locale en attente garde la main jusqu'à son enregistrement.
+          final enAttente = _listeModifiee || (_minuteur?.isActive ?? false);
+          setState(() {
+            _coches = l.coches;
+            if (!enAttente) _liste = l;
+          });
         },
         onError: (_) {},
       );
@@ -332,28 +320,6 @@ class _EtatCourses extends State<EcranCourses> {
     });
   }
 
-  void _cocher(Gymnase g, ProduitEvenement p, bool oui) {
-    int? quantite;
-    if (oui) {
-      final conso = p.fiche.conso ?? 0;
-      quantite = quantiteAPrevoir(
-          personnes: _personnes[g.id] ?? 0,
-          jours: _jours,
-          conso: conso,
-          stock: _stocks[g.id]?[p.id]);
-    }
-    setState(() {
-      _version++;
-      _modifierListe(_liste.avecQuantite(g.id, p.id, quantite));
-    });
-  }
-
-  void _surQuantite(Gymnase g, ProduitEvenement p, String texte) {
-    final n = int.tryParse(texte.trim());
-    if (n == null || n < 0 || n > 100000) return;
-    setState(() => _modifierListe(_liste.avecQuantite(g.id, p.id, n)));
-  }
-
   void _surReste(String cle, String texte) {
     final t = texte.trim().replaceAll(',', '.');
     final restes = {..._liste.restes};
@@ -365,6 +331,23 @@ class _EtatCourses extends State<EcranCourses> {
       restes[cle] = v;
     }
     setState(() => _modifierListe(_liste.avec(restes: restes)));
+  }
+
+  /// « Modifier » : la saisie de ce qu'il y a en stock, dans une petite feuille. Le
+  /// champ garde la clé `reste_<cle>` ; l'enregistrement passe par [_surReste].
+  Future<void> _modifierReste(Achat achat) async {
+    final actuel = _liste.restes[achat.cle];
+    final texte = await showDialog<String>(
+      context: context,
+      builder: (_) => _DialogueReste(
+        nom: achat.nom,
+        cle: achat.cle,
+        unite: libelleUniteReste(achat.uniteBase),
+        initial: actuel == null ? '' : _nombre(actuel),
+      ),
+    );
+    if (texte == null || !mounted) return;
+    _surReste(achat.cle, texte);
   }
 
   Future<void> _ajouterLibre() async {
@@ -412,6 +395,8 @@ class _EtatCourses extends State<EcranCourses> {
   /// ce qui a été acheté (valider). Les boutons font ce qu'ils faisaient avant.
   Widget _barreActions(BuildContext context) {
     final validee = _liste.validation != null;
+    final cles = clesArticles(calculerAchats(_produits, _liste), _liste.libres);
+    final cochesN = cles.where(_coches.contains).length;
     const serre = EdgeInsets.symmetric(horizontal: 8);
     return DecoratedBox(
       key: const Key('barre_actions'),
@@ -458,7 +443,7 @@ class _EtatCourses extends State<EcranCourses> {
                   child: FilledButton(
                     key: const Key('valider_courses'),
                     onPressed: _liste.lignes.isEmpty ? null : _valider,
-                    child: const Text("Saisir ce que j'ai acheté"),
+                    child: Text('Valider les courses ($cochesN / ${cles.length} cochés)'),
                   ),
                 ),
               ],
@@ -590,43 +575,9 @@ class _EtatCourses extends State<EcranCourses> {
               const SizedBox(height: 12),
               Text('Ce qu’il faut acheter', style: titre),
               const Text(
-                  'Cochez au fur et à mesure dans les rayons. Les quantités tiennent compte du stock.'),
+                  'Cochez ce qui est dans le panier : cela ne change pas le stock. Le stock change seulement quand vous validez les courses. Les quantités tiennent compte du stock.'),
               const SizedBox(height: 4),
               _rayons(context, achats, cles),
-              const SizedBox(height: 4),
-              Card(
-                key: const Key('quantites_produits'),
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Quantités par produit', style: titre),
-                      KeyedSubtree(
-                        key: ValueKey(_version),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final g in _gymnases) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8, bottom: 4),
-                                child: Text(
-                                    _gymnases.length > 1
-                                        ? 'Produits : ${g.nom}'
-                                        : 'Produits',
-                                    style: titre),
-                              ),
-                              for (final p in _produits)
-                                _ligneProduit(g, p, _tableaux[g.id]),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -843,19 +794,28 @@ class _EtatCourses extends State<EcranCourses> {
           ),
           if (achat != null)
             SizedBox(
-              width: 110,
-              child: TextFormField(
-                key: Key('reste_${achat.cle}'),
-                initialValue: _liste.restes[achat.cle] == null
-                    ? ''
-                    : _nombre(_liste.restes[achat.cle]!),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  isDense: true,
-                  labelText: 'Il reste',
-                  suffixText: libelleUniteReste(achat.uniteBase),
-                ),
-                onChanged: (t) => _surReste(achat.cle, t),
+              width: 132,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    textAlign: TextAlign.end,
+                    _liste.restes[achat.cle] == null
+                        ? 'En stock : non renseigné'
+                        : 'En stock : ${_nombre(_liste.restes[achat.cle]!)} ${libelleUniteReste(achat.uniteBase)}',
+                    key: Key('en_stock_${achat.cle}'),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  TextButton(
+                    key: Key('modifier_reste_${achat.cle}'),
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        minimumSize: const Size(0, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    onPressed: () => _modifierReste(achat),
+                    child: const Text('Modifier'),
+                  ),
+                ],
               ),
             ),
           if (libre != null)
@@ -955,66 +915,6 @@ class _EtatCourses extends State<EcranCourses> {
       ),
     );
   }
-
-  Widget _ligneProduit(Gymnase g, ProduitEvenement p, TableauDeBord? tableau) {
-    final quantite = _liste.quantite(g.id, p.id);
-    final stock = _stocks[g.id]?[p.id];
-    final info = [
-      stock == null ? 'Stock non suivi' : 'En stock : $stock',
-      'Vendu : ${tableau == null ? '…' : tableau.vendus(p.id)}',
-    ].join(' · ');
-    final suggere = _suggeres[p.id]?.contains(g.nom) ?? false;
-    return Row(
-      children: [
-        Checkbox(
-          key: Key('coche_${g.id}_${p.id}'),
-          value: quantite != null,
-          onChanged: (v) => _cocher(g, p, v ?? false),
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(p.nom),
-              Text(info,
-                  key: Key('info_${g.id}_${p.id}'),
-                  style: const TextStyle(fontSize: 12)),
-              UnitesStock(
-                key: Key('unites_${g.id}_${p.id}'),
-                fiche: p.fiche,
-                quantite: stock,
-              ),
-              if (suggere)
-                Text(
-                  'Suggéré : stock bas',
-                  key: Key('suggere_${g.id}_${p.id}'),
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: couleurEtat(EtatStock.bas)),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(
-          width: 128,
-          child: quantite == null
-              ? const SizedBox.shrink()
-              : TextFormField(
-                  key: Key('qte_${g.id}_${p.id}'),
-                  initialValue: '$quantite',
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.end,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    suffixText: p.fiche.type == 'litre' ? ' verres' : null,
-                  ),
-                  onChanged: (t) => _surQuantite(g, p, t),
-                ),
-        ),
-      ],
-    );
-  }
 }
 
 /// Un article affiché : un achat (ingrédient ou produit) ou une ligne libre.
@@ -1105,6 +1005,356 @@ class _EtatDialogueLibre extends State<_DialogueLibre> {
             key: const Key('valider_libre'),
             onPressed: _valider,
             child: const Text('Ajouter')),
+      ],
+    );
+  }
+}
+
+/// Saisie de « ce qu'il y a en stock » pour un article (bouton « Modifier »).
+class _DialogueReste extends StatefulWidget {
+  const _DialogueReste({
+    required this.nom,
+    required this.cle,
+    required this.unite,
+    required this.initial,
+  });
+
+  final String nom;
+  final String cle;
+  final String unite;
+  final String initial;
+
+  @override
+  State<_DialogueReste> createState() => _EtatDialogueReste();
+}
+
+class _EtatDialogueReste extends State<_DialogueReste> {
+  late final TextEditingController _champ =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _champ.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('En stock : ${widget.nom}'),
+      content: TextField(
+        key: Key('reste_${widget.cle}'),
+        controller: _champ,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: "Ce qu'il y a en stock",
+          suffixText: widget.unite,
+        ),
+        onSubmitted: (t) => Navigator.pop(context, t),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: const Text('Retour')),
+        FilledButton(
+            key: const Key('valider_reste'),
+            onPressed: () => Navigator.pop(context, _champ.text),
+            child: const Text('Enregistrer')),
+      ],
+    );
+  }
+}
+
+/// « Quantités par produit », rangées dans la Préparation (décision 82), sous le titre
+/// « Ce qu'on prévoit de vendre ». C'est le même bloc qu'avant dans les courses : il lit
+/// et écrit la même liste de courses par les mêmes méthodes du dépôt ; les courses la
+/// relisent en direct, les achats suivent. Aucun calcul ne change.
+class QuantitesParProduit extends StatefulWidget {
+  const QuantitesParProduit({
+    super.key,
+    required this.depot,
+    required this.evenementId,
+  });
+
+  final DepotEvenements depot;
+  final String evenementId;
+
+  @override
+  State<QuantitesParProduit> createState() => _EtatQuantites();
+}
+
+class _EtatQuantites extends State<QuantitesParProduit> {
+  bool _charge = false;
+  Object? _erreur;
+
+  List<ProduitEvenement> _produits = const [];
+  List<Gymnase> _gymnases = const [];
+  Map<String, List<String>> _suggeres = const {};
+  double _jours = joursParDefaut;
+  final Map<String, int> _personnes = {};
+  Map<String, Map<String, int>> _stocks = const {};
+
+  final Map<String, StreamSubscription<TableauDeBord>> _abonnementsVendus = {};
+  final Map<String, TableauDeBord> _tableaux = {};
+  StreamSubscription<ListeCourses?>? _abonnementListe;
+
+  ListeCourses _liste = const ListeCourses();
+  Timer? _minuteur;
+  bool _listeModifiee = false;
+  bool _enregistre = true;
+  bool _erreurEnregistrement = false;
+
+  /// Change quand une quantité est cochée : les champs sont reconstruits.
+  int _version = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _charger();
+  }
+
+  @override
+  void dispose() {
+    if (_minuteur?.isActive ?? false) {
+      _minuteur!.cancel();
+      _enregistrer();
+    }
+    for (final a in _abonnementsVendus.values) {
+      a.cancel();
+    }
+    _abonnementListe?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _charger() async {
+    try {
+      final id = widget.evenementId;
+      final evenement = await widget.depot.suivreEvenement(id).first;
+      final produits = await widget.depot.suivreProduits(id).first;
+      final gymnases = await widget.depot.suivreGymnases(id).first;
+      final etats = await widget.depot.suivreEtats(id).first;
+      final stocks = await widget.depot.suivreStocksParGymnase(id).first;
+      final enregistree = await widget.depot.suivreListeCourses(id).first;
+      var previsions = const <String, Prevision>{};
+      try {
+        previsions = await widget.depot.suivrePrevisions(id).first;
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _produits = produitsAvecPrevisions(produits, previsions);
+        _gymnases = gymnases;
+        _stocks = stocks;
+        for (final g in gymnases) {
+          _abonnementsVendus[g.id] ??= widget.depot
+              .caisses(id)
+              .suivreTableauDeBord(gymnaseIds: {g.id})
+              .listen((t) {
+            if (mounted) setState(() => _tableaux[g.id] = t);
+          });
+          _personnes[g.id] = g.personnes;
+        }
+        _suggeres = produitsSuggeres(etats, gymnases);
+        _jours = evenement?.nbJours ?? joursParDefaut;
+        _liste = enregistree ??
+            listeParDefaut(
+                produits: produits,
+                gymnases: gymnases,
+                jours: _jours,
+                stocks: stocks);
+        _charge = true;
+      });
+      _abonnementListe ??= widget.depot.suivreListeCourses(id).listen(
+        (l) {
+          if (!mounted || l == null) return;
+          if (_listeModifiee || (_minuteur?.isActive ?? false)) return;
+          setState(() => _liste = l);
+        },
+        onError: (_) {},
+      );
+    } catch (e) {
+      if (mounted) setState(() => _erreur = e);
+    }
+  }
+
+  void _modifierListe(ListeCourses l) {
+    _liste = l;
+    _listeModifiee = true;
+    _enregistre = false;
+    _minuteur?.cancel();
+    _minuteur = Timer(const Duration(milliseconds: 700), _enregistrer);
+  }
+
+  Future<void> _enregistrer() async {
+    final ecrire = _listeModifiee;
+    _listeModifiee = false;
+    try {
+      if (ecrire) {
+        final articles =
+            clesArticles(calculerAchats(_produits, _liste), _liste.libres);
+        await widget.depot.enregistrerListeCourses(
+            widget.evenementId, _liste.avec(articles: articles));
+      }
+      if (mounted) {
+        setState(() {
+          _enregistre = true;
+          _erreurEnregistrement = false;
+        });
+      }
+    } catch (_) {
+      _listeModifiee = _listeModifiee || ecrire;
+      if (mounted) setState(() => _erreurEnregistrement = true);
+    }
+  }
+
+  void _cocher(Gymnase g, ProduitEvenement p, bool oui) {
+    int? quantite;
+    if (oui) {
+      quantite = quantiteAPrevoir(
+          personnes: _personnes[g.id] ?? 0,
+          jours: _jours,
+          conso: p.fiche.conso ?? 0,
+          stock: _stocks[g.id]?[p.id]);
+    }
+    setState(() {
+      _version++;
+      _modifierListe(_liste.avecQuantite(g.id, p.id, quantite));
+    });
+  }
+
+  void _surQuantite(Gymnase g, ProduitEvenement p, String texte) {
+    final n = int.tryParse(texte.trim());
+    if (n == null || n < 0 || n > 100000) return;
+    setState(() => _modifierListe(_liste.avecQuantite(g.id, p.id, n)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titre = Theme.of(context).textTheme.titleMedium;
+    if (_erreur != null) {
+      return const Text('Impossible de charger les quantités.',
+          key: Key('erreur_quantites'));
+    }
+    if (!_charge) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final validee = _liste.validation != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Ce qu'on prévoit de vendre",
+            key: const Key('titre_prevoit_vendre'), style: titre),
+        const SizedBox(height: 4),
+        const Text("Combien de chaque produit on prépare ; les courses s'en servent."),
+        Text(
+          _erreurEnregistrement
+              ? "L'enregistrement a échoué : vérifiez votre connexion."
+              : _enregistre
+                  ? 'Enregistré'
+                  : 'Enregistrement…',
+          key: const Key('etat_quantites'),
+          style: TextStyle(
+              color: _erreurEnregistrement ? Theme.of(context).colorScheme.error : null),
+        ),
+        const SizedBox(height: 4),
+        AbsorbPointer(
+          absorbing: validee,
+          child: Opacity(
+            opacity: validee ? 0.6 : 1,
+            child: Card(
+              key: const Key('quantites_produits'),
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Quantités par produit', style: titre),
+                    KeyedSubtree(
+                      key: ValueKey(_version),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final g in _gymnases) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Text(
+                                  _gymnases.length > 1
+                                      ? 'Produits : ${g.nom}'
+                                      : 'Produits',
+                                  style: titre),
+                            ),
+                            for (final p in _produits)
+                              _ligneProduit(g, p, _tableaux[g.id]),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _ligneProduit(Gymnase g, ProduitEvenement p, TableauDeBord? tableau) {
+    final quantite = _liste.quantite(g.id, p.id);
+    final stock = _stocks[g.id]?[p.id];
+    final info = [
+      stock == null ? 'Stock non suivi' : 'En stock : $stock',
+      'Vendu : ${tableau == null ? '…' : tableau.vendus(p.id)}',
+    ].join(' · ');
+    final suggere = _suggeres[p.id]?.contains(g.nom) ?? false;
+    return Row(
+      children: [
+        Checkbox(
+          key: Key('coche_${g.id}_${p.id}'),
+          value: quantite != null,
+          onChanged: (v) => _cocher(g, p, v ?? false),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(p.nom),
+              Text(info,
+                  key: Key('info_${g.id}_${p.id}'),
+                  style: const TextStyle(fontSize: 12)),
+              UnitesStock(
+                key: Key('unites_${g.id}_${p.id}'),
+                fiche: p.fiche,
+                quantite: stock,
+              ),
+              if (suggere)
+                Text(
+                  'Suggéré : stock bas',
+                  key: Key('suggere_${g.id}_${p.id}'),
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: couleurEtat(EtatStock.bas)),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 128,
+          child: quantite == null
+              ? const SizedBox.shrink()
+              : TextFormField(
+                  key: Key('qte_${g.id}_${p.id}'),
+                  initialValue: '$quantite',
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.end,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    suffixText: p.fiche.type == 'litre' ? ' verres' : null,
+                  ),
+                  onChanged: (t) => _surQuantite(g, p, t),
+                ),
+        ),
       ],
     );
   }
