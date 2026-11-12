@@ -1214,7 +1214,7 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 ### 18.3 Questions à trancher avant de coder (phase 2, une à la fois)
 
 1. Le découpage lot A (avant le tournoi) / lot B (après) est-il le bon ? → **Validé par Kinder le 12/11/2026** (« Oui, ce découpage »).
-2. Point 5 : le classeur du club porte le menu et les recettes (revient sur la réponse T3 du 11/11/2026) ?
+2. Point 5 : le classeur du club porte le menu et les recettes (revient sur la réponse T3 du 11/11/2026) ? → **Oui, validé par Kinder le 12/11/2026** (« Oui, il les garde ») : le classeur porte les 18 produits (prix, type, mesures, rayon) et les recettes ; l'assistant reprend tel quel le menu existant de même nom. Remplace la réponse T3 du 11/11/2026.
 3. Point 10 : « Quantités par produit » déplacé dans la Préparation (recommandé) ou gardé en tête des Courses ?
 4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ?
 5. (Lot B) Point 4 : « ratio » = effectifs, pourcentages, ou les deux (recommandé : les deux, effectifs d'abord).
