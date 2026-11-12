@@ -126,7 +126,10 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
+    // A8 : les quantités sont dans la Préparation ; Courses relit la liste au retour.
+    await versPrevision(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
+    await versCourses(tester);
     // 80 et 60 personnes-jours : croques 52 + 36 + 48 = 136 (A), 39 + 27 + 36 = 102 (B) = 238.
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 476 tranches');
     expect(texte(tester, 'achat_jambon blanc|tranche'), 'Jambon blanc : 79 tranches'); // (100 + 75) x 0,45

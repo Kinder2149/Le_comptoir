@@ -211,7 +211,10 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await ouvrirReglagesCourses(tester);
     await toucher(find.byKey(const Key('recalculer')));
+    // A8 : les quantités se lisent en Préparation ; Courses relit la liste au retour.
+    await versPrevision(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
+    await versCourses(tester);
     await toucher(find.byKey(Key('case_p:$cafe')));
     await toucher(find.byKey(Key('case_p:$coca')));
     await photo('06_courses');

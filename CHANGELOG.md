@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Lot A, A3 : classeur du club avec menu et recettes
+- `recette/classeur-notre-club.xlsx` : feuille Menu (19 produits, prix 2024 du club à vérifier) et Recettes (4 croques, d'après le classeur d'origine) remplies ; importé par l'assistant dans une association dont le menu s'appelle « Les Discjonctés » : menu repris sans modification, aucun doublon, consommations égales au relevé (N2 vert). Parcours des Courses adaptés au déplacement des quantités en Préparation (à rejouer au N3). Relevé A3 dans PLAN_STOCK_COURSES.md.
+
 ## 12/11/2026 — Lot A, A8 : Courses, « En stock », cocher ≠ valider, quantités en Préparation
 - « Il reste » devient « En stock : n [unité] » avec un bouton « Modifier » (la saisie est gardée) ; cocher un article n'a aucun effet sur le stock, seul « Valider les courses (n / m cochés) » ouvre la validation ; « Quantités par produit » quitte les Courses pour la Préparation (écran Prévision, « Ce qu'on prévoit de vendre »), mêmes données et mêmes calculs, les Courses suivent en direct. Aucun calcul, règle ni dépendance. Tests : 549.
 

@@ -183,10 +183,15 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
     await toucher(tester, find.byKey(const Key('duree_jour')));
     await toucher(tester, find.byKey(const Key('recalculer')));
+    // A8 : les quantités (estimation modifiable) sont dans la Préparation.
+    await versPrevision(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+    await tester.ensureVisible(find.byKey(const Key('titre_prevoit_vendre')));
     await tester.pump(const Duration(milliseconds: 500));
     await photo(tester, '05_B4_courses_duree_estimation');
+    await versCourses(tester);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // ---------- C1 : validation de la série 1.
     await tester.dragUntilVisible(find.byKey(const Key('valider_courses')),
@@ -214,8 +219,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await attendreLong(tester, find.byKey(const Key('series_validees')));
     await photo(tester, '10_C1_serie_2_liste_vide_bandeau_serie_1');
+    await versPrevision(tester); // A8 : les quantités se saisissent en Préparation
     await toucher(tester, find.byKey(Key('coche_${gA}_$croque')));
     await saisir(tester, 'qte_${gA}_$croque', '40');
+    await versCourses(tester);
     await toucher(tester, find.byKey(const Key('valider_courses')));
     await attendre(tester, find.byKey(const Key('confirmer_validation')));
     await saisir(tester, 'cout_courses', '30');

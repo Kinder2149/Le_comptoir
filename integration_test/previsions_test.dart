@@ -194,6 +194,8 @@ void main() {
       await finTransition(tester);
       await ouvrirReglagesCourses(tester);
       await toucher(tester, find.byKey(const Key('recalculer')));
+      // A8 : « Quantités par produit » est dans la Préparation (écran Prévision).
+      await versPrevision(tester);
       await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
       for (var i = 0; i < 100 && champQte('qte_${gA}_$croque') != attendu; i++) {
         await tester.pump(const Duration(milliseconds: 100));

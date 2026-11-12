@@ -354,6 +354,8 @@ void main() {
         isTrue);
     await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
+    // A8 : « Quantités par produit » est dans la Préparation (écran Prévision).
+    await versPrevision(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     for (var i = 0;
         i < 100 && champQte('qte_${gA}_$croque') != '320';
@@ -363,16 +365,19 @@ void main() {
     expect(champQte('qte_${gA}_$croque'), '320'); // 80 x 2 jours x 2
 
     // Un jour complet : choix local, la durée de l'événement ne bouge pas.
+    await versCourses(tester);
     await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('duree_jour')));
     await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
+    await versPrevision(tester);
     for (var i = 0;
         i < 100 && champQte('qte_${gA}_$croque') != '160';
         i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(champQte('qte_${gA}_$croque'), '160');
+    await versCourses(tester);
     await attendreTexte(tester, 'etat_courses', 'Enregistré');
     expect((await docEvt())['nbJours'], 2);
 

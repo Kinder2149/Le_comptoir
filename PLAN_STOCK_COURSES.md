@@ -1151,6 +1151,19 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 **Preuve N2** : `integration_test/classeur_club_test.dart` (LC2, vrai moteur local) : le classeur est lu sans erreur, l'assistant dit « aucun menu lisible » (aucun menu créé), crée la référence « Tournoi de l'an passé (Excel) » et règle la prévision : les 19 consommations égalent le relevé (tolérance 0,0001). Vert. Piège trouvé : openpyxl écrit les liens internes en absolu et le lecteur Excel de l'application plante dessus ; le classeur est corrigé après écriture (liens relatifs).
 
+### Relevé A3 — Classeur du club avec menu et recettes (recette/classeur-notre-club.xlsx)
+
+**Repris** : feuille Menu : 19 produits, les noms exacts de l'Historique (source : « Derniere liste », bloc « Rappels Tarifs 2024 » pour les prix). Familles, types et rayons choisis au plus simple ; consommation vide. Type « Au litre » (4 verres par litre) : Café, Thé, Infusion, Coca, Ice Tea, Oasis, Orangina. Type « Composé (recette) » : les 4 croques. « À l'unité » : le reste. Feuille Recettes : 15 lignes pour les 4 croques, d'après « CM standard », « CM Veggie », « CM Tartiflette », « CM Nutella ». Historique, Stock de départ (quantités vides), Courses (vide) et Accueil : inchangés depuis T3. Lecture par `lireClasseur` (vrai lecteur, test temporaire supprimé) : 19 produits, 4 recettes, 38 lignes d'historique, aucune erreur. `flutter analyze` sans erreur.
+
+**Parcours** : `integration_test/classeur_club_test.dart` crée le menu « Les Discjonctés » avec les 19 produits ; l'assistant le reprend sans modification (aucun menu créé), le résumé dit « repris sans aucune modification » et que les recettes du classeur ne sont pas reprises. Consommations inchangées (relevé T3). Non joué (la mère le joue).
+
+**À vérifier par Kinder** :
+- Prix 2024 : Croque 1 €, Soda/Jus 1 €, Thé/Café 0,50 € (repris aussi pour Infusion), Bière 2 €, barres/Twix/Mars 1 €. Au plus proche : Fruit (pas de tarif 2024) 1 € ; crêpes 1 € chacune, alors que le tarif 2024 est « 3 petites crêpes = 1 € ». Pour les boissons « Au litre », le prix est supposé celui d'un verre de 25 cl.
+- Sans recette (produits « À l'unité », sans ingrédients) : crêpes sucre et Nutella, Fruit, barres, Mars, Twix, Bière. Rayons par défaut : Bière Boissons, crêpes Autre, Fruit Frais, barres/Mars/Twix Épicerie.
+- Pourcentages des fiches convertis en fraction d'unité, faute d'unité « % » : Bûchette de chèvre 20 % = 0,2 unité ; Tomate 40 % = 0,4 unité ; Fromage tartiflette 10 % = 0,1 unité.
+- Fiches « Vendu par 2 » : la recette est prise pour UN croque (2 tranches de pain de mie).
+- Dans le parcours, le menu « Les Discjonctés » est créé avec un prix de test (1,50 €) et une consommation de test (0,5), pas avec les tarifs ci-dessus.
+
 ### Cadrage T4 — Ajouter un produit à un événement (décision 78)
 
 **Critères (repris du plan)** : (1) en préparation et en cours : le produit est créé dans l'événement et dans le menu d'origine ; (2) il apparaît dans stock de départ, prévision, courses et caisse ; (3) nom et prix des produits existants inchangés ; (4) événement clôturé : pas de bouton ; (5) un bénévole ne peut pas ajouter (test de règles).
@@ -1401,6 +1414,7 @@ Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à
 | A5 (T5) | Faite, N1 et règles (commit dc70268) ; règles `previsions_annulation` déployées | 11/11/2026 | critères de T5 |
 | A6 (T6) | Faite, N1 (commit d8dcb26) | 11/11/2026 | critères de T6 |
 | A2 (T2 + critère 9) | Faite, N1 (analyse sans erreur, 523 tests ; menu de même nom porté par un classeur Menu + Recettes : aucun menu créé, aucune recette écrite, résumé qui le dit) | 12/11/2026 | critères de T2 + (9) ; N2 de T2 rejoué en A3 |
+| A3 (T3 + décision 84) | Faite, N2 (`classeur_club_test` vert sur LC2 : classeur Menu 19 produits + Recettes 4 croques, menu « Les Discjonctés » repris sans aucune modification, aucun menu créé, consommations égales au relevé). Prix 2024 et produits sans recette à vérifier par Kinder (Relevé A3) | 12/11/2026 | critères de T3 avec (2) remplacé |
 | A7 (T7 + 6, 7, 8) | Faite, N1 (analyse sans erreur, 532 tests + test/a7_test.dart : badges de couleur par rôle, une carte par rôle, QR de l'association visible du responsable seul, scan par faux lecteur = bénévole sans événement). N2 non prouvé : le parcours Android du QR a échoué deux fois (test), Kinder a décidé le 12/11/2026 de garder N1 ; le critère 8 est vu à l'écran en A10 | 12/11/2026 | critères de T7 + (6), (7), (8) |
 | A9 (décision 83) | Faite, N1 (analyse sans erreur, 542 tests dont 10 nouveaux ; « 6 L · 24 verres », « 2 gâteaux · 16 parts » sous chaque stock de Stock de départ, Gymnases et stock, caisse, Courses, Bilan ; aucun test existant modifié) | 12/11/2026 | critères (1), (2), (3) de 18.5 |
 | A8 (T8 + 6 à 9, décision 82) | Faite, N1 (analyse sans erreur, 549 tests ; « En stock : n » + « Modifier », bouton « Valider les courses (n / m cochés) », cocher sans effet sur le stock, « Quantités par produit » en Préparation sous « Ce qu'on prévoit de vendre » ; tests de calcul des courses inchangés). Parcours integration_test qui saisissent les quantités depuis Courses à adapter et à rejouer au N3 de A10 | 12/11/2026 | critères de T8 + (6) à (9) |

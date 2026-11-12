@@ -286,6 +286,44 @@ Future<void> ongletCourses(WidgetTester tester, {required bool dejaAchete}) asyn
   await tester.pump(const Duration(milliseconds: 500));
 }
 
+/// Remonte (retour arrière) jusqu'à l'écran de l'événement, celui qui porte les tâches
+/// « Prévision » et « Courses » : [cle] est la tâche à retrouver.
+Future<void> _remonterA(WidgetTester tester, String cle) async {
+  for (var i = 0; i < 6 && find.byKey(Key(cle)).evaluate().isEmpty; i++) {
+    // Une modification de Courses ou de la Préparation s'enregistre après 700 ms.
+    await tester.pump(const Duration(milliseconds: 1500));
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump(const Duration(seconds: 1));
+  }
+}
+
+/// A8 (décision 82) : « Quantités par produit » est dans la Préparation (écran Prévision,
+/// « Ce qu'on prévoit de vendre »). Ouvre cet écran depuis Courses (ou tout écran empilé
+/// sur l'événement) et attend que le bloc soit chargé.
+Future<void> versPrevision(WidgetTester tester) async {
+  if (find.byKey(const Key('titre_prevoit_vendre')).evaluate().isNotEmpty) return;
+  await _remonterA(tester, 'tache_prevision');
+  await toucherCle(tester, 'tache_prevision');
+  final titre = find.byKey(const Key('titre_prevoit_vendre'));
+  for (var i = 0; i < 150 && titre.evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  if (titre.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(titre, 300,
+        scrollable: find.byType(Scrollable).first);
+  }
+  await attendre(tester, find.byKey(const Key('quantites_produits')));
+}
+
+/// A8 : revient de la Préparation (écran Prévision) à Courses, qui relit la liste : les
+/// achats suivent les quantités saisies.
+Future<void> versCourses(WidgetTester tester) async {
+  if (find.byKey(const Key('etat_courses')).evaluate().isNotEmpty) return;
+  await _remonterA(tester, 'voir_courses');
+  await toucherCle(tester, 'voir_courses');
+  await attendre(tester, find.byKey(const Key('etat_courses')));
+}
+
 /// La liste des courses ne construit que ce qui est visible : on remonte en haut tant que
 /// l'élément [cle] (en haut de l'écran) n'est pas dans l'arbre.
 Future<void> _hautDesCourses(WidgetTester tester, String cle) async {

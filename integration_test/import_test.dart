@@ -287,6 +287,16 @@ void main() {
     await finTransition(tester);
     await ouvrirReglagesCourses(tester);
     await toucher(tester, find.byKey(const Key('recalculer')));
+    // A8 : « Quantités par produit » est dans la Préparation (« Ce qu'on prévoit de
+    // vendre »), qui relit la liste recalculée dans Courses (enregistrée à la sortie).
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pumpWidget(MaterialApp(
+      key: UniqueKey(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+            child: QuantitesParProduit(depot: depotEv, evenementId: evt)),
+      ),
+    ));
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     for (var i = 0; i < 100 && champQte('qte_${gA}_$croque') != '300'; i++) {
       await tester.pump(const Duration(milliseconds: 100));

@@ -78,6 +78,20 @@ void main() {
     throw TestFailure('« $cle » : attendu coché = $attendu');
   }
 
+  /// A8 : « Recalculer » est dans Courses, « Quantités par produit » en Préparation. Depuis
+  /// Courses : règle la durée [duree] (elle se remet à « Tout l'événement » à chaque
+  /// ouverture de Courses), recalcule, puis ouvre la Préparation où se lisent les quantités.
+  Future<void> recalculerPuisVoir(WidgetTester tester, {String? duree}) async {
+    await versCourses(tester);
+    await ouvrirReglagesCourses(tester);
+    if (duree != null) {
+      await toucher(tester, find.byKey(Key('duree_$duree')));
+      await ouvrirReglagesCourses(tester);
+    }
+    await toucher(tester, find.byKey(const Key('recalculer')));
+    await versPrevision(tester);
+  }
+
   testWidgets('courses : pré-remplissage, achats, reste, lignes libres, reprise',
       (tester) async {
     final db = FirebaseFirestore.instance;
@@ -154,9 +168,12 @@ void main() {
     await toucher(tester, find.byKey(const Key('preparer_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
 
-    // --- Rien n'est réglé : aide, pas de produit pré-rempli.
+    // --- Rien n'est réglé : aide (dans Courses), pas de produit pré-rempli (A8 : les
+    // quantités sont dans la Préparation).
     expect(find.byKey(const Key('aide_personnes')), findsOneWidget);
+    await versPrevision(tester);
     expect(find.byKey(Key('qte_${gA}_$croque')), findsNothing);
+    await versCourses(tester);
 
     // Courses n'a plus de champ « personnes » : elles se règlent dans la Préparation.
     expect(find.byKey(Key('personnes_$gA')), findsNothing);
@@ -166,12 +183,10 @@ void main() {
     // --- 80 et 60 personnes (réglées hors de Courses), 2 jours : 320 et 240 croques.
     await depotEv.definirPersonnes(evtId, gA, 80);
     await depotEv.definirPersonnes(evtId, gB, 60);
-    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // courses
-    await tester.pump(const Duration(seconds: 1));
-    await toucher(tester, find.byKey(const Key('preparer_courses')));
-    await attendre(tester, find.byKey(const Key('etat_courses')));
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    // On quitte Courses puis on le rouvre (A8 : en passant par la Préparation).
+    await versPrevision(tester);
+    await versCourses(tester);
+    await recalculerPuisVoir(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '320');
     expect(valeurChamp(tester, 'qte_${gB}_$croque'), '240');
@@ -182,43 +197,35 @@ void main() {
     expect(find.byKey(Key('suggere_${gB}_$tarte')), findsNothing);
 
     // --- B4 : demi-journée, jour complet, stock déduit, puis retour à 2 jours.
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('duree_demi')));
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    await recalculerPuisVoir(tester, duree: 'demi');
     await attendreChamp(tester, 'qte_${gA}_$croque', '80');
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('duree_jour')));
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    await recalculerPuisVoir(tester, duree: 'jour');
     await attendreChamp(tester, 'qte_${gA}_$croque', '160');
     await depotEv.definirStock(evtId, gA, croque, 100);
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    await recalculerPuisVoir(tester, duree: 'jour');
     await attendreChamp(tester, 'qte_${gA}_$croque', '60'); // 160 - 100 en stock
     await attendreTexte(tester, 'info_${gA}_$croque', 'En stock : 100 · Vendu : 0');
     await depotEv.definirStock(evtId, gA, croque, 200);
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    await recalculerPuisVoir(tester, duree: 'jour');
     for (var i = 0; i < 50 && find.byKey(Key('qte_${gA}_$croque')).evaluate().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byKey(Key('qte_${gA}_$croque')), findsNothing); // le stock couvre le besoin
     await depotEv.arreterSuivi(evtId, gA, croque);
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('duree_plus')));
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    await recalculerPuisVoir(tester, duree: 'plus');
     await attendreChamp(tester, 'qte_${gA}_$croque', '320');
 
-    // --- Achats : 560 croques et 560 verres de café.
+    // --- Achats : 560 croques et 560 verres de café (dans Courses, qui relit la liste).
+    await versCourses(tester);
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 1 120 tranches');
     expect(texte(tester, 'achat_jambon blanc|tranche'), 'Jambon blanc : 187 tranches');
     expect(texte(tester, 'achat_gruyere rape|g'), 'Gruyère râpé : 3,92 kg');
     expect(texte(tester, 'achat_produit:$cafe'), 'Café : 70 L');
 
-    // --- 320 -> 300 à A : 540 croques, pain 1 080.
+    // --- 320 -> 300 à A : 540 croques, pain 1 080 (la quantité se saisit en Préparation).
+    await versPrevision(tester);
     await saisir(tester, 'qte_${gA}_$croque', '300');
+    await versCourses(tester);
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 1 080 tranches');
 
     // --- Il reste 100 tranches de pain : 980 à acheter.
@@ -229,9 +236,11 @@ void main() {
     await toucher(tester, find.byKey(const Key('valider_reste')));
     await attendreTexte(tester, 'achat_pain de mie|tranche', 'Pain de mie : 980 tranches');
 
-    // --- Une tarte à A : cochée, puis quantité réglée.
+    // --- Une tarte à A : cochée, puis quantité réglée (en Préparation).
+    await versPrevision(tester);
     await toucher(tester, find.byKey(Key('coche_${gA}_$tarte')));
     await saisir(tester, 'qte_${gA}_$tarte', '12');
+    await versCourses(tester);
     await attendreTexte(tester, 'achat_produit:$tarte', 'Tarte : 12');
 
     // --- Ligne libre.
@@ -291,13 +300,13 @@ void main() {
     // --- On quitte puis on rouvre : tout est retrouvé.
     Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // courses
     await tester.pump(const Duration(seconds: 1));
-    Navigator.of(tester.element(find.byType(Scaffold).last)).pop(); // gymnases et stocks
-    await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(seconds: 1));
     await toucher(tester, find.byKey(const Key('voir_courses')));
     await attendre(tester, find.byKey(const Key('etat_courses')));
+    await versPrevision(tester); // A8 : les quantités se retrouvent en Préparation
     expect(valeurChamp(tester, 'qte_${gA}_$croque'), '300');
     expect(valeurChamp(tester, 'qte_${gB}_$croque'), '240');
+    await versCourses(tester);
     await ouvrirReglagesCourses(tester);
     expect(texte(tester, 'lecture_personnes_$gA'),
         'Personnes attendues (Gymnase A) : 80');
@@ -385,12 +394,13 @@ void main() {
     await attendre(tester, find.byKey(const Key('etat_courses')));
 
     // --- La liste : 320/240 croques (A passe à 300), 320/240 verres, 12 tartes à A.
-    await ouvrirReglagesCourses(tester);
-    await toucher(tester, find.byKey(const Key('recalculer')));
+    // A8 : « Recalculer » est dans Courses, les quantités se règlent en Préparation.
+    await recalculerPuisVoir(tester);
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
     await saisir(tester, 'qte_${gA}_$croque', '300');
     await toucher(tester, find.byKey(Key('coche_${gA}_$tarte')));
     await saisir(tester, 'qte_${gA}_$tarte', '12');
+    await versCourses(tester);
     await attendreTexte(tester, 'achat_gruyere rape|g', 'Gruyère râpé : 3,78 kg');
 
     // --- Validation : tout acheté comme proposé.
@@ -452,9 +462,11 @@ void main() {
     expect(find.byKey(const Key('valider_courses')), findsOneWidget);
     expect((await stock(gA, croque))!['quantite'], 150); // inchangé
     // Série 2 : 40 croques de plus au gymnase A, payés 80,00 €.
+    await versPrevision(tester); // A8 : les quantités se saisissent en Préparation
     await toucher(tester, find.byKey(Key('coche_${gA}_$croque')));
     await saisir(tester, 'qte_${gA}_$croque', '40');
     await attendre(tester, find.byKey(Key('qte_${gA}_$croque')));
+    await versCourses(tester);
     await toucher(tester, find.byKey(const Key('valider_courses')));
     await attendre(tester, find.byKey(const Key('confirmer_validation')));
     expect(texte(tester, 'rendement_$croque'), 'Croque : +40');
