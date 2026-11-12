@@ -1402,6 +1402,7 @@ Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à
 | A6 (T6) | Faite, N1 (commit d8dcb26) | 11/11/2026 | critères de T6 |
 | A2 (T2 + critère 9) | Faite, N1 (analyse sans erreur, 523 tests ; menu de même nom porté par un classeur Menu + Recettes : aucun menu créé, aucune recette écrite, résumé qui le dit) | 12/11/2026 | critères de T2 + (9) ; N2 de T2 rejoué en A3 |
 | A7 (T7 + 6, 7, 8) | Faite, N1 (analyse sans erreur, 532 tests + test/a7_test.dart : badges de couleur par rôle, une carte par rôle, QR de l'association visible du responsable seul, scan par faux lecteur = bénévole sans événement). N2 non prouvé : le parcours Android du QR a échoué deux fois (test), Kinder a décidé le 12/11/2026 de garder N1 ; le critère 8 est vu à l'écran en A10 | 12/11/2026 | critères de T7 + (6), (7), (8) |
+| A9 (décision 83) | Faite, N1 (analyse sans erreur, 542 tests dont 10 nouveaux ; « 6 L · 24 verres », « 2 gâteaux · 16 parts » sous chaque stock de Stock de départ, Gymnases et stock, caisse, Courses, Bilan ; aucun test existant modifié) | 12/11/2026 | critères (1), (2), (3) de 18.5 |
 
 ### 18.6 Prompt de lancement de la session mère du lot A — REMPLACÉ par 18.8 le 12/11/2026, gardé pour trace (remplaçait celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
 

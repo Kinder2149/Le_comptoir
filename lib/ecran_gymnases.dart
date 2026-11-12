@@ -10,6 +10,7 @@ import 'ecran_courses.dart';
 import 'ecran_qr.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
+import 'unites_affichees.dart';
 import 'tableau_bord.dart';
 import 'theme.dart';
 import 'ticket.dart';
@@ -513,6 +514,13 @@ class LigneStock extends StatelessWidget {
                       key: Key('stock_${g}_${p.id}'),
                       style: TextStyle(color: couleurEtat(etat)),
                     ),
+                    if (suivi)
+                      UnitesStock(
+                        key: Key('unites_${g}_${p.id}'),
+                        fiche: p.fiche,
+                        quantite: p.stock,
+                        style: TextStyle(fontSize: 12, color: couleurEtat(etat)),
+                      ),
                     if (suivi)
                       Text(
                         vendu == null ? 'Vendu : …' : 'Vendu : $vendu',

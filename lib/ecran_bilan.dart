@@ -7,6 +7,7 @@ import 'courses.dart';
 import 'depot_caisses.dart';
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
+import 'unites_affichees.dart';
 import 'export_bilan.dart';
 import 'gymnase.dart';
 import 'partage.dart';
@@ -829,6 +830,13 @@ class _LigneProduit extends StatelessWidget {
                                       : Palette.saugeFonce,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600)),
+                        if (ligne.stock != null && produit != null)
+                          UnitesStock(
+                            key: Key('unites_$cle'),
+                            fiche: produit!.fiche,
+                            quantite: ligne.stock,
+                            style: const TextStyle(color: Palette.gris, fontSize: 12),
+                          ),
                         if (detail.isNotEmpty)
                           Text(detail,
                               style: const TextStyle(color: Palette.gris, fontSize: 12)),

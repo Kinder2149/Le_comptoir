@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Lot A, A9 : unités affichées à côté de chaque stock
+- Sous chaque stock (Stock de départ, Gymnases et stock, caisse, Courses, Bilan) : l'unité d'achat et l'unité de vente (« 6 L · 24 verres », « 2 gâteaux · 16 parts »), unité de vente seule si la fiche est incomplète. Affichage seulement : aucun calcul, aucune écriture ni règle. Tests : 542.
+
 ## 12/11/2026 — Lot A, A7 : badges de rôle, « Qui peut quoi » en cartes, QR de l'association
 - Un badge de couleur par rôle (responsable, gestionnaire, en attente, bénévole), identique partout ; « Qui peut quoi » = une carte par rôle avec puces ; QR de l'association dans la carte « Association et code » (responsable seul), scanné = entrée comme bénévole sans ouvrir d'événement (liens de gymnase inchangés, titre « Rejoindre l'association »). Droits et règles inchangés, aucune dépendance. Preuve : N1 ; parcours Android non prouvé (deux échecs du test), N1 gardé sur décision de Kinder, critère 8 revu à la vérification finale.
 

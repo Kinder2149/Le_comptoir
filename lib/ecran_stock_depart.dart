@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'ecran_caisse.dart' show VignetteProduit;
 import 'evenement.dart';
+import 'unites_affichees.dart';
 import 'gymnase.dart';
 import 'liste_familles.dart';
 import 'theme.dart';
@@ -475,6 +476,11 @@ class _EtatLigneStockDepart extends State<_LigneStockDepart> {
                     stock == null ? 'Stock non suivi' : 'Stock : ${stock.quantite}',
                     key: Key('lecture_depart_${g}_${p.id}'),
                   ),
+                UnitesStock(
+                  key: Key('unites_depart_${g}_${p.id}'),
+                  fiche: p.fiche,
+                  quantite: stock?.quantite,
+                ),
                 if (stock != null && stock.repris)
                   Text(
                     'Repris',

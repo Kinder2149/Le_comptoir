@@ -9,6 +9,7 @@ import 'depot_menus.dart' show libellesRayons, rayonDepuis, rayonsCourses;
 import 'ecran_caisse.dart' show couleurEtat;
 import 'ecran_validation_courses.dart';
 import 'evenement.dart';
+import 'unites_affichees.dart';
 import 'gymnase.dart';
 import 'partage.dart';
 import 'previsions.dart';
@@ -978,6 +979,11 @@ class _EtatCourses extends State<EcranCourses> {
               Text(info,
                   key: Key('info_${g.id}_${p.id}'),
                   style: const TextStyle(fontSize: 12)),
+              UnitesStock(
+                key: Key('unites_${g.id}_${p.id}'),
+                fiche: p.fiche,
+                quantite: stock,
+              ),
               if (suggere)
                 Text(
                   'Suggéré : stock bas',

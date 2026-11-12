@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
+import 'depot_menus.dart' show FicheProduit;
 import 'evenement.dart';
+import 'unites_affichees.dart';
 import 'gymnase.dart';
 import 'theme.dart';
 import 'ticket.dart';
@@ -127,9 +129,14 @@ class EcranCaisse extends StatefulWidget {
     this.onCloturer,
     this.onStock,
     this.verrouillee = false,
+    this.fiches = const {},
   });
 
   final String titre;
+
+  /// Fiche de chaque produit (identifiant -> fiche), pour montrer le stock en verres,
+  /// litres, parts ou gâteaux. Affichage seulement.
+  final Map<String, FicheProduit> fiches;
 
   /// Sous le titre : le gymnase de la caisse, quand il y en a un.
   final String? sousTitre;
@@ -309,6 +316,13 @@ class _EtatCaisse extends State<EcranCaisse> {
                                         : FontWeight.bold,
                                 color: couleurEtat(p.etatAffiche),
                               ),
+                            ),
+                          if (p.stock != null && widget.fiches[p.id] != null)
+                            UnitesStock(
+                              key: Key('unites_${p.id}'),
+                              fiche: widget.fiches[p.id]!,
+                              quantite: p.stock,
+                              style: const TextStyle(fontSize: 11),
                             ),
                         ],
                       ),
@@ -683,6 +697,7 @@ class _EtatCaisseEvenement extends State<EcranCaisseEvenement> {
             onCloturer: cloturee ? null : _cloturer,
             onStock: _ouvrirStock,
             verrouillee: cloturee,
+            fiches: {for (final x in _produitsEvenement) x.id: x.fiche},
             bandeau: _bandeau(v.data ?? const <Vente>[], c.data),
           );
         },
