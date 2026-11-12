@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Lot A, A7 : badges de rôle, « Qui peut quoi » en cartes, QR de l'association
+- Un badge de couleur par rôle (responsable, gestionnaire, en attente, bénévole), identique partout ; « Qui peut quoi » = une carte par rôle avec puces ; QR de l'association dans la carte « Association et code » (responsable seul), scanné = entrée comme bénévole sans ouvrir d'événement (liens de gymnase inchangés, titre « Rejoindre l'association »). Droits et règles inchangés, aucune dépendance. Preuve : N1 ; parcours Android non prouvé (deux échecs du test), N1 gardé sur décision de Kinder, critère 8 revu à la vérification finale.
+
 ## 12/11/2026 — Lot A, A2 : assistant d'import, menu de même nom
 - Un classeur dont les feuilles Menu et Recettes sont remplies, importé avec un menu de même nom déjà dans l'association : aucun menu créé, aucune recette écrite, menu existant intact ; le résumé dit que les recettes du classeur ne sont pas reprises (une phrase ajoutée). Tests : 523, analyse sans erreur.
 
