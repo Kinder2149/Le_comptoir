@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Plan complet fusionné proposé (section 18, à valider)
+- Fusion de T1 à T9 et des douze points de la note « Clôture du tournoi » en deux lots : A avant le tournoi (affichage et rangement seulement), B après (calculs, modèle de comptes, simulation). Constat : aucune étape T1 à T9 livrée. Rien de figé.
+
 ## 11/11/2026 — Mission « Clôture du tournoi » : note de cadrage (phase 1, rien de figé)
 - Douze retours de Kinder (soir du 11/11/2026, capture de l'écran Produit « Croque tartiflette » et deux classeurs : `classeur-notre-club.xlsx` produit par l'application, `Nouvelle_feuille_2.xlsx` original du club) consignés dans PLAN_STOCK_COURSES.md section 17, avec le constat dans le code pour chacun : QR code de l'association jamais affiché (seul le QR d'un gymnase existe), un seul association par téléphone, rôles en texte brut dans Paramètres, effectifs par catégorie, par jour et par gymnase absents du classeur (53 / 60 personnes seulement, chiffres introuvables dans l'original), menu et recettes vides dans le classeur du club, stock sans unité ni verres / parts, écran article en boîte de dialogue chevauchée, champ « Il reste » modifiable dans les Courses, bloc « Quantités par produit » mal placé, case à cocher confondue avec la validation de la série.
 - Relevé du classeur d'origine (équipes, bénévoles, pourcentages par jour, conditionnements d'achat, achats 2024 / 2025 avec retours de terrain) et scénario de la simulation de clôture sur émulateur (2 gymnases, 2 jours, 4 caisses, courses et ventes fictives, bilan financier).

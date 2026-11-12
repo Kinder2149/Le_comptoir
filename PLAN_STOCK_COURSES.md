@@ -1168,3 +1168,58 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 3. **Limites de Kinder** : ≤ 20 modules (19 aujourd'hui : le point 2 et le test de simulation peuvent en demander un ou deux : **signalé avant tout code**) ; ≤ 5 fichiers de documentation (5 aujourd'hui : cette note vit ici, section 17, pas dans un nouveau fichier) ; zéro dépendance ajoutée.
 4. **Statut** : « T1 à T9 » (Prêt pour le tournoi) n'est pas suivi dans le tableau de la section 16 : **vérifier ce qui est réellement livré** avant de ré-ouvrir T7 (Paramètres) et T8 (Courses). Les points 3, 9 et 10 recoupent T7 et T8 : à fusionner, pas à doubler.
 5. **Phase 3** : décisions 80 et suivantes à figer, section 6 de `PROJET_CONTEXTE.md` ; revue d'équipe par le Coordinateur (Recherche et Technique) pour le point 2 (modèle de comptes Firebase) avant validation.
+
+## 18. Plan complet fusionné « Prêt pour le tournoi » + « Clôture du tournoi » — PROPOSITION (12/11/2026, à valider par Kinder)
+
+> Fusion des étapes T1 à T9 (section 16, plan validé le 11/11/2026) et des douze points de la note de cadrage (section 17).
+> **Rien n'est figé** : les points de la section 17 passent par la phase 2 (questions une à une), puis 3 (décisions 80 et suivantes) et 4 (critères) avant tout code.
+> Constat au 12/11/2026 : **aucune des étapes T1 à T9 n'est livrée** (rien dans le code, suivi de la section 16 vide). Branche de travail : `claude/pret-tournoi` (contient cette note).
+
+### 18.1 Recoupements (pour ne rien faire deux fois)
+
+| Étape du plan validé | Points de la note qui s'y ajoutent | Écran |
+|---|---|---|
+| T2 Assistant d'import + T3 Classeur du club | 5 (le classeur porte le menu et les recettes ; l'import reprend le menu existant sans le doubler) | Extraction et modèle |
+| T7 Paramètres en cartes | 3 (une carte et un badge de couleur par rôle) + 1 (QR code pour rejoindre l'association, dans la carte « Association et code ») | Paramètres |
+| T8 Courses en cartes | 9 (« Il reste » en lecture seule) + 10 (« Quantités par produit » rangé) + 11 (cocher ≠ valider) | Courses |
+| — (nouvelle étape, affichage seul) | 7 + 12 (unité et verres / parts à côté de chaque stock) | Stock de départ, stocks, caisse, courses, bilan |
+
+### 18.2 Découpage proposé : ce qui sert au tournoi du week-end, et ce qui vient après
+
+**Lot A — avant l'essai à blanc de vendredi (mission « Prêt pour le tournoi » élargie)** : uniquement de l'affichage et du rangement, **aucun calcul ne change** (règle de la section 16 conservée).
+
+| # | Étape | Origine | Ce que Kinder voit |
+|---|---|---|---|
+| A1 | Enregistrer sur le téléphone | T1 | Chaque fichier : « Enregistrer sur le téléphone » ou « Partager » |
+| A2 | Assistant d'import unique | T2 + point 5 | Une carte « Importer » ; le menu du classeur est repris sans doublon |
+| A3 | Classeur du club | T3 + point 5 | `recette/classeur-notre-club.xlsx` avec menu et recettes remplis |
+| A4 | Ajouter un produit | T4 | Bouton dans « Produits et images » |
+| A5 | Annuler un changement de source | T5 | Bouton dans la prévision |
+| A6 | Heure de la dernière actualisation | T6 | « Actualisé le JJ/MM à HH:MM » |
+| A7 | Paramètres en cartes, badges de rôle, QR de l'association | T7 + points 3 et 1 | Cartes, badge coloré par rôle, QR à montrer aux bénévoles |
+| A8 | Courses en cartes, « Il reste » affiché, cocher ≠ valider, « Quantités par produit » rangé | T8 + points 9, 10, 11 | Liste qu'on coche en magasin ; une seule validation finale met le stock à jour |
+| A9 | Unités et verres / parts partout | points 7 et 12 | « 3 bouteilles · 24 verres » sur chaque stock |
+| A10 | Clôture du lot A | T9 | Vérification complète, APK 1.5.0 à installer sur les téléphones du week-end |
+
+**Lot B — après le tournoi (mission « Clôture du tournoi »)** : ce qui touche aux calculs ou au modèle de comptes, trop risqué la veille d'un tournoi.
+
+| # | Étape | Origine | Pourquoi après |
+|---|---|---|---|
+| B1 | Écran article en cartes, données qui « rebondissent » (17.3) | point 8 | Refonte d'un écran central ; à faire à froid |
+| B2 | Effectifs par catégorie / jour / gymnase et pourcentages dans le classeur et la prévision | point 4 | Change le calcul de la prévision |
+| B3 | Stock des produits composés et de leurs composants | point 6 | Change le calcul des courses |
+| B4 | Plusieurs associations, un rôle par association | point 2 | Change le modèle de comptes et les règles d'accès ; seul, en dernier, avec revue |
+| B5 | Simulation complète du tournoi sur émulateur (17.4) | note 17.4 | Critère de fin de la mission ; s'appuie sur les vrais chiffres du week-end |
+
+### 18.3 Questions à trancher avant de coder (phase 2, une à la fois)
+
+1. Le découpage lot A (avant le tournoi) / lot B (après) est-il le bon ?
+2. Point 5 : le classeur du club porte le menu et les recettes (revient sur la réponse T3 du 11/11/2026) ?
+3. Point 10 : « Quantités par produit » déplacé dans la Préparation (recommandé) ou gardé en tête des Courses ?
+4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ?
+5. (Lot B) Point 4 : « ratio » = effectifs, pourcentages, ou les deux (recommandé : les deux, effectifs d'abord).
+6. (Lot B) Point 2 : association active = la dernière utilisée, avec un sélecteur dans l'en-tête ?
+
+### 18.4 Limites
+
+Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à vérifier qu'un affichage de QR existe déjà, `EcranQr`). Cinq fichiers de documentation : ce plan vit ici. Le point 2 (B4) et la simulation (B5) peuvent demander un module de plus : signalé avant le code.
