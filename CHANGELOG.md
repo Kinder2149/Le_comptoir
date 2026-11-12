@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Lot A (« Prêt pour le tournoi » élargi) : Plan prêt
+- Phase 2 du plan complet : découpage lot A (avant le tournoi) / lot B (après) validé ; le classeur du club garde menu et recettes ; « Quantités par produit » passe en Préparation ; QR de l'association pour la gestion seule ; « Il reste » affiché avec un bouton « Modifier » (constat : il porte les restes d'ingrédients, saisis nulle part ailleurs).
+- Décisions 80 à 84 figées (QR de l'association, badges de rôle, Courses, unités affichées, classeur du club) et critères du lot A A1 à A10 validés par Kinder (PLAN_STOCK_COURSES.md 18.5).
+- Prompt de la session mère du lot A en 18.6 (remplace celui de la section 16) ; le chantier se mène dans une conversation neuve, sur la branche `claude/lot-a-tournoi`, après fusion de cette branche de cadrage dans main.
+
 ## 12/11/2026 — Plan complet fusionné proposé (section 18, à valider)
 - Fusion de T1 à T9 et des douze points de la note « Clôture du tournoi » en deux lots : A avant le tournoi (affichage et rangement seulement), B après (calculs, modèle de comptes, simulation). Constat : aucune étape T1 à T9 livrée. Rien de figé.
 

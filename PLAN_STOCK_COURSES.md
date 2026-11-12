@@ -1219,9 +1219,9 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ? → **Oui, gestion seule, validé par Kinder le 12/11/2026** (« Oui, gestion seule ») : le QR contient le code de l'association ; le scanner fait entrer comme bénévole, comme le code tapé.
    - **Constat au cadrage (12/11/2026), point 9** : « Il reste » dans les Courses n'est pas une copie du stock de départ. Il porte les restes **d'ingrédients et de conditionnements** (pain de mie, jambon, sucre…), qui ne se saisissent nulle part ailleurs (le stock de départ ne porte que les produits finis ; les composants viennent avec le point 6, lot B). Le passer en lecture seule ferait perdre cette saisie. → **Tranché par Kinder le 12/11/2026** (« Oui, avec Modifier ») : chaque article affiche « En stock : n [unité] » sans champ de saisie, et un bouton « Modifier » ouvre la saisie. La saisie du stock des composants en Préparation reste au lot B (point 6).
 
-### 18.5 Décisions et critères du lot A — PROPOSÉS (phases 3 et 4, à valider par Kinder)
+### 18.5 Décisions et critères du lot A — VALIDÉS par Kinder le 12/11/2026 (phases 3 et 4 closes)
 
-**Décisions proposées** (entrent en section 6 de PROJET_CONTEXTE.md à la validation) :
+**Décisions** (figées en section 6 de PROJET_CONTEXTE.md, numéros 80 à 84) :
 
 - **80. QR code de l'association** : affiché dans Paramètres › carte « Association et code », pour la gestion seulement (responsable et gestionnaires). Il contient le code de l'association ; le scanner fait entrer comme bénévole, exactement comme le code tapé. Les droits (décisions 19, 23) ne changent pas.
 - **81. Badges de rôle** (complète 79 c) : une couleur par rôle (responsable, gestionnaire, gestionnaire en attente, bénévole), prise dans la palette de la décision 31. « Qui peut quoi » devient une carte par rôle (badge + liste à puces de ce qu'il peut et ne peut pas faire). Les mêmes badges partout où un rôle s'affiche.
@@ -1246,3 +1246,34 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 ### 18.4 Limites
 
 Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à vérifier qu'un affichage de QR existe déjà, `EcranQr`). Cinq fichiers de documentation : ce plan vit ici. Le point 2 (B4) et la simulation (B5) peuvent demander un module de plus : signalé avant le code.
+
+**Ordre et dépendances du lot A** : A1 avant A2 et A8 (boutons de fichier) ; A2 avant A3 (le classeur s'importe par l'assistant) ; A9 avant A8 (l'affichage « En stock : n [unité] » de A8 reprend les unités de A9) ; A4 à A7 indépendantes ; A10 en dernier. Ordre retenu : A1 → A2 → A3 → A4 → A5 → A6 → A7 → A9 → A8 → A10.
+
+**Préalables, ce qu'on ne touche pas, arrêts** : ceux de la section 16, inchangés. Seule différence : les calculs restent intouchés **aussi** pour A8 et A9 (affichage et rangement seulement).
+
+**Suivi** (une ligne par étape close)
+
+| Étape | État | Date | Critères |
+|---|---|---|---|
+
+### 18.6 Prompt de lancement de la session mère du lot A (remplace celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
+
+```
+Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end (essai à blanc vendredi) : va droit au but.
+
+1. Lis, dans cet ordre : METHODO\3_CHANTIER.md (dossier DEV du poste), PROJET_CONTEXTE.md (bloc STATUT, décisions 13, 19, 23, 31, 56, 70 à 84, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md sections 16 (T1 à T9 : critères, constats, préalables, arrêts) et 18 (plan complet : lot A = A1 à A10, recoupements, critères ajoutés en 18.5, ordre), section 17 pour le détail des points 1, 3, 5, 7, 9 à 12, CHANGELOG.md (dernière entrée), graphify-out/GRAPH_REPORT.md.
+2. Préalable : vérifie que la branche de cadrage `claude/pret-tournoi` (sections 17 et 18, décisions 80 à 84) est fusionnée dans main. Sinon, tu t'arrêtes là et tu le dis à Kinder.
+3. Hygiène git : rien de non enregistré (le dossier `graphify-out/converted/`, produit par graphify, n'est pas du travail de Kinder : laisse-le), main à jour avec le dépôt en ligne, puis branche `claude/lot-a-tournoi` depuis main. Jamais de travail sur main.
+4. Pour chaque étape, dans l'ordre A1 → A2 → A3 → A4 → A5 → A6 → A7 → A9 → A8 → A10 :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 18 (« Cadrage An »), critères repris tels quels (section 16 pour l'étape T d'origine + ajouts de 18.5).
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon R17 : Sonnet, sauf A2 en « opus ». Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie la preuve au niveau écrit au plan (N1 : flutter analyze, flutter test, tests_regles/lancer.ps1 ; N2 : le seul parcours Android qui prouve le critère, sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (préalable 2 de la section 16).
+   d. Ligne dans le tableau de suivi de la section 18, ligne dans CHANGELOG.md, commit sur la branche. Puis étape suivante, sans attendre Kinder.
+5. Pas de banc d'essai dans cette mission (décision 75) : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1 ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test). Une sous-session n'enquête jamais sur un rouge connu.
+6. A3 : le classeur du club part de recette/historique-tournoi-an-passe.xlsx et porte le menu et les recettes de l'association test (décision 84) ; l'import ne crée aucun menu en double. Les classeurs du club ne sont pas dans le dépôt : s'ils manquent sur le poste, demande-les à Kinder avant A3.
+7. A8 et A9 : affichage et rangement seulement (décisions 82 et 83) ; tous les tests de calcul des courses et de la prévision passent sans modification. « Il reste » garde sa saisie derrière un bouton « Modifier ».
+8. Aucune dépendance nouvelle sans accord de Kinder (A7 : réutiliser l'affichage de QR existant, `EcranQr`). Les calculs, le bilan et les droits des rôles ne changent pas ; le nom et le prix d'un produit déjà dans un événement restent figés.
+9. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
+10. Clôture (A10, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin du lot A, 18.5). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
