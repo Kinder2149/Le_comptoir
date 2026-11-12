@@ -99,6 +99,18 @@ class BadgeComptoir extends StatelessWidget {
   }
 }
 
+/// Couleurs du badge d'un rôle, identiques partout (décision 31) : responsable =
+/// anthracite sur blanc, gestionnaire = prune, gestionnaire en attente = ocre,
+/// bénévole = sauge. Renvoie (fond, encre).
+(Color, Color) couleursRole(String role, {bool enAttente = false}) {
+  if (enAttente) return (Palette.ocreDoux, Palette.ocreFonce);
+  return switch (role) {
+    'responsable' => (Palette.anthracite, Colors.white),
+    'gestionnaire' => (Palette.pruneDoux, Palette.pruneFonce),
+    _ => (Palette.saugeDoux, Palette.saugeFonce),
+  };
+}
+
 /// Thème de toute l'application : anthracite, lin et boutons arrondis (14), cartes (16).
 ThemeData themeComptoir() {
   const scheme = ColorScheme.light(

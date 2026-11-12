@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'actualisation.dart';
 
@@ -60,6 +61,10 @@ class EcranAssociation extends StatelessWidget {
     } on FormatException {
       _message(context,
           "QR code illisible : ce n'est pas un QR code du Comptoir.");
+      return;
+    }
+    if (lien.sansGymnase) {
+      _message(context, 'Vous faites déjà partie de cette association.');
       return;
     }
     await _ouvrirLien(context, moi, lien);
@@ -564,13 +569,9 @@ class _EtatParametres extends State<EcranParametres> {
         ),
       );
 
-  /// Couleurs du badge de statut (décision 31).
-  (Color, Color) _couleursStatut(Membre x) {
-    if (x.estResponsable) return (Palette.anthracite, Colors.white);
-    if (x.enAttente) return (Palette.ocreDoux, Palette.ocreFonce);
-    if (x.role == 'gestionnaire') return (Palette.pruneDoux, Palette.pruneFonce);
-    return (Palette.anthraciteDoux, Palette.anthraciteFonce);
-  }
+  /// Couleurs du badge de statut (décision 31) : la même fonction partout.
+  (Color, Color) _couleursStatut(Membre x) =>
+      couleursRole(x.role, enAttente: x.enAttente);
 
   /// Carte réservée au responsable : nom et code de l'association.
   Widget _sectionAssociation(BuildContext context) => StreamBuilder<Association?>(
@@ -600,6 +601,25 @@ class _EtatParametres extends State<EcranParametres> {
                   style: TypeAction.gerer.contour,
                   onPressed: () => _regenerer(asso),
                   child: const Text('Changer le code'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'À faire scanner par les bénévoles : ils rejoignent '
+                "l'association.",
+                key: Key('explication_qr_asso'),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(12),
+                  child: QrImageView(
+                    // La clé porte le texte du QR : il change avec le code.
+                    key: ValueKey(ecrireLienAssociation(asso.code)),
+                    data: ecrireLienAssociation(asso.code),
+                    size: 200,
+                  ),
                 ),
               ),
             ],
@@ -758,7 +778,7 @@ class _EtatParametres extends State<EcranParametres> {
     }
   }
 
-  /// Note « Qui peut quoi » : les droits des trois rôles, repliable.
+  /// Note « Qui peut quoi » : une carte par rôle (badge + puces), repliable.
   Widget _quiPeutQuoi(BuildContext context) => Card(
         margin: const EdgeInsets.only(bottom: 12),
         clipBehavior: Clip.antiAlias,
@@ -774,19 +794,78 @@ class _EtatParametres extends State<EcranParametres> {
               style: Theme.of(context).textTheme.titleMedium),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: const [
-            Text(
-              "Responsable : nomme et retire les gestionnaires, retire un membre, "
-              "change le code d'accès et supprime l'association.\n"
-              'Gestionnaire : gère les menus, les événements, le stock et les bilans '
-              'des gymnases qui lui sont rattachés ; voit la liste des membres sans '
-              'pouvoir la modifier.\n'
-              'Bénévole : tient sa caisse et voit les événements en cours ; ne voit ni '
-              'les menus ni la liste des membres.',
-            ),
+          children: [
+            for (final r in _droitsParRole) _carteRole(r.$1, r.$2),
           ],
         ),
       );
+
+  /// Les droits de chaque rôle (décisions 19, 23 et 71).
+  static const _droitsParRole = <(String, List<String>)>[
+    (
+      'responsable',
+      [
+        'Nomme et retire les gestionnaires',
+        'Retire un membre',
+        "Change le code d'accès",
+        "Supprime l'association",
+      ],
+    ),
+    (
+      'gestionnaire',
+      [
+        'Gère les menus et les événements',
+        'Gère le stock et les bilans des gymnases qui lui sont rattachés',
+        'Voit la liste des membres sans pouvoir la modifier',
+      ],
+    ),
+    (
+      'benevole',
+      [
+        'Tient sa caisse',
+        'Voit les événements en cours',
+        'Ne voit ni les menus ni la liste des membres',
+      ],
+    ),
+  ];
+
+  Widget _carteRole(String role, List<String> puces) {
+    final (fond, encre) = couleursRole(role);
+    return Container(
+      key: Key('droits_$role'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Palette.papier,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Palette.filet),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BadgeComptoir(
+            texte: libelleRole(role),
+            cleTexte: Key('droits_badge_$role'),
+            fond: fond,
+            encre: encre,
+          ),
+          const SizedBox(height: 8),
+          for (final p in puces)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('\u2022  '),
+                  Expanded(child: Text(p)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   /// Carte réservée au responsable : suppression de l'association.
   Widget _sectionZone(BuildContext context) => StreamBuilder<Association?>(

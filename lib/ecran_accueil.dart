@@ -136,7 +136,8 @@ class _EtatAccueil extends State<EcranAccueil> {
         codeSaisi: lien.codeAssociation,
         prenom: prenom,
       );
-      widget.surLien?.call(lien);
+      // Lien d'association seule : on entre comme bénévole, sans rien ouvrir.
+      if (!lien.sansGymnase) widget.surLien?.call(lien);
     } on CodeInvalide {
       if (mounted) {
         setState(() => _erreur =

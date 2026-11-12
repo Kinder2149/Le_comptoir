@@ -136,6 +136,10 @@ class LienGymnase {
   final String evenementId;
   final String gymnaseId;
 
+  /// Lien de l'association seule (sans événement ni gymnase) : il fait rejoindre
+  /// l'association, sans rien ouvrir ensuite.
+  bool get sansGymnase => evenementId.isEmpty && gymnaseId.isEmpty;
+
   @override
   bool operator ==(Object other) =>
       other is LienGymnase &&
@@ -163,10 +167,19 @@ String ecrireLienGymnase(LienGymnase lien) => Uri(
       },
     ).toString();
 
+/// Le texte du QR code de l'association, sans événement ni gymnase :
+/// `lecomptoir://rejoindre?v=1&c=<code>`. Le scanneur entre comme bénévole.
+String ecrireLienAssociation(String code) => Uri(
+      scheme: 'lecomptoir',
+      host: 'rejoindre',
+      queryParameters: {'v': versionLien, 'c': code},
+    ).toString();
+
 final _codeLien = RegExp(r'^[A-Z0-9]{6}$');
 final _idLien = RegExp(r'^[A-Za-z0-9]{1,40}$');
 
-/// Lit le texte d'un QR code. Lève [FormatException] si ce n'est pas un QR code du
+/// Lit le texte d'un QR code (de gymnase, ou d'association seule : événement et
+/// gymnase vides). Lève [FormatException] si ce n'est pas un QR code du
 /// Comptoir, d'une autre version, ou si un champ est absent ou mal formé.
 LienGymnase lireLienGymnase(String texte) {
   final Uri uri;
@@ -179,12 +192,14 @@ LienGymnase lireLienGymnase(String texte) {
   final c = (q['c'] ?? '').toUpperCase();
   final e = q['e'] ?? '';
   final g = q['g'] ?? '';
+  // Soit les deux ids (lien de gymnase), soit aucun (lien d'association).
+  final idsOk = (e.isEmpty && g.isEmpty) ||
+      (_idLien.hasMatch(e) && _idLien.hasMatch(g));
   if (uri.scheme != 'lecomptoir' ||
       uri.host != 'rejoindre' ||
       q['v'] != versionLien ||
       !_codeLien.hasMatch(c) ||
-      !_idLien.hasMatch(e) ||
-      !_idLien.hasMatch(g)) {
+      !idsOk) {
     throw FormatException('Ce n\u2019est pas un QR code du Comptoir', texte);
   }
   return LienGymnase(c, e, g);
