@@ -1573,7 +1573,7 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 ### 19.2 Préalables (validés avec le plan)
 
-1. **R29** : le chantier démarre quand le lot A est fusionné dans main (en attente de la capture de Kinder). La branche de cadrage `claude/cadrage-calcul-club` est fusionnée avant, sur accord de Kinder.
+1. **R29** : le chantier démarre quand le lot A est fusionné dans main (en attente de la capture de Kinder). La branche de cadrage `claude/cadrage-calcul-club` est fusionnée avant, sur accord de Kinder. **Remplacé le 12/11/2026 par le départ anticipé de 19.5 (écart à R29 décidé par Kinder).**
 2. Règles d'accès déployées sur le vrai projet dès que leurs tests passent (accord donné une fois pour la mission, comme au lot A).
 3. Une session mère (Sonnet) mène les étapes une par une, chacune dans une sous-session neuve, modèle selon R17 ; V1 en « opus ».
 4. Aucune dépendance nouvelle sans accord de Kinder.
@@ -1606,7 +1606,7 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 | Étape | État | Date | Critères |
 |---|---|---|---|
 
-### 19.4 Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_Comptoir du poste utilisé, une fois le plan validé et le lot A fusionné)
+### 19.4 Prompt de lancement de la session mère — REMPLACÉ par 19.5 le 12/11/2026, gardé pour trace (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_Comptoir du poste utilisé, une fois le plan validé et le lot A fusionné)
 
 ```
 Tu es la session mère de la mission « Calcul du club » (version 1.6.0) de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end : la 1.5.0 reste la version du tournoi, et Kinder décidera au vu de ta simulation ce qu'il prend de la 1.6.0.
@@ -1625,5 +1625,38 @@ Tu es la session mère de la mission « Calcul du club » (version 1.6.0) de Le 
 8. Pas de banc d'essai dans cette mission : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1 ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test). Une sous-session n'enquête jamais sur un rouge connu.
 9. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite ; écart de calcul non expliqué dans la preuve 1 de la simulation.
 10. Clôture (V9, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin et par preuve de la simulation, captures dans audit_front/tournoi/simulation/). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche envoyée, APK de recette 1.6.0. Kinder dit ce qu'il prend pour le week-end. Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
+
+### 19.5 Départ anticipé (12/11/2026, décision de Kinder) et prompt de lancement qui remplace 19.4
+
+**Décision de Kinder (12/11/2026, vers 21 h)** : le chantier « Calcul du club » démarre **sans attendre la fin du lot A**, dont la clôture (N3) tourne encore avec des rouges à examiner (`courses_test`, `chantier_complet_test`, `clotures_test`). **Écart à R29 assumé par Kinder** : deux missions actives en même temps sur ce projet, jusqu'à la fusion du lot A.
+
+**Conditions de l'écart** :
+1. **Deux dossiers séparés.** Le lot A continue dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir` (branche `claude/lot-a-tournoi`) ; la 1.6.0 se fait dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir_calcul_club` (copie de travail du même dépôt, branche `claude/calcul-club`). Aucune session ne touche au dossier de l'autre. Ce second dossier est temporaire : il est retiré à la fusion de la 1.6.0.
+2. **Base** : `claude/calcul-club` part de `claude/cadrage-calcul-club`, qui contient le lot A tel qu'il était le 12/11/2026 à 19 h 22 (A1 à A9 faites). Les corrections de la clôture du lot A sont reprises dans `claude/calcul-club` (fusion de `claude/lot-a-tournoi`) **avant V6**, et de nouveau avant V9.
+3. **Émulateur LC2 partagé** : la 1.6.0 ne s'en sert pas tant que la clôture du lot A l'occupe (N3, vérification par une autre IA, captures). V1 à V4 ne demandent que N1 ; avant V5 (premier N2), la mère vérifie que le lot A a rendu l'émulateur, sinon elle attend en poursuivant ce qui ne demande que N1.
+4. **Fusion** : la 1.6.0 n'est fusionnée dans main qu'après le lot A.
+5. **Courses** : V6 et V7 s'appuient sur la page Courses du lot A ; si les rouges de `courses_test` ou de `chantier_complet_test` révèlent un défaut de l'application, la 1.6.0 attend sa correction par le lot A avant V6.
+
+```
+Tu es la session mère de la mission « Calcul du club » (version 1.6.0) de Le Comptoir (temps de réalisation : phases 5, 6 et clôture), en DÉPART ANTICIPÉ : la mission « Prêt pour le tournoi » (lot A) est encore en clôture dans un autre dossier, par une autre session. Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end : la 1.5.0 (lot A) reste la version du tournoi, et Kinder décidera au vu de ta simulation ce qu'il prend de la 1.6.0.
+
+0. TON DOSSIER est V:\DEV\PROJETS\applications_mobile\Le_Comptoir_calcul_club (copie de travail séparée du même dépôt). Tu ne lis, n'écris et ne lances RIEN dans V:\DEV\PROJETS\applications_mobile\Le_Comptoir : une autre session y clôt le lot A. Tu ne changes jamais de branche dans ce dossier-là.
+1. Lis, dans cet ordre : METHODO\3_CHANTIER.md (dossier DEV du poste), PROJET_CONTEXTE.md (bloc STATUT, décisions 46, 56, 75 à 92, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md section 19 (constats, préalables, étapes V1 à V9, critères, arrêts) et surtout 19.5 (conditions du départ anticipé), section 17 (17.2 et 17.4 pour le classeur d'origine et le scénario), section 18 (lot A, pour l'existant), CHANGELOG.md (dernières entrées), graphify-out/GRAPH_REPORT.md.
+2. Hygiène git, dans ton dossier : tu es sur `claude/cadrage-calcul-club` ; crée la branche `claude/calcul-club` à partir d'elle (PAS depuis main, qui n'a pas encore le lot A). Jamais de travail sur main. Branche envoyée en ligne après chaque étape. Les fichiers locaux non versionnés (firebase_options.dart, google-services.json, key.properties, recette/Nouvelle feuille 2.xlsx) sont déjà copiés dans ton dossier : ne les envoie jamais en ligne.
+3. Pour chaque étape, dans l'ordre V1 → V2 → V3 → V4 → V5 → V6 → V7 → V8 → V9 :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 19 (« Cadrage Vn »), critères repris tels quels.
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon R17 : Sonnet, sauf V1 en « opus ». Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test, et TON DOSSIER comme seul dossier de travail. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie la preuve au niveau écrit au plan (N1 : flutter analyze, flutter test, tests_regles/lancer.ps1 ; N2 : le seul parcours Android qui prouve le critère, sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent ; si le lot A n'est pas encore fusionné, vérifie avant de déployer que tes règles contiennent bien celles du lot A (tu pars de sa branche), pour ne rien retirer de ce qui est en ligne.
+   d. Ligne dans le tableau de suivi de la section 19, ligne dans CHANGELOG.md, commit, branche envoyée. Puis étape suivante, sans attendre Kinder.
+4. Émulateur LC2 : il est à la session du lot A tant qu'elle est en clôture. Avant le premier N2 (V5), demande à Kinder, en une question, si le lot A a rendu l'émulateur ; en attendant, avance ce qui ne demande que N1.
+5. Avant V6, et de nouveau avant V9 : fusionne `claude/lot-a-tournoi` (dernier état en ligne) dans `claude/calcul-club` pour reprendre les corrections de la clôture du lot A ; N1 vert après la fusion. Si la clôture du lot A a révélé un défaut de la page Courses non encore corrigé, attends sa correction avant V6 et dis-le à Kinder.
+6. Le classeur d'origine (`recette/Nouvelle feuille 2.xlsx`, hors dépôt) est dans ton dossier : tu le lis pour V1 (chiffres du test), V5 (remplir le classeur du club) et V7 (preuve 1). Aucun nom de bénévole n'en sort. Attention : les parts des produits varient aussi d'un jour à l'autre.
+7. Esprit et design de l'application (décision 86) : cartes, vocabulaire et palette du lot A ; pourcentages pré-remplis par l'import ; rien ne recopie l'allure des feuilles Excel.
+8. Après V7 : montre à Kinder le résultat des quatre preuves de la simulation, en une phrase chacune, sans attendre sa réponse pour continuer V8. Si le temps manque avant le tournoi, arrête-toi après V7 et dis-le.
+9. Pas de banc d'essai dans cette mission : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1, lancé depuis TON dossier ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test), plus ceux que la clôture du lot A aura inscrits comme connus. Une sous-session n'enquête jamais sur un rouge connu.
+10. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite ; écart de calcul non expliqué dans la preuve 1 de la simulation.
+11. Clôture (V9, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin et par preuve de la simulation, captures dans audit_front/tournoi/simulation/). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche envoyée, APK de recette 1.6.0. Kinder dit ce qu'il prend pour le week-end. Fusion dans main seulement APRÈS celle du lot A et sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```

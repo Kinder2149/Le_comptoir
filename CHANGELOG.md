@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Mission « Calcul du club » : départ anticipé (écart à R29, décision de Kinder)
+- Le chantier de la 1.6.0 démarre pendant la clôture du lot A, dans un second dossier (`Le_Comptoir_calcul_club`, branche `claude/calcul-club`) ; conditions (émulateur partagé, reprise des corrections du lot A avant V6 et V9, fusion après le lot A) et prompt en PLAN_STOCK_COURSES.md 19.5, qui remplace 19.4.
+
 ## 12/11/2026 — Mission « Calcul du club » (version 1.6.0) : Plan prêt (validé par Kinder le 12/11/2026)
 - Kinder avance au week-end les points 4, 6 et 8 de « Clôture du tournoi » et la simulation complète sur les chiffres de l'an dernier. Phase 2 : sept questions tranchées (garde-fou de version, méthode du club, événements existants, groupes dans la Prévision, ingrédients en Préparation, article en cinq cartes, feuilles Repas et Groupes, simulation à quatre preuves).
 - Décisions 85 à 92 figées (section 6 de PROJET_CONTEXTE.md) ; plan V1 à V9, critères, niveaux de preuve et prompt de la session mère en section 19 de PLAN_STOCK_COURSES.md. Constat : les parts des produits varient aussi d'un jour à l'autre dans le classeur d'origine.
