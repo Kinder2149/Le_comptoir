@@ -500,6 +500,8 @@ void main() {
     Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
     await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(seconds: 1));
+    // A8 : on est passé par l'onglet Avant (Préparation) ; le bilan se lit dans Pendant.
+    await toucher(tester, find.byKey(const Key('onglet_pendant')));
     await toucher(tester, find.byKey(const Key('voir_bilan')));
     await attendre(tester, find.byKey(const Key('bilan_cout')));
     expect(texte(tester, 'bilan_cout'), 'Coût des courses : 492,50 €');

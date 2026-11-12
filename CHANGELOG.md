@@ -23,6 +23,9 @@
 - Décisions 85 à 92 figées (section 6 de PROJET_CONTEXTE.md) ; plan V1 à V9, critères, niveaux de preuve et prompt de la session mère en section 19 de PLAN_STOCK_COURSES.md. Constat : les parts des produits varient aussi d'un jour à l'autre dans le classeur d'origine.
 - Branche de cadrage `claude/cadrage-calcul-club`. Aucun code modifié.
 
+## 12/11/2026 — Lot A, A10 : N3 de clôture
+- N3 (suite d'intégration complète, 12/11/2026) : tout vert sauf les rouges connus (`evenements_test`, `menus_test`, `images_test`) ; `parcours_ergonomie_test` fige sur ce poste (rouge connu à captures), `parcours_retours_terrain_test` non rejoué (idem). `parcours_mission_test` (arrêt du N3 du 11/11) rejoué : vert. Rouges nouveaux, tous des parcours périmés : `courses_test`, `chantier_complet_test` (les quantités sont en Préparation : assistant `versPrevision` corrigé, onglet Pendant pour lire le bilan), `clotures_test` (échec en cascade, vert au rejeu). Aucune assertion affaiblie. Parcours du QR de l'association non prouvé (deux échecs, décision de Kinder : N1).
+
 ## 12/11/2026 — Lot A, A3 : classeur du club avec menu et recettes
 - `recette/classeur-notre-club.xlsx` : feuille Menu (19 produits, prix 2024 du club à vérifier) et Recettes (4 croques, d'après le classeur d'origine) remplies ; importé par l'assistant dans une association dont le menu s'appelle « Les Discjonctés » : menu repris sans modification, aucun doublon, consommations égales au relevé (N2 vert). Parcours des Courses adaptés au déplacement des quantités en Préparation (à rejouer au N3). Relevé A3 dans PLAN_STOCK_COURSES.md.
 

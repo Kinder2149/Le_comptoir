@@ -287,9 +287,10 @@ Future<void> ongletCourses(WidgetTester tester, {required bool dejaAchete}) asyn
 }
 
 /// Remonte (retour arrière) jusqu'à l'écran de l'événement, celui qui porte les tâches
-/// « Prévision » et « Courses » : [cle] est la tâche à retrouver.
-Future<void> _remonterA(WidgetTester tester, String cle) async {
-  for (var i = 0; i < 6 && find.byKey(Key(cle)).evaluate().isEmpty; i++) {
+/// « Prévision » et « Courses » : une des clés [cles] doit être à l'écran.
+Future<void> _remonterA(WidgetTester tester, List<String> cles) async {
+  bool trouve() => cles.any((c) => find.byKey(Key(c)).evaluate().isNotEmpty);
+  for (var i = 0; i < 6 && !trouve(); i++) {
     // Une modification de Courses ou de la Préparation s'enregistre après 700 ms.
     await tester.pump(const Duration(milliseconds: 1500));
     Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
@@ -302,7 +303,13 @@ Future<void> _remonterA(WidgetTester tester, String cle) async {
 /// sur l'événement) et attend que le bloc soit chargé.
 Future<void> versPrevision(WidgetTester tester) async {
   if (find.byKey(const Key('titre_prevoit_vendre')).evaluate().isNotEmpty) return;
-  await _remonterA(tester, 'tache_prevision');
+  await _remonterA(tester, ['tache_prevision', 'onglet_avant']);
+  // Un événement ouvert s'affiche d'abord dans l'onglet Pendant : la tâche Prévision
+  // est dans l'onglet Avant.
+  if (find.byKey(const Key('tache_prevision')).evaluate().isEmpty) {
+    await toucherCle(tester, 'onglet_avant');
+    await attendre(tester, find.byKey(const Key('tache_prevision')));
+  }
   await toucherCle(tester, 'tache_prevision');
   final titre = find.byKey(const Key('titre_prevoit_vendre'));
   for (var i = 0; i < 150 && titre.evaluate().isEmpty; i++) {
@@ -319,7 +326,7 @@ Future<void> versPrevision(WidgetTester tester) async {
 /// achats suivent les quantités saisies.
 Future<void> versCourses(WidgetTester tester) async {
   if (find.byKey(const Key('etat_courses')).evaluate().isNotEmpty) return;
-  await _remonterA(tester, 'voir_courses');
+  await _remonterA(tester, ['voir_courses']);
   await toucherCle(tester, 'voir_courses');
   await attendre(tester, find.byKey(const Key('etat_courses')));
 }
