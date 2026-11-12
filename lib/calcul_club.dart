@@ -139,3 +139,141 @@ List<EcartGroupe> ecartsGroupes(CalculClub calcul) {
   }
   return ecarts;
 }
+
+// ---------- Enregistrement (mission « Calcul du club », V2, décision 88) ----------
+// Deux documents dans evenements/{e}/calcul_club, identifiants « repas » et « groupes » :
+//   repas   = { jours: {"1": {gymnaseId: {joueusesMidi, joueusesSoir, benevolesMidi,
+//               benevolesSoir, spectateursMidi, spectateursSoir}}} } (entiers)
+//   groupes = { groupes: [{nom, pourcentages: {"1": 0.7}, produits: {produitId: {"1": 0.4}}}] }
+// Les clés de jours sont des textes (Firestore). Une entrée hors format est ignorée à la
+// lecture ; un document absent donne null. Aucune fonction de calcul ci-dessus n'est modifiée.
+
+const _champsRepas = [
+  'joueusesMidi',
+  'joueusesSoir',
+  'benevolesMidi',
+  'benevolesSoir',
+  'spectateursMidi',
+  'spectateursSoir',
+];
+
+/// Le document « repas » : gymnase -> jour -> repas devient jour -> gymnase -> repas.
+Map<String, dynamic> repasVersMap(Map<String, Map<int, RepasGymnaseJour>> repas) {
+  final jours = <String, Map<String, Map<String, int>>>{};
+  repas.forEach((gymnaseId, parJour) {
+    parJour.forEach((jour, r) {
+      jours.putIfAbsent('$jour', () => {})[gymnaseId] = {
+        'joueusesMidi': r.joueusesMidi,
+        'joueusesSoir': r.joueusesSoir,
+        'benevolesMidi': r.benevolesMidi,
+        'benevolesSoir': r.benevolesSoir,
+        'spectateursMidi': r.spectateursMidi,
+        'spectateursSoir': r.spectateursSoir,
+      };
+    });
+  });
+  return {'jours': jours};
+}
+
+/// Le document « repas » relu. Null si absent ; une entrée hors format est ignorée.
+Map<String, Map<int, RepasGymnaseJour>>? repasDepuisMap(Map<String, dynamic>? doc) {
+  if (doc == null) return null;
+  final repas = <String, Map<int, RepasGymnaseJour>>{};
+  final jours = doc['jours'];
+  if (jours is! Map) return repas;
+  jours.forEach((cleJour, parGymnase) {
+    final jour = cleJour is String ? int.tryParse(cleJour) : null;
+    if (jour == null || parGymnase is! Map) return;
+    parGymnase.forEach((gymnaseId, valeurs) {
+      final r = _repasDepuis(valeurs);
+      if (gymnaseId is String && gymnaseId.isNotEmpty && r != null) {
+        repas.putIfAbsent(gymnaseId, () => {})[jour] = r;
+      }
+    });
+  });
+  return repas;
+}
+
+/// Six entiers positifs ou nuls, sinon null (l'entrée est ignorée).
+RepasGymnaseJour? _repasDepuis(Object? valeurs) {
+  if (valeurs is! Map) return null;
+  final n = <String, int>{};
+  for (final champ in _champsRepas) {
+    final v = valeurs[champ];
+    if (v is! int || v < 0) return null;
+    n[champ] = v;
+  }
+  return RepasGymnaseJour(
+    joueusesMidi: n['joueusesMidi']!,
+    joueusesSoir: n['joueusesSoir']!,
+    benevolesMidi: n['benevolesMidi']!,
+    benevolesSoir: n['benevolesSoir']!,
+    spectateursMidi: n['spectateursMidi']!,
+    spectateursSoir: n['spectateursSoir']!,
+  );
+}
+
+/// Le document « groupes » : pourcentages et parts par jour, en fractions.
+Map<String, dynamic> groupesVersMap(List<GroupeConso> groupes) => {
+      'groupes': [
+        for (final g in groupes)
+          {
+            'nom': g.nom,
+            'pourcentages': {
+              for (final e in g.pourcentages.entries) '${e.key}': e.value,
+            },
+            'produits': {
+              for (final p in g.produits.entries)
+                p.key: {for (final e in p.value.entries) '${e.key}': e.value},
+            },
+          },
+      ],
+    };
+
+/// Le document « groupes » relu. Null si absent ; un groupe sans nom est ignoré, une part
+/// qui n'est pas un nombre aussi.
+List<GroupeConso>? groupesDepuisMap(Map<String, dynamic>? doc) {
+  if (doc == null) return null;
+  final liste = doc['groupes'];
+  if (liste is! List) return const [];
+  final groupes = <GroupeConso>[];
+  for (final g in liste) {
+    if (g is! Map || g['nom'] is! String || (g['nom'] as String).isEmpty) continue;
+    groupes.add(GroupeConso(
+      nom: g['nom'] as String,
+      pourcentages: _partsDepuis(g['pourcentages']),
+      produits: _produitsDepuis(g['produits']),
+    ));
+  }
+  return groupes;
+}
+
+Map<int, double> _partsDepuis(Object? v) {
+  final parts = <int, double>{};
+  if (v is! Map) return parts;
+  v.forEach((cle, x) {
+    final jour = cle is String ? int.tryParse(cle) : null;
+    if (jour != null && x is num) parts[jour] = x.toDouble();
+  });
+  return parts;
+}
+
+Map<String, Map<int, double>> _produitsDepuis(Object? v) {
+  final produits = <String, Map<int, double>>{};
+  if (v is! Map) return produits;
+  v.forEach((cle, parts) {
+    if (cle is String && cle.isNotEmpty) produits[cle] = _partsDepuis(parts);
+  });
+  return produits;
+}
+
+/// Le calcul du club d'un événement à partir de ses deux documents. Null si aucun des deux
+/// n'existe (l'événement garde l'ancien calcul) ; s'il n'en existe qu'un, l'autre est vide.
+CalculClub? calculClubDepuis(
+    Map<String, dynamic>? repas, Map<String, dynamic>? groupes) {
+  if (repas == null && groupes == null) return null;
+  return CalculClub(
+    repas: repasDepuisMap(repas) ?? const {},
+    groupes: groupesDepuisMap(groupes) ?? const [],
+  );
+}

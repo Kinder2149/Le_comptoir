@@ -262,4 +262,126 @@ void main() {
       expect(ecartsGroupes(c), isEmpty);
     });
   });
+
+  group('enregistrement : sérialisation (V2)', () {
+    void memesRepas(RepasGymnaseJour b, RepasGymnaseJour a) {
+      expect(b.joueusesMidi, a.joueusesMidi);
+      expect(b.joueusesSoir, a.joueusesSoir);
+      expect(b.benevolesMidi, a.benevolesMidi);
+      expect(b.benevolesSoir, a.benevolesSoir);
+      expect(b.spectateursMidi, a.spectateursMidi);
+      expect(b.spectateursSoir, a.spectateursSoir);
+      expect(b.total, a.total);
+    }
+
+    Map<String, Object> repasValide() => {
+          'joueusesMidi': 49,
+          'joueusesSoir': 49,
+          'benevolesMidi': 10,
+          'benevolesSoir': 11,
+          'spectateursMidi': 0,
+          'spectateursSoir': 0,
+        };
+
+    test('les repas font l\'aller-retour : chaque catégorie, midi et soir', () {
+      final attendu = calculClasseur().repas;
+      final relu = repasDepuisMap(repasVersMap(attendu))!;
+      expect(relu.keys.toSet(), attendu.keys.toSet());
+      for (final gymnase in attendu.keys) {
+        expect(relu[gymnase]!.keys.toSet(), attendu[gymnase]!.keys.toSet());
+        for (final jour in attendu[gymnase]!.keys) {
+          memesRepas(relu[gymnase]![jour]!, attendu[gymnase]![jour]!);
+        }
+      }
+    });
+
+    test('le document « repas » a la forme attendue par les règles (jour en texte)', () {
+      final doc = repasVersMap(calculClasseur().repas);
+      final jours = doc['jours'] as Map<String, dynamic>;
+      expect(jours.keys.toSet(), {'1', '2'});
+      final g1 = jours['1'] as Map<String, dynamic>;
+      expect((g1['g1'] as Map)['joueusesMidi'], 49);
+      expect((g1['g1'] as Map).length, 6);
+    });
+
+    test('les groupes font l\'aller-retour : noms, pourcentages et parts', () {
+      final attendu = calculClasseur().groupes;
+      final relu = groupesDepuisMap(groupesVersMap(attendu))!;
+      expect(relu.length, attendu.length);
+      for (var i = 0; i < attendu.length; i++) {
+        expect(relu[i].nom, attendu[i].nom);
+        expect(relu[i].pourcentages, attendu[i].pourcentages);
+        expect(relu[i].produits, attendu[i].produits);
+      }
+    });
+
+    test('le document « groupes » a la forme attendue par les règles', () {
+      final doc = groupesVersMap(calculClasseur().groupes);
+      final liste = doc['groupes'] as List;
+      expect(liste.length, calculClasseur().groupes.length);
+      final premier = liste.first as Map<String, dynamic>;
+      expect(premier['nom'], 'Plat');
+      expect(premier['pourcentages'], {'1': 0.70, '2': 0.80});
+    });
+
+    test('une entrée hors format est ignorée à la lecture des repas', () {
+      final relu = repasDepuisMap({
+        'jours': {
+          '1': {
+            'g1': repasValide(),
+            'g2': {...repasValide()}..remove('spectateursSoir'),
+            'g3': {...repasValide(), 'joueusesMidi': '49'},
+            'g4': {...repasValide(), 'benevolesSoir': -1},
+            'g5': 'texte',
+          },
+          'deux': {'g1': repasValide()},
+          '3': 'texte',
+          '4': {'g1': repasValide()},
+        },
+      })!;
+      expect(relu.keys.toList(), ['g1']);
+      expect(relu['g1']!.keys.toSet(), {1, 4});
+      expect(relu['g1']![1]!.total, 119);
+      memesRepas(relu['g1']![1]!, const RepasGymnaseJour(
+          joueusesMidi: 49,
+          joueusesSoir: 49,
+          benevolesMidi: 10,
+          benevolesSoir: 11));
+    });
+
+    test('une entrée hors format est ignorée à la lecture des groupes', () {
+      final relu = groupesDepuisMap({
+        'groupes': [
+          {
+            'nom': 'Plat',
+            'pourcentages': {'1': 0.7, 'deux': 0.5, '2': 'x'},
+            'produits': {
+              'croque': {'1': 0.4},
+              '': {'1': 0.1},
+            },
+          },
+          {'pourcentages': {'1': 1.0}},
+          'texte',
+        ],
+      })!;
+      expect(relu.length, 1);
+      expect(relu[0].nom, 'Plat');
+      expect(relu[0].pourcentages, {1: 0.7});
+      expect(relu[0].produits, {
+        'croque': {1: 0.4},
+      });
+    });
+
+    test('un document absent donne null ; un seul document donne l\'autre vide', () {
+      expect(repasDepuisMap(null), isNull);
+      expect(groupesDepuisMap(null), isNull);
+      expect(calculClubDepuis(null, null), isNull);
+      final seul = calculClubDepuis(repasVersMap(calculClasseur().repas), null)!;
+      expect(seul.groupes, isEmpty);
+      expect(seul.repas.keys.toSet(), {'g1', 'g2'});
+      final sans = calculClubDepuis(null, groupesVersMap(calculClasseur().groupes))!;
+      expect(sans.repas, isEmpty);
+      expect(sans.groupes.length, 2);
+    });
+  });
 }

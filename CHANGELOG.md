@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V2 : enregistrement et règles
+- Repas par gymnase, jour et catégorie, et groupes du club : deux documents `calcul_club/repas` et `calcul_club/groupes` dans l'événement, mêmes droits que la prévision (gestion complète, préparation ou cours) ; un bénévole ne lit ni n'écrit. Aucun événement existant modifié. 573 tests, 274 tests de règles, règles déployées (accord donné pour la mission).
+
 ## 12/11/2026 — Calcul du club, V1 : logique du calcul (1.6.0)
 - `lib/calcul_club.dart` : repas par gymnase et par jour (3 catégories, midi et soir), quantité = Σ jours (repas × % du groupe × part du produit ce jour), un seul arrondi haut par gymnase, parts ≠ 100 % signalées sans correction. Aucun fichier existant modifié : l'ancien calcul est intact. Test sur les chiffres du classeur d'origine (croque standard 33,32 / 36,4 / 39,48 / 33,88). N1 : analyse sans problème, 566 tests verts.
 

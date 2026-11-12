@@ -38,6 +38,7 @@ rules_version = '2';
 //                                                 evenements/{e}.nbGymnases (≤ 8) compte les gymnases (il ne monte qu'avec la
 //                                                 naissance du gymnase `dernierGymnase`) : clôturer
 //                                                 l'événement exige d'être rattaché à TOUS (ou d'être responsable).
+//       calcul_club/{d}                           repas et groupes du calcul du club (d = « repas » ou « groupes ») : gestion seulement, comme la prévision (V2)
 //       caisses/{uid__g}                          une caisse par (membre, gymnase) ; membreUid, gymnaseId, prenom,
 //                                                 statut, ouverteLe, + à la clôture : récapitulatif
 //         ventes/{v}                              lignes, totalCentimes, mode, creeLe, gymnaseId, corrigeDe?,
@@ -674,6 +675,31 @@ service cloud.firestore {
             && request.resource.data.lignes is map
             && request.resource.data.lignes.size() <= 400
             && request.resource.data.creeLe is timestamp;
+        }
+
+        // Calcul du club (mission « Calcul du club », V2, décision 88) : deux documents dans
+        // evenements/{e}/calcul_club, identifiants « repas » et « groupes » seulement.
+        // repas = { jours } (map de 30 jours au plus) ; groupes = { groupes } (liste de 40 au plus).
+        // Mêmes droits que la prévision : lu et écrit par la gestion complète, tant que
+        // l'événement est en préparation ou en cours ; effacé aussi par l'association en cours
+        // de suppression. Les nombres ne sont pas bornés ici (limite des 1000 expressions) : l'application les tient.
+        match /calcul_club/{d} {
+          allow read: if (d == 'repas' || d == 'groupes')
+            && gereTout(a, e);
+          allow delete: if (d == 'repas' || d == 'groupes')
+            && (suppressionEnCours(a) || (gereTout(a, e) && reglable(a, e)));
+          allow create, update: if gereTout(a, e)
+            && reglable(a, e)
+            && ((d == 'repas'
+                 && request.resource.data.keys().hasOnly(['jours'])
+                 && request.resource.data.keys().hasAll(['jours'])
+                 && request.resource.data.jours is map
+                 && request.resource.data.jours.size() <= 30)
+             || (d == 'groupes'
+                 && request.resource.data.keys().hasOnly(['groupes'])
+                 && request.resource.data.keys().hasAll(['groupes'])
+                 && request.resource.data.groupes is list
+                 && request.resource.data.groupes.size() <= 40));
         }
 
         // Apports nommés (mission « Préparer l'événement », P10, décision 59) : « Quiche,

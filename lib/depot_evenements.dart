@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'depot_caisses.dart';
+import 'calcul_club.dart';
 import 'courses.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
@@ -655,6 +656,29 @@ class DepotEvenements {
   Stream<bool> suivreAnnulation(String evenementId) =>
       _annulation(evenementId).snapshots().compte('annulation').map((d) => d.exists);
 
+  // ---------- Calcul du club (mission « Calcul du club », V2) ----------
+
+  /// Les deux documents du calcul du club : `evenements/{e}/calcul_club/{repas|groupes}`.
+  CollectionReference<Map<String, dynamic>> _calculClub(String evenementId) =>
+      _evenements.doc(evenementId).collection('calcul_club');
+
+  /// Les réglages du calcul du club, en direct. Null si l'événement n'en a pas (il garde
+  /// alors l'ancien calcul). Réservé à qui a accès à tout l'événement (règles d'accès).
+  Stream<CalculClub?> suivreCalculClub(String evenementId) => _combiner(
+        _calculClub(evenementId).doc('repas').snapshots().compte('calcul club repas'),
+        _calculClub(evenementId).doc('groupes').snapshots().compte('calcul club groupes'),
+        (repas, groupes) => calculClubDepuis(repas.data(), groupes.data()),
+      );
+
+  /// Enregistre les repas (gymnase, jour, catégorie), en remplaçant ceux d'avant.
+  Future<void> definirRepas(
+          String evenementId, Map<String, Map<int, RepasGymnaseJour>> repas) =>
+      _calculClub(evenementId).doc('repas').set(repasVersMap(repas));
+
+  /// Enregistre les groupes du calcul du club, en remplaçant ceux d'avant.
+  Future<void> definirGroupes(String evenementId, List<GroupeConso> groupes) =>
+      _calculClub(evenementId).doc('groupes').set(groupesVersMap(groupes));
+
   /// Produits d'un événement, lus une fois sur le serveur (sans stock).
   Future<List<ProduitEvenement>> _lireProduits(String evenementId) async {
     final s = await _evenements
@@ -1151,6 +1175,55 @@ class DepotEvenements {
 
 /// Stocks d'un gymnase : quantité et total de référence par produit, et produits
 /// signalés « vides ».
+/// Combine deux flux : une valeur à chaque nouvelle valeur de l'un ou de l'autre, dès que
+/// les deux ont donné la leur. Se termine quand les deux sont terminés.
+Stream<R> _combiner<A, B, R>(
+    Stream<A> a, Stream<B> b, R Function(A, B) combiner) {
+  late final StreamController<R> controleur;
+  StreamSubscription<A>? sa;
+  StreamSubscription<B>? sb;
+  A? dernierA;
+  B? dernierB;
+  var aRecu = false;
+  var bRecu = false;
+  var termines = 0;
+  void emettre() {
+    if (aRecu && bRecu) controleur.add(combiner(dernierA as A, dernierB as B));
+  }
+  void fin() {
+    termines++;
+    if (termines == 2) controleur.close();
+  }
+
+  controleur = StreamController<R>(
+    onListen: () {
+      sa = a.listen((v) {
+        dernierA = v;
+        aRecu = true;
+        emettre();
+      }, onError: controleur.addError, onDone: fin);
+      sb = b.listen((v) {
+        dernierB = v;
+        bRecu = true;
+        emettre();
+      }, onError: controleur.addError, onDone: fin);
+    },
+    onPause: () {
+      sa?.pause();
+      sb?.pause();
+    },
+    onResume: () {
+      sa?.resume();
+      sb?.resume();
+    },
+    onCancel: () async {
+      await sa?.cancel();
+      await sb?.cancel();
+    },
+  );
+  return controleur.stream;
+}
+
 class _StocksGymnase {
   const _StocksGymnase(this.stocks, this.vides);
 
