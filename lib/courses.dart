@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 
+import 'calcul_club.dart';
 import 'depot_menus.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -31,8 +32,9 @@ int quantiteAPrevoir({
   required double jours,
   required double conso,
   int? stock,
+  int? prevue,
 }) {
-  final reste = quantitePrevue(personnes: personnes, jours: jours, conso: conso) -
+  final reste = (prevue ?? quantitePrevue(personnes: personnes, jours: jours, conso: conso)) -
       (stock != null && stock > 0 ? stock : 0);
   return reste > 0 ? reste : 0;
 }
@@ -296,10 +298,13 @@ ListeCourses listeParDefaut({
   required List<Gymnase> gymnases,
   required double jours,
   Map<String, Map<String, int>> stocks = const {},
+  CalculClub? calcul,
 }) {
   final lignes = <LigneCourse>[];
   for (final g in gymnases) {
-    if (g.personnes <= 0) continue;
+    // Un gymnase aux repas détaillés compte même sans personnes réglées (V3).
+    final detaille = calcul != null && calcul.repas.containsKey(g.id);
+    if (g.personnes <= 0 && !detaille) continue;
     for (final p in produits) {
       if (p.fiche.provenance == 'apporte') continue;
       final conso = p.fiche.conso;
@@ -308,7 +313,14 @@ ListeCourses listeParDefaut({
           personnes: g.personnes,
           jours: jours,
           conso: conso,
-          stock: stocks[g.id]?[p.id]);
+          stock: stocks[g.id]?[p.id],
+          prevue: quantitePrevueClub(
+              calcul: calcul,
+              gymnaseId: g.id,
+              produitId: p.id,
+              personnes: g.personnes,
+              jours: jours,
+              conso: conso));
       // Le stock couvre déjà le besoin : rien à acheter, la ligne n'est pas cochée.
       if (quantite <= 0) continue;
       lignes.add(LigneCourse(g.id, p.id, quantite));

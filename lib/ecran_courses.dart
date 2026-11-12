@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'calcul_club.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
 import 'depot_evenements.dart';
@@ -45,6 +46,7 @@ class EcranCourses extends StatefulWidget {
 }
 
 class _EtatCourses extends State<EcranCourses> {
+  CalculClub? _calcul;
   bool _charge = false;
   Object? _erreurChargement;
 
@@ -112,6 +114,7 @@ class _EtatCourses extends State<EcranCourses> {
       final produits = await widget.depot.suivreProduits(id).first;
       final gymnases = await widget.depot.suivreGymnases(id).first;
       final stocks = await widget.depot.suivreStocksParGymnase(id).first;
+      final calcul = await _lireCalculClub(widget.depot, id);
       final enregistree = await widget.depot.suivreListeCourses(id).first;
       final previsions = await _lirePrevisions();
       if (!mounted) return;
@@ -124,12 +127,13 @@ class _EtatCourses extends State<EcranCourses> {
         for (final g in gymnases) {
           _personnes[g.id] = g.personnes;
         }
+        _calcul = calcul;
         _liste = enregistree ??
             listeParDefaut(
                 produits: produits,
                 gymnases: gymnases,
                 jours: _jours,
-                stocks: stocks);
+                stocks: stocks, calcul: calcul);
         _coches = enregistree?.coches ?? {};
         _charge = true;
       });
@@ -313,6 +317,7 @@ class _EtatCourses extends State<EcranCourses> {
       gymnases: [for (final g in _gymnases) Gymnase(g.id, g.nom, _personnes[g.id] ?? 0)],
       jours: _jours,
       stocks: _stocks,
+      calcul: _calcul,
     );
     setState(() {
       _version++;
@@ -497,7 +502,8 @@ class _EtatCourses extends State<EcranCourses> {
     final titre = Theme.of(context).textTheme.titleMedium;
     final achats = calculerAchats(_produits, _liste);
     final cles = clesArticles(achats, _liste.libres);
-    final aucunePersonne = _gymnases.every((g) => (_personnes[g.id] ?? 0) == 0);
+    final aucunePersonne = _gymnases.every((g) =>
+        (_personnes[g.id] ?? 0) == 0 && !(_calcul?.repas.containsKey(g.id) ?? false));
     final cochesAffichees = cles.where(_coches.contains).length;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1065,6 +1071,15 @@ class _EtatDialogueReste extends State<_DialogueReste> {
   }
 }
 
+/// Le calcul du club de l'événement, lu une fois (V3). Erreur de lecture : null, l'ancien calcul reste.
+Future<CalculClub?> _lireCalculClub(DepotEvenements depot, String evenementId) async {
+  try {
+    return await depot.suivreCalculClub(evenementId).first;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// « Quantités par produit », rangées dans la Préparation (décision 82), sous le titre
 /// « Ce qu'on prévoit de vendre ». C'est le même bloc qu'avant dans les courses : il lit
 /// et écrit la même liste de courses par les mêmes méthodes du dépôt ; les courses la
@@ -1085,6 +1100,7 @@ class QuantitesParProduit extends StatefulWidget {
 
 class _EtatQuantites extends State<QuantitesParProduit> {
   bool _charge = false;
+  CalculClub? _calcul;
   Object? _erreur;
 
   List<ProduitEvenement> _produits = const [];
@@ -1134,6 +1150,7 @@ class _EtatQuantites extends State<QuantitesParProduit> {
       final gymnases = await widget.depot.suivreGymnases(id).first;
       final etats = await widget.depot.suivreEtats(id).first;
       final stocks = await widget.depot.suivreStocksParGymnase(id).first;
+      final calcul = await _lireCalculClub(widget.depot, id);
       final enregistree = await widget.depot.suivreListeCourses(id).first;
       var previsions = const <String, Prevision>{};
       try {
@@ -1155,12 +1172,13 @@ class _EtatQuantites extends State<QuantitesParProduit> {
         }
         _suggeres = produitsSuggeres(etats, gymnases);
         _jours = evenement?.nbJours ?? joursParDefaut;
+        _calcul = calcul;
         _liste = enregistree ??
             listeParDefaut(
                 produits: produits,
                 gymnases: gymnases,
                 jours: _jours,
-                stocks: stocks);
+                stocks: stocks, calcul: calcul);
         _charge = true;
       });
       _abonnementListe ??= widget.depot.suivreListeCourses(id).listen(
@@ -1213,7 +1231,14 @@ class _EtatQuantites extends State<QuantitesParProduit> {
           personnes: _personnes[g.id] ?? 0,
           jours: _jours,
           conso: p.fiche.conso ?? 0,
-          stock: _stocks[g.id]?[p.id]);
+          stock: _stocks[g.id]?[p.id],
+          prevue: quantitePrevueClub(
+              calcul: _calcul,
+              gymnaseId: g.id,
+              produitId: p.id,
+              personnes: _personnes[g.id] ?? 0,
+              jours: _jours,
+              conso: p.fiche.conso ?? 0));
     }
     setState(() {
       _version++;

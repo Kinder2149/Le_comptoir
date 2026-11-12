@@ -607,6 +607,8 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             definirJours: (j) => widget.depot.definirJours(ev.id, j),
             definirPersonnes: (g, n) =>
                 widget.depot.definirPersonnes(ev.id, g, n),
+            calcul: widget.depot.suivreCalculClub(ev.id),
+            definirRepas: (r) => widget.depot.definirRepas(ev.id, r),
           ),
         ),
       );
@@ -629,6 +631,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             appliquerReference: (r) => widget.depot.appliquerReference(ev.id, r),
             annulable: widget.depot.suivreAnnulation(ev.id),
             annulerChangement: () => widget.depot.annulerChangementPrevision(ev.id),
+            calcul: widget.depot.suivreCalculClub(ev.id),
             definirPrevisionVerifiee: (v) =>
                 widget.depot.definirPrevisionVerifiee(ev.id, v),
             onVoirCourses: portee.toutVoir

@@ -1,4 +1,4 @@
-import 'courses.dart' show arrondiHaut;
+import 'courses.dart' show arrondiHaut, quantitePrevue;
 
 // Calcul du club (mission Calcul du club, étape V1, décisions 86 à 88).
 // Logique pure : aucun accès à la base, aucun écran. La quantité prévue d'un
@@ -276,4 +276,42 @@ CalculClub? calculClubDepuis(
     repas: repasDepuisMap(repas) ?? const {},
     groupes: groupesDepuisMap(groupes) ?? const [],
   );
+}
+
+// ---------- Point d'entrée des courses et de la prévision (mission « Calcul du club », V3) ----------
+
+/// Quantité prévue d'un produit dans un gymnase, pour les courses et la prévision : le calcul
+/// du club quand le gymnase a ses repas détaillés et que le produit est dans un groupe ; sinon
+/// exactement l'ancien calcul (personnes × jours × consommation, courses.dart, inchangé).
+int quantitePrevueClub({
+  required CalculClub? calcul,
+  required String gymnaseId,
+  required String produitId,
+  required int personnes,
+  required double jours,
+  required double conso,
+}) =>
+    (calcul == null ? null : quantiteClub(calcul, gymnaseId, produitId)) ??
+    quantitePrevue(personnes: personnes, jours: jours, conso: conso);
+
+/// Total pour le tournoi d'un produit : somme des gymnases, chacun avec son calcul du club
+/// quand il en a un. Null si aucun gymnase n'a de calcul du club pour ce produit : l'appelant
+/// garde alors son total.
+int? totalClubProduit({
+  required CalculClub? calcul,
+  required String produitId,
+  required Map<String, int> personnesParGymnase,
+  required double jours,
+  required double conso,
+}) {
+  if (calcul == null) return null;
+  var total = 0;
+  var detaille = false;
+  personnesParGymnase.forEach((gymnaseId, personnes) {
+    final club = quantiteClub(calcul, gymnaseId, produitId);
+    if (club != null) detaille = true;
+    total += club ??
+        quantitePrevue(personnes: personnes, jours: jours, conso: conso);
+  });
+  return detaille ? total : null;
 }

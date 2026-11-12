@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V3 : repas jour par jour dans la Préparation
+- Carte « Personnes et durée » : bouton « Détailler par jour (méthode du club) », une carte par jour, par gymnase les trois catégories (midi et soir) et le total du jour ; la Prévision et les Courses suivent le calcul du club quand les repas sont détaillés et que le produit est dans un groupe, sinon l'ancien calcul, inchangé. 593 tests verts.
+
 ## 12/11/2026 — Calcul du club, V2 : enregistrement et règles
 - Repas par gymnase, jour et catégorie, et groupes du club : deux documents `calcul_club/repas` et `calcul_club/groupes` dans l'événement, mêmes droits que la prévision (gestion complète, préparation ou cours) ; un bénévole ne lit ni n'écrit. Aucun événement existant modifié. 573 tests, 274 tests de règles, règles déployées (accord donné pour la mission).
 

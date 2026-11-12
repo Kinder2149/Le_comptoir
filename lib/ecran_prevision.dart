@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'calcul_club.dart';
 import 'champ_reglage.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -33,6 +34,7 @@ class EcranPrevision extends StatelessWidget {
     this.quantites,
     this.annulable,
     this.annulerChangement,
+    this.calcul,
   });
 
   final Stream<Evenement?> evenement;
@@ -68,6 +70,9 @@ class EcranPrevision extends StatelessWidget {
   /// suit les autres téléphones), et l'action qui le remet (null = pas de bouton).
   final Stream<bool>? annulable;
   final Future<void> Function()? annulerChangement;
+
+  /// Le calcul du club de l'événement (V3) : les totaux suivent les repas détaillés (null = ancien total).
+  final Stream<CalculClub?>? calcul;
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +141,7 @@ class EcranPrevision extends StatelessWidget {
     final lignes = enregistrees == null
         ? const <PrevisionProduit>[]
         : fusionnerPrevisions(avecPrevision, enregistrees);
-    return ListeFamilles<PrevisionProduit>(
+    return _avecCalcul((club) => ListeFamilles<PrevisionProduit>(
       elements: lignes,
       ouvertesAuDepart: true,
       familleDe: (l) => produitDe[l.produitId]?.fiche.famille ?? 'autre',
@@ -149,6 +154,13 @@ class EcranPrevision extends StatelessWidget {
         personnes,
         ev.nbJours,
         reglable,
+        totalClub: totalClubProduit(
+          calcul: club,
+          produitId: l.produitId,
+          personnesParGymnase: {for (final g in tous) g.id: g.personnes},
+          jours: ev.nbJours,
+          conso: l.conso,
+        ),
       ),
       enTete: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -180,6 +192,16 @@ class EcranPrevision extends StatelessWidget {
           ],
         ],
       ),
+    ));
+  }
+
+  /// Le flux du calcul du club, s'il y en a un : [construire] reçoit le calcul (ou null).
+  Widget _avecCalcul(Widget Function(CalculClub?) construire) {
+    final flux = calcul;
+    if (flux == null) return construire(null);
+    return StreamBuilder<CalculClub?>(
+      stream: flux,
+      builder: (context, sC) => construire(sC.data),
     );
   }
 
@@ -278,8 +300,8 @@ class EcranPrevision extends StatelessWidget {
     int personnes,
     double jours,
     bool reglable,
-  ) {
-    final total = arrondi(l.conso * personnes * jours);
+    {int? totalClub}) {
+    final double total = totalClub?.toDouble() ?? arrondi(l.conso * personnes * jours);
     final verresParLitre = p.fiche.verresParLitre;
     final enVerres = verresParLitre != null && verresParLitre > 0;
     return Padding(
