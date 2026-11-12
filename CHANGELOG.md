@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Mission « Calcul du club » (version 1.6.0) : plan proposé (phases 2 à 4, à valider)
+- Kinder avance au week-end les points 4, 6 et 8 de « Clôture du tournoi » et la simulation complète sur les chiffres de l'an dernier. Phase 2 : sept questions tranchées (garde-fou de version, méthode du club, événements existants, groupes dans la Prévision, ingrédients en Préparation, article en cinq cartes, feuilles Repas et Groupes, simulation à quatre preuves).
+- Décisions 85 à 92 proposées (section 6 de PROJET_CONTEXTE.md) ; plan V1 à V9, critères, niveaux de preuve et prompt de la session mère en section 19 de PLAN_STOCK_COURSES.md. Constat : les parts des produits varient aussi d'un jour à l'autre dans le classeur d'origine.
+- Branche de cadrage `claude/cadrage-calcul-club`. Aucun code modifié.
+
 ## 12/11/2026 — Lot A, A3 : classeur du club avec menu et recettes
 - `recette/classeur-notre-club.xlsx` : feuille Menu (19 produits, prix 2024 du club à vérifier) et Recettes (4 croques, d'après le classeur d'origine) remplies ; importé par l'assistant dans une association dont le menu s'appelle « Les Discjonctés » : menu repris sans modification, aucun doublon, consommations égales au relevé (N2 vert). Parcours des Courses adaptés au déplacement des quantités en Préparation (à rejouer au N3). Relevé A3 dans PLAN_STOCK_COURSES.md.
 
