@@ -785,138 +785,6 @@ RENDU :
 - L'écran exact que Kinder doit utiliser pour son test final.
 ```
 
-### Cadrage T1 — Enregistrer sur le téléphone (décision 76)
-
-**Critères (repris du plan)** : (1) les six fichiers (modèle, données de l'association, export d'un tournoi, comparateur, classeur de l'événement, liste de courses) proposent « Enregistrer sur le téléphone » et « Partager » ; (2) « Enregistrer » ouvre le choix du dossier et le fichier y est, lisible ; (3) annuler le choix ne montre aucune erreur ; (4) aucune dépendance ajoutée.
-
-**Stratégie** : un seul point d'entrée dans `lib/partage.dart`. Les deux fonctions par défaut (`partagerFichier`, `partagerFichierTexte`) gardent leur signature (les écrans et les tests qui injectent un faux partageur ne changent pas) mais, au lieu d'ouvrir directement la feuille de partage, affichent une petite feuille de choix « Enregistrer sur le téléphone » / « Partager ». Pour avoir un contexte sans changer les signatures : clé de navigation globale `navigatorCle` déclarée dans `partage.dart` et branchée sur le `MaterialApp` de `lib/main.dart`. « Enregistrer » = `FilePicker.saveFile(fileName:, bytes:)` (file_picker 11.0.3, déjà accordé) ; fermeture sans choix (retour nul) = silence, jamais d'erreur ; échec réel = message simple. « Partager » = comportement actuel (`Share.shareXFiles`). Libellés en français, boutons aux couleurs de la décision 31.
-
-**Fichiers touchés** : `lib/partage.dart`, `lib/main.dart` (clé de navigation), `test/` (un test d'écran de la feuille de choix), un parcours N2 court dans `integration_test/`.
-
-**On ne fait pas** : aucune dépendance, aucun changement des contenus des fichiers, des écrans appelants ni des calculs ; pas de refonte des boutons existants (leurs libellés peuvent rester).
-
-**Preuve** : N1 (`flutter analyze`, `flutter test`) ; N2 : sur l'émulateur LC2, un fichier enregistré réellement via le sélecteur Android et retrouvé lisible ; annulation sans erreur.
-
-### Cadrage T2 — Assistant d'import unique (décision 77), étape « opus »
-
-**Critères (repris du plan)** : (1) départ : modèle générique ou classeur choisi ; (2) menu : nouveau menu créé, ou menu existant de même nom repris sans modification ; (3) anciens tournois enregistrés comme références de prévision ; (4) tournoi en préparation choisi (facultatif) : stock de départ rempli (gymnases et produits retrouvés par leur nom) et prévision réglée sur la référence importée ; (5) résumé avant toute écriture, lignes ignorées avec leur raison ; (6) « Importer un menu » et « Importer un classeur » renvoient vers l'assistant ; (7) un bénévole ne voit pas l'assistant ; (8) un classeur à l'ancien format reste importable.
-
-**Stratégie** : on ne réécrit aucune lecture ni aucun calcul, on enchaîne l'existant. (a) Logique pure dans un nouveau `lib/import_assistant.dart` : `PlanAssistant` = plan de menu (`preparerImportMenu`, `lib/import_menu.dart`) + choix « créer » ou « reprendre le menu existant de même nom » (comparaison par `cleIngredient`) + plan d'import de `preparerImport` (`lib/import_classeur.dart`, références et stock de départ) + intention de régler la prévision sur la référence importée (la référence du premier tournoi lu, ou celle choisie) ; un seul résumé liste tout ce qui sera écrit et les lignes ignorées avec leur raison. (b) Nouvel écran `lib/ecran_import.dart` : étape Départ (« Télécharger le modèle » via T1, ou « Choisir mon classeur »), étape Menu (nom proposé, détection d'un menu existant de même nom), étape Tournoi facultatif (liste des tournois en préparation, « Aucun » par défaut), puis résumé et « Appliquer ». (c) Écritures par les méthodes existantes seulement : `creerMenuDepuisClasseur`, `DepotEvenements.appliquerImport` (références + stock), et la méthode qui règle la prévision d'après une référence (`depot_evenements.dart` autour de la ligne 655). Rejouable sans risque. (d) Entrée : cinquième carte « Importer » dans `lib/ecran_extraction.dart` (gestion seulement, comme les quatre autres, ce qui règle le critère 7). (e) « Importer un menu depuis Excel » (`lib/ecran_menus.dart`) et « Importer un classeur » (`lib/ecran_classeur.dart`) ouvrent l'assistant (le second avec le tournoi déjà choisi) ; leur ancien code de lecture/écriture est retiré ou reste appelé par l'assistant, sans doublon. (f) Le lecteur de classeur `lireClasseur` ne change pas : les classeurs à l'ancien format restent importables (critère 8). Un menu existant n'est jamais modifié ; la feuille Courses n'est pas importée.
-
-**Fichiers touchés** : nouveaux `lib/import_assistant.dart`, `lib/ecran_import.dart` ; modifiés `lib/ecran_extraction.dart`, `lib/ecran_menus.dart`, `lib/ecran_classeur.dart`, au besoin `lib/depot_evenements.dart` / `lib/depot_menus.dart` pour un petit enchaînement ; tests dans `test/` et `integration_test/` (adaptation des tests d'import qui visaient les anciens boutons, sans toucher aux rouges connus). `firestore.rules` : seulement si un test de règles montre qu'une écriture de l'assistant est refusée à la gestion (alors déployer après tests, préalable 2).
-
-**On ne fait pas** : aucun changement de calcul, de bilan, de droits des rôles, de menu ou d'événement existant ; pas de nouvelle dépendance ; pas d'import de la feuille Courses.
-
-**Preuve** : N1 (`flutter analyze`, `flutter test`, `tests_regles/lancer.ps1` si les règles bougent) ; N2 : un parcours sur LC2 avec le vrai moteur de données local : l'assistant lit `recette/historique-tournoi-an-passe.xlsx`, crée le menu ou reprend le menu de même nom, écrit références, stock et prévision sur un tournoi en préparation, et un bénévole ne voit pas l'assistant.
-
-### Cadrage T3 — Classeur du club pour l'association test
-
-**Critères (repris du plan)** : (1) produit par Claude Code d'après `recette/historique-tournoi-an-passe.xlsx`, avec un relevé de ce qui a été repris ou non ; (2) feuille Menu laissée vide ou au nom du menu de l'association test : aucun menu en double ; (3) feuille Stock de départ prête à remplir (gymnases à nommer comme dans le tournoi) ; (4) importé par l'assistant sur émulateur sans erreur, consommations égales au relevé.
-
-**Stratégie** : un petit script Python (openpyxl, dans le dossier temporaire, pas dans le dépôt) lit l'historique de l'an passé (feuilles Menu vide, Stock de départ vide, Historique de 38 lignes, Courses vide) et écrit `recette/classeur-notre-club.xlsx` : mêmes feuilles et mêmes en-têtes (format lu par `lib/classeur.dart`), feuille Menu laissée vide (le menu du week-end est déjà dans l'association test, décision de Kinder : aucun menu créé), feuille Historique reprise ligne pour ligne (événement, gymnase, personnes, jours, produit, quantité), feuille Stock de départ avec une ligne par gymnase et par produit de l'historique, quantité vide (produit non suivi tant que Kinder ne remplit pas), feuille Courses vide. Le relevé (repris, non repris, pourquoi, gymnases et produits à vérifier contre le menu de l'association test) est écrit dans la section « Relevé T3 » de ce plan (pas de nouveau .md : limite de 5 fichiers atteinte). N2 : le parcours `assistant_import_test` (ou un court parcours dédié) importe ce classeur sur l'émulateur et compare les consommations par personne et par jour au relevé.
-
-**Fichiers touchés** : `recette/classeur-notre-club.xlsx` (nouveau), section « Relevé T3 » de ce plan, un test d'import dédié si nécessaire. **On ne fait pas** : aucun code de l'application, aucun menu, aucun accès au vrai projet Firebase, aucune dépendance.
-
-### Relevé T3 — Classeur du club (recette/classeur-notre-club.xlsx)
-
-**Repris** : l'Historique de l'an passé, ligne pour ligne : 38 lignes, un seul événement « Tournoi de l'an passé », 2 gymnases (« Gymnase 1 » : 53 personnes, « Gymnase 2 » : 60 personnes), 2 jours, 19 produits. Stock de départ : 38 lignes (2 gymnases x 19 produits), quantité vide (produits non suivis tant que Kinder ne remplit pas). Mêmes feuilles, bandeaux, explications et en-têtes que le modèle de l'application (Accueil, Menu, Recettes, Stock de départ, Historique, Courses).
-
-**Non repris** : le Menu (vide, en-têtes seuls) : le menu du week-end est déjà dans l'association test, aucun menu n'est donc créé ni dupliqué. Recettes et Courses : vides (l'historique de l'an passé n'en contenait pas ; Courses est ignorée à l'import). Aucune quantité de stock : l'an passé n'en avait pas, rien n'est inventé. La colonne Consommation de l'Historique est une formule (calculée par Excel), non lue à l'import.
-
-**À vérifier contre le menu de l'association test** (rapprochement par nom, sans casse ni accents ; un nom différent = ligne ignorée et signalée) :
-- Gymnases : « Gymnase 1 », « Gymnase 2 » (à renommer dans la feuille Stock de départ si ceux du tournoi s'appellent autrement).
-- Produits (19) : Barre de céréales chocolat, Barre de céréales fruit, Bière, Café, Coca, Croque Monsieur Chocolat, Croque tartiflette, Croque végé, Croque-monsieur, Crêpe Nutella, Crêpe sucre, Fruit, Ice Tea, Infusion, Mars, Oasis, Orangina, Thé, Twix. Attention aux variantes de graphie (« Croque Monsieur Chocolat » / « Croque-monsieur », « Croque végé » ; « Thé », « Café », « Bière » avec accents).
-
-**Consommations attendues par personne et par jour** (total vendu / somme des personnes x jours, soit 226 personnes-jours) : Croque-monsieur 0,6327 (143) ; Coca 1,5265 (345) ; Café 1,4912 (337) ; Crêpe Nutella 1,2434 (281) ; Fruit 1,1327 (256) ; Oasis 0,8451 (191) ; Bière 0,6814 (154) ; Thé 0,7434 (168) ; Mars 0,0664 (15) ; Twix 0,0664 (15). Les 19 produits sont contrôlés par le parcours.
-
-**Preuve N2** : `integration_test/classeur_club_test.dart` (LC2, vrai moteur local) : le classeur est lu sans erreur, l'assistant dit « aucun menu lisible » (aucun menu créé), crée la référence « Tournoi de l'an passé (Excel) » et règle la prévision : les 19 consommations égalent le relevé (tolérance 0,0001). Vert. Piège trouvé : openpyxl écrit les liens internes en absolu et le lecteur Excel de l'application plante dessus ; le classeur est corrigé après écriture (liens relatifs).
-
-### Cadrage T4 — Ajouter un produit à un événement (décision 78)
-
-**Critères (repris du plan)** : (1) en préparation et en cours : le produit est créé dans l'événement et dans le menu d'origine ; (2) il apparaît dans stock de départ, prévision, courses et caisse ; (3) nom et prix des produits existants inchangés ; (4) événement clôturé : pas de bouton ; (5) un bénévole ne peut pas ajouter (test de règles).
-
-**Stratégie** : bouton « Ajouter un produit » dans `EcranProduitsEvenement` (`lib/ecran_evenement.dart` ligne ~1655), visible seulement si `modifiable` (donc ni clôturé, ni pour un bénévole : cet écran est de la gestion). Formulaire simple réutilisant l'existant du menu (nom, prix, type de produit, provenance : même validation que `DepotMenus.ajouterProduit`, `lib/depot_menus.dart` ligne ~517, et mêmes limites, dont le nombre maximal de produits d'un menu). Un nouvelle méthode du dépôt des événements écrit, en un seul lot, le produit dans `evenements/{e}/produits` ET dans `menus/{menuId}/produits` du menu d'origine de l'événement (identifiant commun si le modèle le prévoit, sinon retrouvé par le nom), sans toucher aux produits existants (nom et prix figés). Règles : `evenements/{e}/produits` autorise déjà `create` à la gestion quand `reglableApres(a, e)` (en préparation ou en cours) ; vérifier que le lot (événement + menu) passe, sinon ajuster minimalement, avec test de règles, puis la mère déploie. Le produit doit sortir dans les écrans qui lisent la liste des produits de l'événement (stock de départ, prévision, courses, caisse) sans autre modification : vérifier, et ne corriger que l'affichage si l'un d'eux ne le montre pas. Le menu d'origine peut avoir été supprimé : dans ce cas le produit n'est ajouté qu'à l'événement et un message le dit.
-
-**Fichiers touchés** : `lib/ecran_evenement.dart`, `lib/depot_evenements.dart`, éventuellement `firestore.rules` + `tests_regles/`, tests `test/` et un parcours N2 `integration_test/`. **On ne fait pas** : aucun calcul, aucune modification ou suppression de produit existant, aucun changement des droits des rôles, aucune dépendance.
-
-**Preuve** : N1 (`flutter analyze`, `flutter test`, `powershell -File tests_regles/lancer.ps1` : un bénévole ne peut pas créer de produit d'événement, la gestion le peut en préparation et en cours, pas en clôturé) ; N2 sur LC2 : en cours, ajouter un produit, le retrouver dans le menu, le stock de départ (ou la prévision), les courses et la caisse.
-
-### Cadrage T5 — Annuler un changement de source (décision 79 a)
-
-**Critères (repris du plan)** : (1) après « D'après une source », « Annuler ce changement » rend exactement les chiffres d'avant, corrections à la main comprises ; (2) « Revenir au menu » marche comme avant ; (3) l'annulation se lit aussi sur un autre téléphone.
-
-**Stratégie** : avant tout changement de source (`appliquerEvenementPasse`, `appliquerReference`, import d'assistant qui règle la prévision), le dépôt (`lib/depot_evenements.dart`, autour de `_appliquerPrevisions`) range l'état exact des prévisions dans UN document de l'événement, `evenements/{e}/previsions_annulation/dernier` (champ `lignes` : produit → {conso, source} ; liste vide = « d'avant il n'y avait aucune prévision enregistrée », c'est-à-dire les chiffres du menu), avec `creeLe`. « Annuler ce changement » (nouvelle méthode `annulerChangementPrevision`) relit ce document, remet exactement les prévisions d'avant (écrit celles qui existaient, efface les autres) puis efface le document d'annulation ; un seul niveau d'annulation (le dernier changement). Le document étant côté serveur, l'annulation se lit sur un autre téléphone (critère 3) : l'écran le suit en direct (flux). Bouton « Annuler ce changement » dans `lib/ecran_prevision.dart`, à côté de « D'après une source » et « Revenir au menu », visible seulement si le document existe. « Revenir au menu » garde son comportement ; il ne range pas de document d'annulation (il remet aux chiffres du menu comme avant), et un changement de source ultérieur écrase l'annulation précédente. Corriger un chiffre à la main n'efface pas l'annulation (elle remet l'état d'avant la source, y compris les mains d'avant). Règles : nouveau `match /previsions_annulation/{d}` à la gestion (`gereTout` et `reglable`, document `dernier` seul, champs `lignes` et `creeLe` bornés, taille limitée) avec tests de règles ; la mère déploie après les tests (préalable 2). Les écritures par lots de 10 existantes restent (limite d'évaluation des règles).
-
-**Fichiers touchés** : `lib/depot_evenements.dart`, `lib/ecran_prevision.dart`, éventuellement `lib/ecran_evenement.dart` (câblage du flux), `firestore.rules`, `tests_regles/`, `test/`. **On ne fait pas** : aucun calcul de prévision, aucune dépendance, pas de niveaux multiples d'annulation, pas de changement des droits.
-
-**Preuve** : N1 seulement (`flutter analyze`, `flutter test`, `powershell -File tests_regles/lancer.ps1`) ; le test d'écran joue le scénario source → mains → annuler = exactement l'état d'avant, et une seconde instance sur les mêmes données voit le bouton.
-
-### Cadrage T6 — Heure de la dernière actualisation (décision 79 b)
-
-**Critères (repris du plan)** : (1) ligne « Actualisé le JJ/MM à HH:MM » sous le titre ; (2) mise à jour après un glisser vers le bas réussi ; (3) hors réseau, elle ne change pas et le message hors réseau s'affiche.
-
-**Stratégie** : tout passe par `lib/actualisation.dart`, déjà utilisé par les écrans actualisables (association, événement, caisses en direct, stock, bilan ; vérifier la liste réelle avec `grep actualisable|Actualisable lib`). `actualiserEcran` renvoie un booléen (vrai si la relecture a réussi, faux si hors réseau ou en erreur) ; `Actualisable` devient un widget à état qui garde l'heure de la dernière actualisation réussie (au départ : l'heure d'ouverture de l'écran, puisque les écrans sont en direct) et affiche, en tête, une petite ligne discrète « Actualisé le JJ/MM à HH:MM » (format français, deux chiffres, horloge injectable pour les tests) au-dessus de la liste actualisable ; le glisser vers le bas continue de fonctionner (liste toujours défilante). Après un glisser réussi : heure mise à jour ; échec ou hors réseau : heure inchangée et message « Hors réseau… » comme aujourd'hui. Les écrans qui n'ont pas besoin de changer ne changent pas : la ligne vient du composant partagé.
-
-**Fichiers touchés** : `lib/actualisation.dart`, au besoin le câblage d'un écran dont la liste n'est pas dans `Actualisable`, `test/` (tests d'écrans d'actualisation existants à adapter, jamais en les affaiblissant). **On ne fait pas** : aucune relecture ajoutée ni modifiée, aucun changement de lectures serveur, aucune dépendance, aucune règle.
-
-**Preuve** : N1 seulement (`flutter analyze`, `flutter test`) : le test joue ouverture → ligne présente ; glisser réussi → heure mise à jour ; glisser hors réseau → heure inchangée et message.
-
-### Cadrage T7 — Paramètres en cartes (décision 79 c)
-
-**Critères (repris du plan)** : (1) cartes Mon compte, Association et code, Membres, Qui peut quoi (repliable), Zone dangereuse, aux couleurs de la décision 31 ; (2) chaque membre a un badge de statut ; (3) responsable : « Changer le statut » propose bénévole, gestionnaire, retirer de l'association, avec confirmation ; (4) gestionnaire : liste sans action ; bénévole : pas de liste ; (5) règles inchangées (un gestionnaire ne retire toujours personne).
-
-**Stratégie** : refonte de présentation de `EcranParametres` (`lib/ecran_association.dart`, à partir de la ligne ~346) : les sections séparées par `Divider` deviennent des cartes de l'application (même style que les autres écrans : cartes arrondies à 16, teintes de la décision 31 via le module de thème `lib/theme.dart`, zone dangereuse en brique avec contour fin, « Qui peut quoi » en carte repliable). Chaque membre : nom, badge de statut (bénévole, gestionnaire en attente, gestionnaire, responsable) aux couleurs de la décision 31. Pour le responsable, sur chaque autre membre, un seul bouton « Changer le statut » qui ouvre une feuille de choix (bénévole, gestionnaire, retirer de l'association) puis une confirmation ; il appelle les méthodes existantes (`nommerGestionnaire`, `retirerGestionnaire`, `retirerMembre`) sans en changer le fonctionnement ni les règles. Le responsable ne voit pas d'action sur lui-même (il est seul responsable) : afficher son badge « Responsable » et, s'il est seul, une phrase qui dit comment inviter des membres (code d'accès) afin que l'écran ne paraisse plus vide. Gestionnaire : liste avec badges, sans action. Bénévole : pas de liste. Les clés des widgets utilisées par les tests existants sont conservées quand la fonction reste la même ; les tests qui visaient les anciens boutons texte sont adaptés sans être affaiblis.
-
-**Fichiers touchés** : `lib/ecran_association.dart`, éventuellement `lib/theme.dart` (une petite pièce réutilisable de carte/badge, sans changer l'existant), tests `test/` (membres, paramètres). **On ne fait pas** : aucune règle, aucun droit, aucune dépendance, aucun changement du fonctionnement des actions, pas de nouvel écran.
-
-**Preuve** : N1 seulement (`flutter analyze`, `flutter test`) : tests d'écran par rôle (responsable avec autres membres, responsable seul, gestionnaire, bénévole), badges, feuille « Changer le statut » avec confirmation.
-
-### Cadrage T8 — Page Courses en cartes (décision 79 d)
-
-**Critères (repris du plan)** : (1) bandeau résumé (durée, personnes, coût cumulé) ; (2) rayons en cartes repliables avec compteur ; (3) actions (Ajouter une ligne, Partager / Enregistrer, Valider) fixées en bas ; (4) tous les tests de calcul des courses passent sans modification ; (5) captures avant et après rangées dans `audit_front/tournoi/`.
-
-**Stratégie** : présentation seulement dans `lib/ecran_courses.dart` (973 lignes ; `_contenu`, `_ongletAcheter`, `_reglages`, `_rayons`, `_ligneArticle`, bandeaux de séries et de validation). (a) Bandeau résumé en haut sous les onglets : durée (jours), nombre de personnes, coût cumulé des séries déjà validées (valeurs déjà calculées par l'écran, aucune nouvelle lecture ni calcul). (b) Chaque rayon devient une carte repliable (`ExpansionTile` dans une carte arrondie à 16, teintes de la décision 31) avec compteur « cochés/total » ; les clés `rayon_$r`, `case_…`, `reste_…` sont conservées pour les tests. (c) Actions fixées en bas de l'écran (barre inférieure de l'`Scaffold`, hors de la liste qui défile) : « Ajouter une ligne », « Enregistrer / Partager la liste » (le bouton de partage existant de T1 : libellé aligné sur « Enregistrer ou partager »), « Saisir ce que j'ai acheté » (valider) ; clés conservées (`ajouter_libre`, `partager_liste`, `valider_courses`). Les quantités par produit et les réglages (durée, personnes) restent, rangés en cartes, sans changer leur comportement. Onglet « Déjà acheté » en cartes de même style. Les calculs (`lib/courses.dart`), les écritures et les règles ne changent pas ; les tests de calcul des courses ne sont pas modifiés (les tests d'écran dont seules les positions changent peuvent être adaptés sans être affaiblis). **Captures** : « avant » prises AVANT toute modification et « après » à la fin, sur l'émulateur LC2 avec des données de démonstration, par `adb exec-out screencap -p` (jamais par une capture dans un test : la conversion de la surface en image fige les parcours sur ce poste), rangées dans `audit_front/tournoi/` (`courses-avant.png`, `courses-apres.png`, et une capture du bas de page avec les actions fixées). Un seul passage d'émulateur pour les captures, fermé à la fin.
-
-**Fichiers touchés** : `lib/ecran_courses.dart`, `test/` (tests d'écran de la page Courses, adaptés), `audit_front/tournoi/` (captures). **On ne fait pas** : aucun calcul, aucune règle, aucune dépendance, aucun changement de ce que les boutons font.
-
-**Preuve** : N1 (`flutter analyze`, `flutter test`) ; critère 4 : les tests de calcul des courses (`test/courses_test.dart` et voisins) passent sans modification de leur contenu ; critère 5 : les trois captures existent et montrent les cartes.
-
-### Texte de vérification T9 (pour une autre IA, conversation neuve sur Sonnet, sur le PC)
-
-```
-PROMPT DE VÉRIFICATION — Prêt pour le tournoi — projet Le Comptoir (branche claude/pret-tournoi, version 1.5.0+6)
-TYPE : finale
-
-Tu es l'IA de vérification. Tu n'as pas codé cette mission. Tu ne corriges rien.
-
-CRITÈRES DE FIN DE MISSION (validés par Kinder le 11/11/2026), un écran chacun, une capture chacune (R32) :
-1. Départ de l'import : dans l'association test, depuis « Extraction et modèle », la carte « Importer » ouvre l'assistant (choix : modèle générique ou mon classeur).
-2. Import du classeur du club (recette/classeur-notre-club.xlsx) : le résumé avant écriture montre l'an passé (référence), le menu existant de même nom repris sans modification (ou « aucun menu à créer »), le tournoi en préparation choisi avec stock de départ et prévision réglée sur la référence ; après « Appliquer », la prévision du tournoi montre les chiffres de l'an passé.
-3. Enregistrement d'un fichier : « Enregistrer sur le téléphone » (et « Partager ») propose le choix du dossier ; le fichier est dans Téléchargements (vue par l'application Fichiers ou par adb).
-4. Ajout d'un produit : « Produits et images » > « Ajouter un produit » ; le produit se voit en caisse.
-5. Ce même produit se voit dans le menu d'origine.
-6. Prévision : après « D'après une source », « Annuler ce changement » rend les chiffres d'avant.
-7. Une ligne « Actualisé le JJ/MM à HH:MM » est visible sous le titre d'un écran actualisable (ex. écran de l'événement).
-8. Paramètres : cartes Mon compte, Association et code, Membres, Qui peut quoi, Zone dangereuse ; chaque membre porte un badge ; « Changer le statut » (bénévole, gestionnaire, retirer) s'ouvre sur un autre membre.
-9. Courses : bandeau résumé, rayons en cartes repliables avec compteur, actions fixées en bas.
-
-CONTRÔLE RAPIDE (R31) : 1. l'application se lance et l'écran d'arrivée s'affiche ; 2. l'écran de caisse d'un événement en cours s'affiche et une vente s'encaisse.
-
-CE QUI A ÉTÉ FAIT ET TESTÉ : T1 enregistrer ou partager (N1, N2) ; T2 assistant d'import unique (N1, N2) ; T3 classeur du club (N2) ; T4 ajout d'un produit (N1, règles, N2) ; T5 annulation d'un changement de source (N1, règles) ; T6 heure d'actualisation (N1) ; T7 Paramètres en cartes (N1) ; T8 page Courses en cartes (N1, captures avant/après) ; N3 de clôture : voir le CHANGELOG.
-
-NOUVEAUTÉS À VÉRIFIER EN PRIORITÉ (à l'intérieur des critères) : l'assistant remplace « Importer un menu » et « Importer un classeur » (ils y renvoient) ; le nom et le prix des produits existants ne changent pas après l'ajout d'un produit ; un bénévole ne voit ni « Extraction et modèle », ni « Importer », ni la liste des membres. Voisins : export et comparateur d'Extraction et modèle ; validation des courses.
-
-COMMENT LANCER : Java 21 (jbr d'Android Studio) devant le PATH ; émulateur Android LC2 (`-gpu swiftshader_indirect -no-snapshot -no-audio`, jamais Medium_Phone) ; `firebase emulators:start --only auth,firestore --project le-comptoir-60ba8` ; application en débogage sur l'émulateur contre ces émulateurs. Le moyen le plus simple de mettre l'application dans l'état voulu : un court parcours d'intégration qui prépare les données avec le vrai moteur local puis attend 60 s (modèles : integration_test/capture_courses.dart, assistant_import_test.dart, classeur_club_test.dart, ajout_produit_test.dart, outils.dart) pendant que tu captures par `adb -s emulator-5554 exec-out screencap -p` (jamais de capture prise dans un test : la conversion de la surface en image fige les parcours sur ce poste). Ne touche jamais au vrai projet Firebase ni à l'appareil réel connecté. Aucune migration de base de données ; règles d'accès modifiées par cette mission (nouveau document previsions_annulation) déjà déployées.
-
-TON TRAVAIL :
-1. Lance l'application selon la procédure ci-dessus.
-2. Utilise-la comme un utilisateur.
-3. Pour chaque critère : une seule capture `critere-N.png`, regardée une fois, verdict noté aussitôt (réussi / échoué / non vérifié avec la raison).
-4. Ne rejoue pas les tests des étapes.
-
-RENDU : tableau critère | capture | verdict | ce que tu as vu (en français) ; l'écran exact que Kinder utilise pour son test final.
-```
-
 ### Prompt de lancement de la session mère (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans `V:\DEV\PROJETS\applications_mobile\Le_Comptoir`)
 
 ```
@@ -1237,6 +1105,138 @@ Tu es la session mère de la mission « Prêt pour le tournoi » de Le Comptoir 
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
 
+### Cadrage T1 — Enregistrer sur le téléphone (décision 76)
+
+**Critères (repris du plan)** : (1) les six fichiers (modèle, données de l'association, export d'un tournoi, comparateur, classeur de l'événement, liste de courses) proposent « Enregistrer sur le téléphone » et « Partager » ; (2) « Enregistrer » ouvre le choix du dossier et le fichier y est, lisible ; (3) annuler le choix ne montre aucune erreur ; (4) aucune dépendance ajoutée.
+
+**Stratégie** : un seul point d'entrée dans `lib/partage.dart`. Les deux fonctions par défaut (`partagerFichier`, `partagerFichierTexte`) gardent leur signature (les écrans et les tests qui injectent un faux partageur ne changent pas) mais, au lieu d'ouvrir directement la feuille de partage, affichent une petite feuille de choix « Enregistrer sur le téléphone » / « Partager ». Pour avoir un contexte sans changer les signatures : clé de navigation globale `navigatorCle` déclarée dans `partage.dart` et branchée sur le `MaterialApp` de `lib/main.dart`. « Enregistrer » = `FilePicker.saveFile(fileName:, bytes:)` (file_picker 11.0.3, déjà accordé) ; fermeture sans choix (retour nul) = silence, jamais d'erreur ; échec réel = message simple. « Partager » = comportement actuel (`Share.shareXFiles`). Libellés en français, boutons aux couleurs de la décision 31.
+
+**Fichiers touchés** : `lib/partage.dart`, `lib/main.dart` (clé de navigation), `test/` (un test d'écran de la feuille de choix), un parcours N2 court dans `integration_test/`.
+
+**On ne fait pas** : aucune dépendance, aucun changement des contenus des fichiers, des écrans appelants ni des calculs ; pas de refonte des boutons existants (leurs libellés peuvent rester).
+
+**Preuve** : N1 (`flutter analyze`, `flutter test`) ; N2 : sur l'émulateur LC2, un fichier enregistré réellement via le sélecteur Android et retrouvé lisible ; annulation sans erreur.
+
+### Cadrage T2 — Assistant d'import unique (décision 77), étape « opus »
+
+**Critères (repris du plan)** : (1) départ : modèle générique ou classeur choisi ; (2) menu : nouveau menu créé, ou menu existant de même nom repris sans modification ; (3) anciens tournois enregistrés comme références de prévision ; (4) tournoi en préparation choisi (facultatif) : stock de départ rempli (gymnases et produits retrouvés par leur nom) et prévision réglée sur la référence importée ; (5) résumé avant toute écriture, lignes ignorées avec leur raison ; (6) « Importer un menu » et « Importer un classeur » renvoient vers l'assistant ; (7) un bénévole ne voit pas l'assistant ; (8) un classeur à l'ancien format reste importable.
+
+**Stratégie** : on ne réécrit aucune lecture ni aucun calcul, on enchaîne l'existant. (a) Logique pure dans un nouveau `lib/import_assistant.dart` : `PlanAssistant` = plan de menu (`preparerImportMenu`, `lib/import_menu.dart`) + choix « créer » ou « reprendre le menu existant de même nom » (comparaison par `cleIngredient`) + plan d'import de `preparerImport` (`lib/import_classeur.dart`, références et stock de départ) + intention de régler la prévision sur la référence importée (la référence du premier tournoi lu, ou celle choisie) ; un seul résumé liste tout ce qui sera écrit et les lignes ignorées avec leur raison. (b) Nouvel écran `lib/ecran_import.dart` : étape Départ (« Télécharger le modèle » via T1, ou « Choisir mon classeur »), étape Menu (nom proposé, détection d'un menu existant de même nom), étape Tournoi facultatif (liste des tournois en préparation, « Aucun » par défaut), puis résumé et « Appliquer ». (c) Écritures par les méthodes existantes seulement : `creerMenuDepuisClasseur`, `DepotEvenements.appliquerImport` (références + stock), et la méthode qui règle la prévision d'après une référence (`depot_evenements.dart` autour de la ligne 655). Rejouable sans risque. (d) Entrée : cinquième carte « Importer » dans `lib/ecran_extraction.dart` (gestion seulement, comme les quatre autres, ce qui règle le critère 7). (e) « Importer un menu depuis Excel » (`lib/ecran_menus.dart`) et « Importer un classeur » (`lib/ecran_classeur.dart`) ouvrent l'assistant (le second avec le tournoi déjà choisi) ; leur ancien code de lecture/écriture est retiré ou reste appelé par l'assistant, sans doublon. (f) Le lecteur de classeur `lireClasseur` ne change pas : les classeurs à l'ancien format restent importables (critère 8). Un menu existant n'est jamais modifié ; la feuille Courses n'est pas importée.
+
+**Fichiers touchés** : nouveaux `lib/import_assistant.dart`, `lib/ecran_import.dart` ; modifiés `lib/ecran_extraction.dart`, `lib/ecran_menus.dart`, `lib/ecran_classeur.dart`, au besoin `lib/depot_evenements.dart` / `lib/depot_menus.dart` pour un petit enchaînement ; tests dans `test/` et `integration_test/` (adaptation des tests d'import qui visaient les anciens boutons, sans toucher aux rouges connus). `firestore.rules` : seulement si un test de règles montre qu'une écriture de l'assistant est refusée à la gestion (alors déployer après tests, préalable 2).
+
+**On ne fait pas** : aucun changement de calcul, de bilan, de droits des rôles, de menu ou d'événement existant ; pas de nouvelle dépendance ; pas d'import de la feuille Courses.
+
+**Preuve** : N1 (`flutter analyze`, `flutter test`, `tests_regles/lancer.ps1` si les règles bougent) ; N2 : un parcours sur LC2 avec le vrai moteur de données local : l'assistant lit `recette/historique-tournoi-an-passe.xlsx`, crée le menu ou reprend le menu de même nom, écrit références, stock et prévision sur un tournoi en préparation, et un bénévole ne voit pas l'assistant.
+
+### Cadrage T3 — Classeur du club pour l'association test
+
+**Critères (repris du plan)** : (1) produit par Claude Code d'après `recette/historique-tournoi-an-passe.xlsx`, avec un relevé de ce qui a été repris ou non ; (2) feuille Menu laissée vide ou au nom du menu de l'association test : aucun menu en double ; (3) feuille Stock de départ prête à remplir (gymnases à nommer comme dans le tournoi) ; (4) importé par l'assistant sur émulateur sans erreur, consommations égales au relevé.
+
+**Stratégie** : un petit script Python (openpyxl, dans le dossier temporaire, pas dans le dépôt) lit l'historique de l'an passé (feuilles Menu vide, Stock de départ vide, Historique de 38 lignes, Courses vide) et écrit `recette/classeur-notre-club.xlsx` : mêmes feuilles et mêmes en-têtes (format lu par `lib/classeur.dart`), feuille Menu laissée vide (le menu du week-end est déjà dans l'association test, décision de Kinder : aucun menu créé), feuille Historique reprise ligne pour ligne (événement, gymnase, personnes, jours, produit, quantité), feuille Stock de départ avec une ligne par gymnase et par produit de l'historique, quantité vide (produit non suivi tant que Kinder ne remplit pas), feuille Courses vide. Le relevé (repris, non repris, pourquoi, gymnases et produits à vérifier contre le menu de l'association test) est écrit dans la section « Relevé T3 » de ce plan (pas de nouveau .md : limite de 5 fichiers atteinte). N2 : le parcours `assistant_import_test` (ou un court parcours dédié) importe ce classeur sur l'émulateur et compare les consommations par personne et par jour au relevé.
+
+**Fichiers touchés** : `recette/classeur-notre-club.xlsx` (nouveau), section « Relevé T3 » de ce plan, un test d'import dédié si nécessaire. **On ne fait pas** : aucun code de l'application, aucun menu, aucun accès au vrai projet Firebase, aucune dépendance.
+
+### Relevé T3 — Classeur du club (recette/classeur-notre-club.xlsx)
+
+**Repris** : l'Historique de l'an passé, ligne pour ligne : 38 lignes, un seul événement « Tournoi de l'an passé », 2 gymnases (« Gymnase 1 » : 53 personnes, « Gymnase 2 » : 60 personnes), 2 jours, 19 produits. Stock de départ : 38 lignes (2 gymnases x 19 produits), quantité vide (produits non suivis tant que Kinder ne remplit pas). Mêmes feuilles, bandeaux, explications et en-têtes que le modèle de l'application (Accueil, Menu, Recettes, Stock de départ, Historique, Courses).
+
+**Non repris** : le Menu (vide, en-têtes seuls) : le menu du week-end est déjà dans l'association test, aucun menu n'est donc créé ni dupliqué. Recettes et Courses : vides (l'historique de l'an passé n'en contenait pas ; Courses est ignorée à l'import). Aucune quantité de stock : l'an passé n'en avait pas, rien n'est inventé. La colonne Consommation de l'Historique est une formule (calculée par Excel), non lue à l'import.
+
+**À vérifier contre le menu de l'association test** (rapprochement par nom, sans casse ni accents ; un nom différent = ligne ignorée et signalée) :
+- Gymnases : « Gymnase 1 », « Gymnase 2 » (à renommer dans la feuille Stock de départ si ceux du tournoi s'appellent autrement).
+- Produits (19) : Barre de céréales chocolat, Barre de céréales fruit, Bière, Café, Coca, Croque Monsieur Chocolat, Croque tartiflette, Croque végé, Croque-monsieur, Crêpe Nutella, Crêpe sucre, Fruit, Ice Tea, Infusion, Mars, Oasis, Orangina, Thé, Twix. Attention aux variantes de graphie (« Croque Monsieur Chocolat » / « Croque-monsieur », « Croque végé » ; « Thé », « Café », « Bière » avec accents).
+
+**Consommations attendues par personne et par jour** (total vendu / somme des personnes x jours, soit 226 personnes-jours) : Croque-monsieur 0,6327 (143) ; Coca 1,5265 (345) ; Café 1,4912 (337) ; Crêpe Nutella 1,2434 (281) ; Fruit 1,1327 (256) ; Oasis 0,8451 (191) ; Bière 0,6814 (154) ; Thé 0,7434 (168) ; Mars 0,0664 (15) ; Twix 0,0664 (15). Les 19 produits sont contrôlés par le parcours.
+
+**Preuve N2** : `integration_test/classeur_club_test.dart` (LC2, vrai moteur local) : le classeur est lu sans erreur, l'assistant dit « aucun menu lisible » (aucun menu créé), crée la référence « Tournoi de l'an passé (Excel) » et règle la prévision : les 19 consommations égalent le relevé (tolérance 0,0001). Vert. Piège trouvé : openpyxl écrit les liens internes en absolu et le lecteur Excel de l'application plante dessus ; le classeur est corrigé après écriture (liens relatifs).
+
+### Cadrage T4 — Ajouter un produit à un événement (décision 78)
+
+**Critères (repris du plan)** : (1) en préparation et en cours : le produit est créé dans l'événement et dans le menu d'origine ; (2) il apparaît dans stock de départ, prévision, courses et caisse ; (3) nom et prix des produits existants inchangés ; (4) événement clôturé : pas de bouton ; (5) un bénévole ne peut pas ajouter (test de règles).
+
+**Stratégie** : bouton « Ajouter un produit » dans `EcranProduitsEvenement` (`lib/ecran_evenement.dart` ligne ~1655), visible seulement si `modifiable` (donc ni clôturé, ni pour un bénévole : cet écran est de la gestion). Formulaire simple réutilisant l'existant du menu (nom, prix, type de produit, provenance : même validation que `DepotMenus.ajouterProduit`, `lib/depot_menus.dart` ligne ~517, et mêmes limites, dont le nombre maximal de produits d'un menu). Un nouvelle méthode du dépôt des événements écrit, en un seul lot, le produit dans `evenements/{e}/produits` ET dans `menus/{menuId}/produits` du menu d'origine de l'événement (identifiant commun si le modèle le prévoit, sinon retrouvé par le nom), sans toucher aux produits existants (nom et prix figés). Règles : `evenements/{e}/produits` autorise déjà `create` à la gestion quand `reglableApres(a, e)` (en préparation ou en cours) ; vérifier que le lot (événement + menu) passe, sinon ajuster minimalement, avec test de règles, puis la mère déploie. Le produit doit sortir dans les écrans qui lisent la liste des produits de l'événement (stock de départ, prévision, courses, caisse) sans autre modification : vérifier, et ne corriger que l'affichage si l'un d'eux ne le montre pas. Le menu d'origine peut avoir été supprimé : dans ce cas le produit n'est ajouté qu'à l'événement et un message le dit.
+
+**Fichiers touchés** : `lib/ecran_evenement.dart`, `lib/depot_evenements.dart`, éventuellement `firestore.rules` + `tests_regles/`, tests `test/` et un parcours N2 `integration_test/`. **On ne fait pas** : aucun calcul, aucune modification ou suppression de produit existant, aucun changement des droits des rôles, aucune dépendance.
+
+**Preuve** : N1 (`flutter analyze`, `flutter test`, `powershell -File tests_regles/lancer.ps1` : un bénévole ne peut pas créer de produit d'événement, la gestion le peut en préparation et en cours, pas en clôturé) ; N2 sur LC2 : en cours, ajouter un produit, le retrouver dans le menu, le stock de départ (ou la prévision), les courses et la caisse.
+
+### Cadrage T5 — Annuler un changement de source (décision 79 a)
+
+**Critères (repris du plan)** : (1) après « D'après une source », « Annuler ce changement » rend exactement les chiffres d'avant, corrections à la main comprises ; (2) « Revenir au menu » marche comme avant ; (3) l'annulation se lit aussi sur un autre téléphone.
+
+**Stratégie** : avant tout changement de source (`appliquerEvenementPasse`, `appliquerReference`, import d'assistant qui règle la prévision), le dépôt (`lib/depot_evenements.dart`, autour de `_appliquerPrevisions`) range l'état exact des prévisions dans UN document de l'événement, `evenements/{e}/previsions_annulation/dernier` (champ `lignes` : produit → {conso, source} ; liste vide = « d'avant il n'y avait aucune prévision enregistrée », c'est-à-dire les chiffres du menu), avec `creeLe`. « Annuler ce changement » (nouvelle méthode `annulerChangementPrevision`) relit ce document, remet exactement les prévisions d'avant (écrit celles qui existaient, efface les autres) puis efface le document d'annulation ; un seul niveau d'annulation (le dernier changement). Le document étant côté serveur, l'annulation se lit sur un autre téléphone (critère 3) : l'écran le suit en direct (flux). Bouton « Annuler ce changement » dans `lib/ecran_prevision.dart`, à côté de « D'après une source » et « Revenir au menu », visible seulement si le document existe. « Revenir au menu » garde son comportement ; il ne range pas de document d'annulation (il remet aux chiffres du menu comme avant), et un changement de source ultérieur écrase l'annulation précédente. Corriger un chiffre à la main n'efface pas l'annulation (elle remet l'état d'avant la source, y compris les mains d'avant). Règles : nouveau `match /previsions_annulation/{d}` à la gestion (`gereTout` et `reglable`, document `dernier` seul, champs `lignes` et `creeLe` bornés, taille limitée) avec tests de règles ; la mère déploie après les tests (préalable 2). Les écritures par lots de 10 existantes restent (limite d'évaluation des règles).
+
+**Fichiers touchés** : `lib/depot_evenements.dart`, `lib/ecran_prevision.dart`, éventuellement `lib/ecran_evenement.dart` (câblage du flux), `firestore.rules`, `tests_regles/`, `test/`. **On ne fait pas** : aucun calcul de prévision, aucune dépendance, pas de niveaux multiples d'annulation, pas de changement des droits.
+
+**Preuve** : N1 seulement (`flutter analyze`, `flutter test`, `powershell -File tests_regles/lancer.ps1`) ; le test d'écran joue le scénario source → mains → annuler = exactement l'état d'avant, et une seconde instance sur les mêmes données voit le bouton.
+
+### Cadrage T6 — Heure de la dernière actualisation (décision 79 b)
+
+**Critères (repris du plan)** : (1) ligne « Actualisé le JJ/MM à HH:MM » sous le titre ; (2) mise à jour après un glisser vers le bas réussi ; (3) hors réseau, elle ne change pas et le message hors réseau s'affiche.
+
+**Stratégie** : tout passe par `lib/actualisation.dart`, déjà utilisé par les écrans actualisables (association, événement, caisses en direct, stock, bilan ; vérifier la liste réelle avec `grep actualisable|Actualisable lib`). `actualiserEcran` renvoie un booléen (vrai si la relecture a réussi, faux si hors réseau ou en erreur) ; `Actualisable` devient un widget à état qui garde l'heure de la dernière actualisation réussie (au départ : l'heure d'ouverture de l'écran, puisque les écrans sont en direct) et affiche, en tête, une petite ligne discrète « Actualisé le JJ/MM à HH:MM » (format français, deux chiffres, horloge injectable pour les tests) au-dessus de la liste actualisable ; le glisser vers le bas continue de fonctionner (liste toujours défilante). Après un glisser réussi : heure mise à jour ; échec ou hors réseau : heure inchangée et message « Hors réseau… » comme aujourd'hui. Les écrans qui n'ont pas besoin de changer ne changent pas : la ligne vient du composant partagé.
+
+**Fichiers touchés** : `lib/actualisation.dart`, au besoin le câblage d'un écran dont la liste n'est pas dans `Actualisable`, `test/` (tests d'écrans d'actualisation existants à adapter, jamais en les affaiblissant). **On ne fait pas** : aucune relecture ajoutée ni modifiée, aucun changement de lectures serveur, aucune dépendance, aucune règle.
+
+**Preuve** : N1 seulement (`flutter analyze`, `flutter test`) : le test joue ouverture → ligne présente ; glisser réussi → heure mise à jour ; glisser hors réseau → heure inchangée et message.
+
+### Cadrage T7 — Paramètres en cartes (décision 79 c)
+
+**Critères (repris du plan)** : (1) cartes Mon compte, Association et code, Membres, Qui peut quoi (repliable), Zone dangereuse, aux couleurs de la décision 31 ; (2) chaque membre a un badge de statut ; (3) responsable : « Changer le statut » propose bénévole, gestionnaire, retirer de l'association, avec confirmation ; (4) gestionnaire : liste sans action ; bénévole : pas de liste ; (5) règles inchangées (un gestionnaire ne retire toujours personne).
+
+**Stratégie** : refonte de présentation de `EcranParametres` (`lib/ecran_association.dart`, à partir de la ligne ~346) : les sections séparées par `Divider` deviennent des cartes de l'application (même style que les autres écrans : cartes arrondies à 16, teintes de la décision 31 via le module de thème `lib/theme.dart`, zone dangereuse en brique avec contour fin, « Qui peut quoi » en carte repliable). Chaque membre : nom, badge de statut (bénévole, gestionnaire en attente, gestionnaire, responsable) aux couleurs de la décision 31. Pour le responsable, sur chaque autre membre, un seul bouton « Changer le statut » qui ouvre une feuille de choix (bénévole, gestionnaire, retirer de l'association) puis une confirmation ; il appelle les méthodes existantes (`nommerGestionnaire`, `retirerGestionnaire`, `retirerMembre`) sans en changer le fonctionnement ni les règles. Le responsable ne voit pas d'action sur lui-même (il est seul responsable) : afficher son badge « Responsable » et, s'il est seul, une phrase qui dit comment inviter des membres (code d'accès) afin que l'écran ne paraisse plus vide. Gestionnaire : liste avec badges, sans action. Bénévole : pas de liste. Les clés des widgets utilisées par les tests existants sont conservées quand la fonction reste la même ; les tests qui visaient les anciens boutons texte sont adaptés sans être affaiblis.
+
+**Fichiers touchés** : `lib/ecran_association.dart`, éventuellement `lib/theme.dart` (une petite pièce réutilisable de carte/badge, sans changer l'existant), tests `test/` (membres, paramètres). **On ne fait pas** : aucune règle, aucun droit, aucune dépendance, aucun changement du fonctionnement des actions, pas de nouvel écran.
+
+**Preuve** : N1 seulement (`flutter analyze`, `flutter test`) : tests d'écran par rôle (responsable avec autres membres, responsable seul, gestionnaire, bénévole), badges, feuille « Changer le statut » avec confirmation.
+
+### Cadrage T8 — Page Courses en cartes (décision 79 d)
+
+**Critères (repris du plan)** : (1) bandeau résumé (durée, personnes, coût cumulé) ; (2) rayons en cartes repliables avec compteur ; (3) actions (Ajouter une ligne, Partager / Enregistrer, Valider) fixées en bas ; (4) tous les tests de calcul des courses passent sans modification ; (5) captures avant et après rangées dans `audit_front/tournoi/`.
+
+**Stratégie** : présentation seulement dans `lib/ecran_courses.dart` (973 lignes ; `_contenu`, `_ongletAcheter`, `_reglages`, `_rayons`, `_ligneArticle`, bandeaux de séries et de validation). (a) Bandeau résumé en haut sous les onglets : durée (jours), nombre de personnes, coût cumulé des séries déjà validées (valeurs déjà calculées par l'écran, aucune nouvelle lecture ni calcul). (b) Chaque rayon devient une carte repliable (`ExpansionTile` dans une carte arrondie à 16, teintes de la décision 31) avec compteur « cochés/total » ; les clés `rayon_$r`, `case_…`, `reste_…` sont conservées pour les tests. (c) Actions fixées en bas de l'écran (barre inférieure de l'`Scaffold`, hors de la liste qui défile) : « Ajouter une ligne », « Enregistrer / Partager la liste » (le bouton de partage existant de T1 : libellé aligné sur « Enregistrer ou partager »), « Saisir ce que j'ai acheté » (valider) ; clés conservées (`ajouter_libre`, `partager_liste`, `valider_courses`). Les quantités par produit et les réglages (durée, personnes) restent, rangés en cartes, sans changer leur comportement. Onglet « Déjà acheté » en cartes de même style. Les calculs (`lib/courses.dart`), les écritures et les règles ne changent pas ; les tests de calcul des courses ne sont pas modifiés (les tests d'écran dont seules les positions changent peuvent être adaptés sans être affaiblis). **Captures** : « avant » prises AVANT toute modification et « après » à la fin, sur l'émulateur LC2 avec des données de démonstration, par `adb exec-out screencap -p` (jamais par une capture dans un test : la conversion de la surface en image fige les parcours sur ce poste), rangées dans `audit_front/tournoi/` (`courses-avant.png`, `courses-apres.png`, et une capture du bas de page avec les actions fixées). Un seul passage d'émulateur pour les captures, fermé à la fin.
+
+**Fichiers touchés** : `lib/ecran_courses.dart`, `test/` (tests d'écran de la page Courses, adaptés), `audit_front/tournoi/` (captures). **On ne fait pas** : aucun calcul, aucune règle, aucune dépendance, aucun changement de ce que les boutons font.
+
+**Preuve** : N1 (`flutter analyze`, `flutter test`) ; critère 4 : les tests de calcul des courses (`test/courses_test.dart` et voisins) passent sans modification de leur contenu ; critère 5 : les trois captures existent et montrent les cartes.
+
+### Texte de vérification T9 (pour une autre IA, conversation neuve sur Sonnet, sur le PC)
+
+```
+PROMPT DE VÉRIFICATION — Prêt pour le tournoi — projet Le Comptoir (branche claude/pret-tournoi, version 1.5.0+6)
+TYPE : finale
+
+Tu es l'IA de vérification. Tu n'as pas codé cette mission. Tu ne corriges rien.
+
+CRITÈRES DE FIN DE MISSION (validés par Kinder le 11/11/2026), un écran chacun, une capture chacune (R32) :
+1. Départ de l'import : dans l'association test, depuis « Extraction et modèle », la carte « Importer » ouvre l'assistant (choix : modèle générique ou mon classeur).
+2. Import du classeur du club (recette/classeur-notre-club.xlsx) : le résumé avant écriture montre l'an passé (référence), le menu existant de même nom repris sans modification (ou « aucun menu à créer »), le tournoi en préparation choisi avec stock de départ et prévision réglée sur la référence ; après « Appliquer », la prévision du tournoi montre les chiffres de l'an passé.
+3. Enregistrement d'un fichier : « Enregistrer sur le téléphone » (et « Partager ») propose le choix du dossier ; le fichier est dans Téléchargements (vue par l'application Fichiers ou par adb).
+4. Ajout d'un produit : « Produits et images » > « Ajouter un produit » ; le produit se voit en caisse.
+5. Ce même produit se voit dans le menu d'origine.
+6. Prévision : après « D'après une source », « Annuler ce changement » rend les chiffres d'avant.
+7. Une ligne « Actualisé le JJ/MM à HH:MM » est visible sous le titre d'un écran actualisable (ex. écran de l'événement).
+8. Paramètres : cartes Mon compte, Association et code, Membres, Qui peut quoi, Zone dangereuse ; chaque membre porte un badge ; « Changer le statut » (bénévole, gestionnaire, retirer) s'ouvre sur un autre membre.
+9. Courses : bandeau résumé, rayons en cartes repliables avec compteur, actions fixées en bas.
+
+CONTRÔLE RAPIDE (R31) : 1. l'application se lance et l'écran d'arrivée s'affiche ; 2. l'écran de caisse d'un événement en cours s'affiche et une vente s'encaisse.
+
+CE QUI A ÉTÉ FAIT ET TESTÉ : T1 enregistrer ou partager (N1, N2) ; T2 assistant d'import unique (N1, N2) ; T3 classeur du club (N2) ; T4 ajout d'un produit (N1, règles, N2) ; T5 annulation d'un changement de source (N1, règles) ; T6 heure d'actualisation (N1) ; T7 Paramètres en cartes (N1) ; T8 page Courses en cartes (N1, captures avant/après) ; N3 de clôture : voir le CHANGELOG.
+
+NOUVEAUTÉS À VÉRIFIER EN PRIORITÉ (à l'intérieur des critères) : l'assistant remplace « Importer un menu » et « Importer un classeur » (ils y renvoient) ; le nom et le prix des produits existants ne changent pas après l'ajout d'un produit ; un bénévole ne voit ni « Extraction et modèle », ni « Importer », ni la liste des membres. Voisins : export et comparateur d'Extraction et modèle ; validation des courses.
+
+COMMENT LANCER : Java 21 (jbr d'Android Studio) devant le PATH ; émulateur Android LC2 (`-gpu swiftshader_indirect -no-snapshot -no-audio`, jamais Medium_Phone) ; `firebase emulators:start --only auth,firestore --project le-comptoir-60ba8` ; application en débogage sur l'émulateur contre ces émulateurs. Le moyen le plus simple de mettre l'application dans l'état voulu : un court parcours d'intégration qui prépare les données avec le vrai moteur local puis attend 60 s (modèles : integration_test/capture_courses.dart, assistant_import_test.dart, classeur_club_test.dart, ajout_produit_test.dart, outils.dart) pendant que tu captures par `adb -s emulator-5554 exec-out screencap -p` (jamais de capture prise dans un test : la conversion de la surface en image fige les parcours sur ce poste). Ne touche jamais au vrai projet Firebase ni à l'appareil réel connecté. Aucune migration de base de données ; règles d'accès modifiées par cette mission (nouveau document previsions_annulation) déjà déployées.
+
+TON TRAVAIL :
+1. Lance l'application selon la procédure ci-dessus.
+2. Utilise-la comme un utilisateur.
+3. Pour chaque critère : une seule capture `critere-N.png`, regardée une fois, verdict noté aussitôt (réussi / échoué / non vérifié avec la raison).
+4. Ne rejoue pas les tests des étapes.
+
+RENDU : tableau critère | capture | verdict | ce que tu as vu (en français) ; l'écran exact que Kinder utilise pour son test final.
+```
+
 ## 17. Mission « Clôture du tournoi » — NOTE DE CADRAGE (phase 1, 11/11/2026 au soir, rien de figé)
 
 > Cette section est une **mémoire**, pas un plan. Elle consigne les retours de Kinder du 11/11/2026 (soir) et les
@@ -1314,6 +1314,7 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 > Fusion des étapes T1 à T9 (section 16, plan validé le 11/11/2026) et des douze points de la note de cadrage (section 17).
 > **Rien n'est figé** : les points de la section 17 passent par la phase 2 (questions une à une), puis 3 (décisions 80 et suivantes) et 4 (critères) avant tout code.
 > Constat au 12/11/2026 : **aucune des étapes T1 à T9 n'est livrée** (rien dans le code, suivi de la section 16 vide). Branche de travail : `claude/pret-tournoi` (contient cette note).
+> **Corrigé le 12/11/2026 (voir 18.7)** : ce constat est faux, T1 à T8 étaient faites sur le PC, sur une branche jamais envoyée en ligne. Le travail restant est en 18.7, le prompt en 18.8.
 
 ### 18.1 Recoupements (pour ne rien faire deux fois)
 
@@ -1391,12 +1392,16 @@ Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à
 
 **Préalables, ce qu'on ne touche pas, arrêts** : ceux de la section 16, inchangés. Seule différence : les calculs restent intouchés **aussi** pour A8 et A9 (affichage et rangement seulement).
 
-**Suivi** (une ligne par étape close)
+**Suivi** (une ligne par étape close ; lignes A1, A4, A5, A6 écrites le 12/11/2026 d'après les commits et les cadrages de la section 16, le suivi n'ayant pas été tenu le 11/11/2026)
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| A1 (T1) | Faite, N1 et N2 (commits 8527a81, puis b834b40 : clé de navigation corrigée après une régression vue au N3) | 11/11/2026 | critères de T1 ; N3 à refaire en A10 |
+| A4 (T4) | Faite, N1, règles et N2 (commit 549d18e) | 11/11/2026 | critères de T4 ; N3 à refaire en A10 |
+| A5 (T5) | Faite, N1 et règles (commit dc70268) ; règles `previsions_annulation` déployées | 11/11/2026 | critères de T5 |
+| A6 (T6) | Faite, N1 (commit d8dcb26) | 11/11/2026 | critères de T6 |
 
-### 18.6 Prompt de lancement de la session mère du lot A (remplace celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
+### 18.6 Prompt de lancement de la session mère du lot A — REMPLACÉ par 18.8 le 12/11/2026, gardé pour trace (remplaçait celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
 
 ```
 Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end (essai à blanc vendredi) : va droit au but.
@@ -1415,5 +1420,48 @@ Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temp
 8. Aucune dépendance nouvelle sans accord de Kinder (A7 : réutiliser l'affichage de QR existant, `EcranQr`). Les calculs, le bilan et les droits des rôles ne changent pas ; le nom et le prix d'un produit déjà dans un événement restent figés.
 9. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
 10. Clôture (A10, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin du lot A, 18.5). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
+
+### 18.7 Reprise au 12/11/2026 — état réel du lot A et plan corrigé (proposé par Claude Code, à valider par Kinder)
+
+**Constat.** Les étapes T1 à T8 ont été codées et enregistrées le 11/11/2026 sur le PC, sur une branche `claude/pret-tournoi` qui n'avait jamais été envoyée en ligne ; T9 avait commencé (version 1.5.0+6, texte de vérification, batterie complète des parcours interrompue sur `parcours_mission_test`). Le plan complet (sections 17 et 18) a été écrit le 12/11/2026 sur l'autre poste sans voir ce travail, d'où la phrase « aucune des étapes T1 à T9 n'est livrée », **fausse**. Le 12/11/2026, avec l'accord de Kinder : les parcours adaptés pendant le N3 sont enregistrés (commit d7cd723), le travail est envoyé en ligne, puis joint au plan de main sur la branche **`claude/lot-a-tournoi`** (un seul conflit, le CHANGELOG, résolu en gardant les deux côtés). Les cadrages T1 à T8, le relevé T3 et le texte de vérification T9, rangés par erreur dans la section 13, sont replacés en fin de section 16. Décisions 75 à 84 et critères 18.5 **inchangés** : seul le travail restant change.
+
+| Étape | Déjà fait (section 16) | Reste à faire (critères de 18.5) | Modèle |
+|---|---|---|---|
+| A1, A4, A5, A6 | T1, T4, T5, T6 : tout | rien (lignes au suivi ci-dessus) ; leurs critères sont rejoués en A10 | — |
+| A2 | T2 : assistant complet, menu existant de même nom repris sans modification (critère 2 de T2) | critère (9) : un classeur qui **porte** un menu de même nom ne crée aucun menu et ne modifie pas l'existant, **et le résumé le dit** ; test d'écran ou de logique dédié | Sonnet (complément d'un cas, le gros de l'assistant est fait) |
+| A3 | T3 : `recette/classeur-notre-club.xlsx` avec Menu et Recettes **vides** (ancienne réponse) | refaire le classeur avec les feuilles Menu et Recettes **remplies** d'après le menu de l'association test (décision 84) ; parcours `classeur_club_test` adapté : import par l'assistant, aucun menu en double, consommations toujours égales au relevé | Sonnet |
+| A7 | T7 : cartes, badge de statut par membre, « Changer le statut » | (6) un badge de **couleur par rôle**, identique partout ; (7) « Qui peut quoi » = une carte par rôle avec liste à puces ; (8) QR de l'association dans la carte « Association et code », gestion seulement, scanné depuis un autre téléphone = entrée comme bénévole (réutiliser `EcranQr` et le lecteur existant ; si le lecteur n'accepte pas un QR sans événement ni gymnase, l'étendre sans dépendance) | Sonnet |
+| A9 | rien | entière : unité d'achat et unité de vente à côté de chaque stock sur les cinq écrans (décision 83) | Sonnet |
+| A8 | T8 : bandeau résumé, rayons en cartes repliables, actions fixées en bas | (6) « En stock : n [unité] » + bouton « Modifier » à la place du champ « Il reste » ; (7) cocher ne change pas le stock, seul « Valider les courses (n / m cochés) » le change ; (8) « Quantités par produit » passe en Préparation sous « Ce qu'on prévoit de vendre » ; (9) tests de calcul des courses inchangés et verts | Sonnet |
+| A10 | T9 commencé : version 1.5.0+6, texte de vérification T9 (critères 1 à 9 de T9), parcours adaptés | compléter le texte de vérification avec les critères ajoutés du lot A (18.5 et critère de fin du lot A) ; N3 complet ; vérification par une autre IA ; APK 1.5.0 | Sonnet |
+
+**Ordre restant** (ordre validé, étapes faites retirées) : **A2 → A3 → A7 → A9 → A8 → A10**.
+
+**Préalable avant A3** : le menu de l'association test est sur le vrai serveur, que le chantier ne touche jamais. Source : le fichier « Données de l'association » que Kinder télécharge depuis l'application (Extraction et modèle), complété par les fiches de composition du classeur d'origine (17.2) pour les recettes. S'il manque sur le poste, la session mère le demande à Kinder avant A3 (et continue A7, A9, A8 en attendant).
+
+**Temps** : l'essai à blanc est le vendredi 13/11/2026. Si A10 ne peut pas commencer à temps, la session mère s'arrête et le dit à Kinder ; c'est Kinder qui décide de clore le lot A avec les étapes faites (le reste passe au lot B) — jamais la session seule. Chaque étape ne change que l'affichage : l'application reste stable après n'importe laquelle.
+
+**Critères, préalables, ce qu'on ne touche pas, arrêts** : ceux de la section 16 et de 18.5, inchangés.
+
+### 18.8 Prompt de lancement de la session mère du lot A (reprise du 12/11/2026 ; remplace 18.6 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_Comptoir du poste utilisé)
+
+```
+Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture), en REPRISE : une partie du lot est déjà faite. Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end (essai à blanc vendredi 13/11) : va droit au but.
+
+1. Lis, dans cet ordre : METHODO\3_CHANTIER.md (dossier DEV du poste), PROJET_CONTEXTE.md (bloc STATUT, décisions 13, 19, 23, 31, 56, 70 à 84, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md section 18.7 (ÉTAT RÉEL ET TRAVAIL RESTANT : c'est elle qui fait foi), puis 18.5 (critères), section 16 (critères de T1 à T9, cadrages T1 à T8, relevé T3, texte de vérification T9, préalables, arrêts), section 17 pour le détail des points 1, 3, 5, 7, 9 à 12, CHANGELOG.md (dernières entrées), graphify-out/GRAPH_REPORT.md.
+2. Hygiène git : rien de non enregistré (le dossier `graphify-out/converted/` et les fichiers `audit_front/*_test.txt` sont des sorties d'outils, pas du travail de Kinder : laisse-les) ; récupère le dépôt en ligne ; travaille sur la branche EXISTANTE `claude/lot-a-tournoi` (elle contient T1 à T8, le début de T9 et ce plan), à jour avec sa copie en ligne. Ne crée pas de nouvelle branche depuis main : tu perdrais T1 à T8. Jamais de travail sur main.
+3. Ne refais pas A1, A4, A5, A6 (faites, voir le suivi de 18). Pour chaque étape restante, dans l'ordre A2 → A3 → A7 → A9 → A8 → A10 :
+   a. Phase 5 : cadre l'étape toi-même en partant de ce qui existe (cadrage Tn de la section 16 et code actuel) : seulement le « reste à faire » de 18.7 ; écris ce cadrage sous la section 18 (« Cadrage An »), critères repris tels quels (section 16 pour l'étape T d'origine + ajouts de 18.5).
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon 18.7 (Sonnet partout). Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie la preuve au niveau écrit au plan (N1 : flutter analyze, flutter test, tests_regles/lancer.ps1 ; N2 : le seul parcours Android qui prouve le critère, sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (préalable 2 de la section 16).
+   d. Ligne dans le tableau de suivi de la section 18, ligne dans CHANGELOG.md, commit sur la branche, branche envoyée en ligne (le travail ne reste jamais sur un seul poste). Puis étape suivante, sans attendre Kinder.
+4. A3 : préalable de 18.7 (fichier « Données de l'association » de l'association test). S'il manque, demande-le à Kinder en une question et avance A7, A9, A8 en attendant. Jamais d'accès au vrai projet Firebase.
+5. A8 et A9 : affichage et rangement seulement (décisions 82 et 83) ; tous les tests de calcul des courses et de la prévision passent sans modification. « Il reste » garde sa saisie derrière un bouton « Modifier ».
+6. Aucune dépendance nouvelle sans accord de Kinder (A7 : réutiliser `EcranQr` et le lecteur existant). Les calculs, le bilan et les droits des rôles ne changent pas ; le nom et le prix d'un produit déjà dans un événement restent figés.
+7. Pas de banc d'essai dans cette mission (décision 75) : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1 (en arrière-plan, long) ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test). Une sous-session n'enquête jamais sur un rouge connu. Le N3 du 11/11 s'était arrêté sur parcours_mission_test : le rejouer seul avant de conclure à un défaut.
+8. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite ; A10 impossible à commencer à temps pour l'essai à blanc (Kinder décide alors de clore avec les étapes faites).
+9. Clôture (A10, R11) : complète le texte de vérification T9 (section 16) avec les critères ajoutés de 18.5 et le critère de fin du lot A ; N3 ; puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche envoyée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
