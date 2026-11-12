@@ -102,6 +102,7 @@ void main() {
 
     Future<void> afficherPreparation(String evenementId) async {
       await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
         home: EcranClasseur(
           evenement: depotEv.suivreEvenement(evenementId),
           portee:
@@ -227,6 +228,7 @@ void main() {
 
     Future<void> afficherPrevision() async {
       await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
         home: EcranPrevision(
           evenement: depotEv.suivreEvenement(evt),
           portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
@@ -278,6 +280,7 @@ void main() {
 
     // Les courses calculent avec ce chiffre : 80 × 2 × 2,0 = 320, moins 20 en stock = 300.
     await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
       home: EcranCourses(depot: depotEv, evenementId: evt),
     ));
     await attendre(tester, find.byKey(const Key('etat_courses')));

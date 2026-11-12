@@ -94,6 +94,7 @@ void main() {
     Uint8List? aImporter;
     Future<void> afficherPreparation() async {
       await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
         home: EcranClasseur(
           evenement: depotEv.suivreEvenement(evt),
           portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
@@ -183,6 +184,7 @@ void main() {
     // ---------- 6. Prévision d'après l'an passé : Croque 2,0 et Soda 1,0 (160 ÷ 40 ÷ 2, 80 ÷ 40 ÷ 2).
     Future<void> afficherPrevision() async {
       await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
         home: EcranPrevision(
           evenement: depotEv.suivreEvenement(evt),
           portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),
@@ -227,6 +229,7 @@ void main() {
 
     // ---------- 8. Lancer les courses : 80 × 2 × 2,5 = 400 - 20 en stock = 380.
     await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
       home: EcranCourses(depot: depotEv, evenementId: evt),
     ));
     await attendre(tester, find.byKey(const Key('etat_courses')));
@@ -269,6 +272,7 @@ void main() {
     // ---------- 11. Exporter le même classeur, rempli.
     Uint8List? exporte;
     await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
       home: EcranBilan(
         evenement: evenement,
         tableau: caisses.suivreTableauDeBord(),

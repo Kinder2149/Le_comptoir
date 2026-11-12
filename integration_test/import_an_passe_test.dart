@@ -95,6 +95,7 @@ void main() {
     final Uint8List classeur = base64Decode(anPasseBase64);
 
     await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
       home: EcranClasseur(
         evenement: depotEv.suivreEvenement(evt),
         portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 1),
@@ -145,6 +146,7 @@ void main() {
     final cle = 'choix_reference_${refs.docs.first.id}';
     Future<void> afficherPrevision() async {
       await tester.pumpWidget(MaterialApp(
+        key: UniqueKey(),
         home: EcranPrevision(
           evenement: depotEv.suivreEvenement(evt),
           portee: const PorteeGestion(responsable: true, gymnases: {}, nbGymnases: 2),

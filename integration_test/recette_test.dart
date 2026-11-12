@@ -276,9 +276,11 @@ void main() {
     await attendre(tester, find.byKey(const Key('parametres')));
     await tester.pump(const Duration(seconds: 1));
     await toucher(tester, find.byKey(const Key('parametres')));
-    await attendre(tester, find.byKey(Key('param_nommer_$gusUid')));
+    await attendre(tester, find.byKey(Key('param_changer_$gusUid')));
     await finTransition(tester);
+    await toucher(tester, find.byKey(Key('param_changer_$gusUid')));
     await toucher(tester, find.byKey(Key('param_nommer_$gusUid')));
+    await toucher(tester, find.byKey(const Key('confirmer_nomination')));
     await attendreTexte(tester, 'param_statut_$gusUid', 'Gestionnaire en attente');
 
     await changerDeSession(tester, () async {

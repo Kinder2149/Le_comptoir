@@ -231,6 +231,9 @@ void main() {
     await attendreTexte(tester, 'achat_produit:$tarte', 'Tarte : 12');
 
     // --- Ligne libre.
+    // La barre d'actions est masquée tant que le clavier est ouvert : on le ferme.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump(const Duration(milliseconds: 600));
     await toucher(tester, find.byKey(const Key('ajouter_libre')));
     await tester.enterText(find.byKey(const Key('nom_libre')), 'Liquide vaisselle');
     await tester.enterText(find.byKey(const Key('quantite_libre')), '2');
