@@ -1104,7 +1104,8 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 > Aucune décision n'est figée, aucun numéro de décision n'est attribué, aucun critère n'est validé. Rien n'est codé.
 > Sources : capture de l'écran « Produit » (Croque tartiflette, 11/11/2026, 22:42), `classeur-notre-club.xlsx`
 > (celui produit par l'application / T3) et `Nouvelle_feuille_2.xlsx` (le classeur d'origine du club, 20 feuilles).
-> Ces deux classeurs sont à ranger dans `recette/` au cadrage (références de la mission).
+> **Validée par Kinder le 12/11/2026** (« je valide ») comme mémoire de cadrage : les douze points et le scénario de simulation sont retenus ; la réponse à la question « ratio » est la recommandation de Claude (les deux, effectifs d'abord : à reconfirmer en phase 2). Les décisions restent à figer en phase 3.
+> Pièces : la capture est rangée dans `recette/capture-produit-croque-tartiflette.jpg`. Les deux classeurs ne sont PAS dans le dépôt (`recette/*.xlsx` est ignoré par git, et l'original contient des noms de bénévoles) : Kinder les redonne au cadrage.
 
 ### 17.1 Les douze points à modifier (verbatim reformulé, + constat dans le code)
 
