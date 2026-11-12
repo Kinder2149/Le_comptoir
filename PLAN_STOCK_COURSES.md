@@ -1216,7 +1216,8 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 1. Le découpage lot A (avant le tournoi) / lot B (après) est-il le bon ? → **Validé par Kinder le 12/11/2026** (« Oui, ce découpage »).
 2. Point 5 : le classeur du club porte le menu et les recettes (revient sur la réponse T3 du 11/11/2026) ? → **Oui, validé par Kinder le 12/11/2026** (« Oui, il les garde ») : le classeur porte les 18 produits (prix, type, mesures, rayon) et les recettes ; l'assistant reprend tel quel le menu existant de même nom. Remplace la réponse T3 du 11/11/2026.
 3. Point 10 : « Quantités par produit » déplacé dans la Préparation (recommandé) ou gardé en tête des Courses ? → **Déplacé dans la Préparation, validé par Kinder le 12/11/2026** (« Oui, en Préparation ») : à côté de la prévision, sous un titre clair ; la page Courses ne montre plus que ce qu'il faut acheter. Aucun calcul ne change.
-4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ?
+4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ? → **Oui, gestion seule, validé par Kinder le 12/11/2026** (« Oui, gestion seule ») : le QR contient le code de l'association ; le scanner fait entrer comme bénévole, comme le code tapé.
+   - **Constat au cadrage (12/11/2026), point 9** : « Il reste » dans les Courses n'est pas une copie du stock de départ. Il porte les restes **d'ingrédients et de conditionnements** (pain de mie, jambon, sucre…), qui ne se saisissent nulle part ailleurs (le stock de départ ne porte que les produits finis ; les composants viennent avec le point 6, lot B). Le passer en lecture seule ferait perdre cette saisie.
 5. (Lot B) Point 4 : « ratio » = effectifs, pourcentages, ou les deux (recommandé : les deux, effectifs d'abord).
 6. (Lot B) Point 2 : association active = la dernière utilisée, avec un sélecteur dans l'en-tête ?
 
