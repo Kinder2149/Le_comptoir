@@ -161,8 +161,8 @@ List<List<Object?>> _lignes(List<int> octets, String feuille) {
 
 void main() {
   group('critère 1 : le contenu du classeur', () {
-    test('sept feuilles, dans l’ordre : Accueil, Menu, Recettes, Stock de départ, '
-        'Historique, Courses, Bilan', () {
+    test('neuf feuilles, dans l’ordre : Accueil, Menu, Recettes, Stock de départ, '
+        'Historique, Repas, Groupes, Courses, Bilan', () {
       final x = Excel.decodeBytes(_export());
       expect(x.tables.keys.toList(), [
         'Accueil',
@@ -170,6 +170,8 @@ void main() {
         'Recettes',
         'Stock de départ',
         'Historique',
+        'Repas',
+        'Groupes',
         'Courses',
         'Bilan'
       ]);

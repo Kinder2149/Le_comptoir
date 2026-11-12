@@ -5,6 +5,7 @@ import 'package:archive/archive.dart' show Archive, ArchiveFile, ZipDecoder, Zip
 
 import 'package:excel/excel.dart';
 
+import 'calcul_club.dart';
 import 'comparaison.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
@@ -14,9 +15,9 @@ import 'export_bilan.dart';
 import 'gymnase.dart';
 import 'ticket.dart';
 
-// Le classeur Excel de l'association (décisions 57 et 66) : un fichier .xlsx à six
-// feuilles (Accueil, Menu, Recettes, Stock de départ, Historique, Courses), sept à
-// l'export du tournoi (avec le Bilan). Chaque feuille de données a un bandeau (lignes
+// Le classeur Excel de l'association (décisions 57, 66 et 91) : un fichier .xlsx à huit
+// feuilles (Accueil, Menu, Recettes, Stock de départ, Historique, Repas, Groupes, Courses),
+// neuf à l'export du tournoi (avec le Bilan). Chaque feuille de données a un bandeau (lignes
 // 1 à 4), une ligne d'aide (ligne 5), puis une ligne d'en-têtes (ligne 6) ; les données
 // commencent à la ligne 7. La lecture repère la ligne d'en-têtes par son contenu, donc
 // les classeurs à l'ancien format (aide en ligne 1, en-têtes en ligne 2) restent lisibles.
@@ -28,6 +29,8 @@ const feuilleMenu = 'Menu';
 const feuilleRecettes = 'Recettes';
 const feuilleStock = 'Stock de départ';
 const feuilleHistorique = 'Historique';
+const feuilleRepas = 'Repas';
+const feuilleGroupes = 'Groupes';
 const feuilleCourses = 'Courses';
 const feuilleBilan = 'Bilan';
 
@@ -38,6 +41,8 @@ const feuillesModele = [
   feuilleRecettes,
   feuilleStock,
   feuilleHistorique,
+  feuilleRepas,
+  feuilleGroupes,
   feuilleCourses,
 ];
 
@@ -114,6 +119,39 @@ const _entetesHistoriqueRequis = [
   'Quantité vendue',
 ];
 
+const enteteGymnase = 'Gymnase';
+const enteteJour = 'Jour';
+const enteteGroupe = 'Groupe';
+const entetePourcentageGroupe = 'Pourcentage du groupe';
+const entetePartGroupe = 'Part dans le groupe';
+
+/// Feuille Repas (décision 91) : une ligne par jour et par gymnase, six nombres de repas.
+const entetesRepas = [
+  enteteJour,
+  enteteGymnase,
+  'Joueuses et accompagnateurs midi',
+  'Joueuses et accompagnateurs soir',
+  'Bénévoles et famille midi',
+  'Bénévoles et famille soir',
+  'Spectateurs midi',
+  'Spectateurs soir',
+];
+
+/// Feuille Groupes (décision 91) : une ligne par groupe, jour et produit, en pourcentages.
+const entetesGroupes = [
+  enteteGroupe,
+  enteteJour,
+  entetePourcentageGroupe,
+  enteteProduit,
+  entetePartGroupe,
+];
+
+/// Bornes tenues à la lecture : un jour entier de 1 à 30, des repas de 0 à 1 000 par case
+/// (mêmes bornes que la Préparation), des pourcentages de groupe de 0 à 500 et des parts de
+/// 0 à 100 (mêmes bornes que la Prévision), au plus 40 groupes de 40 caractères.
+const _jourClasseurMax = 30;
+const _repasClasseurMax = 1000;
+
 const entetesCourses = [
   'Série',
   'Produit ou ligne libre',
@@ -151,6 +189,16 @@ const _aides = {
           'avec le nombre de personnes et de jours de cet événement. Sert de '
           'référence pour la prévision ; ne crée aucune vente. La dernière colonne se '
           'calcule toute seule.',
+  feuilleRepas:
+      'Le nombre de repas de chaque gymnase, jour par jour : une ligne par jour et '
+          'par gymnase, avec les joueuses et accompagnateurs, les bénévoles et la '
+          'famille, les spectateurs, chacun midi et soir. Le gymnase porte le nom '
+          'de l\'événement. Vide = l\'application garde « personnes × durée ».',
+  feuilleGroupes:
+      'Les groupes de consommation : une ligne par groupe, par jour et par produit. '
+          'Pourcentage du groupe : combien de portions pour 100 repas ce jour-là '
+          '(70 = 70 %). Part dans le groupe : la part du produit dans son groupe ce '
+          'jour-là (les parts d\'un groupe font 100 %). Les produits portent le nom du menu.',
   feuilleCourses:
       'Les achats d\'un événement : série, produit (ou ligne libre), quantité '
           'achetée, coût en euros et rayon. Remplie à l\'export du tournoi ; ignorée à '
@@ -174,6 +222,12 @@ const _exemples = {
       'Exemple : Événement « Tournoi de l\'an passé », Gymnase « Gymnase 1 », '
           'Personnes 40, Jours 2, Produit « Cola », Quantité vendue 48 : la dernière '
           'colonne affiche 0,60 par personne et par jour.',
+  feuilleRepas:
+      'Exemple : Jour 1, Gymnase « Gymnase 1 », Joueuses et accompagnateurs midi 40, '
+          'soir 40, Bénévoles et famille midi 8, soir 8, Spectateurs midi 0, soir 0.',
+  feuilleGroupes:
+      'Exemple : Groupe « Plat », Jour 1, Pourcentage du groupe 70, Produit « Croque-monsieur », '
+          'Part dans le groupe 60 (une autre ligne : Produit « Croque végé », Part 40).',
   feuilleCourses:
       'Exemple : Série 1, Produit « Cola », Quantité achetée 12, Coût 18,00, '
           'Rayon « Boissons ».',
@@ -184,6 +238,14 @@ String _aideModele(String feuille) => '${_aides[feuille]!}\n${_exemples[feuille]
 
 // Aides propres à l'export du tournoi (les autres feuilles gardent celle du modèle).
 const _aidesExport = {
+  feuilleRepas:
+      'Les repas de cet événement, jour par jour et gymnase par gymnase : de quoi '
+          'calculer les quantités à la manière du club. Ré-importable dans un tournoi '
+          'en préparation.',
+  feuilleGroupes:
+      'Les groupes de consommation de cet événement : pourcentage du groupe et part '
+          'de chaque produit, jour par jour, en pourcentages. Ré-importable dans un '
+          'tournoi en préparation.',
   feuilleStock:
       'Une ligne par gymnase et par produit suivi : la quantité de référence du '
           'stock (stock de départ plus réapprovisionnements par les courses, sinon '
@@ -253,6 +315,34 @@ class LigneHistorique {
   final int quantiteVendue;
 }
 
+/// Une ligne de la feuille Repas : le jour, le gymnase (par son nom) et les six nombres de
+/// repas (joueuses et accompagnateurs, bénévoles et famille, spectateurs ; midi et soir).
+class RepasClasseur {
+  const RepasClasseur(this.jour, this.gymnase, this.repas);
+
+  final int jour;
+  final String gymnase;
+  final RepasGymnaseJour repas;
+}
+
+/// Une ligne de la feuille Groupes : un produit (par son nom) dans un groupe, un jour. Les
+/// pourcentages sont déjà des fractions (70 % = 0,7).
+class LigneGroupeClasseur {
+  const LigneGroupeClasseur({
+    required this.groupe,
+    required this.jour,
+    required this.pourcentage,
+    required this.produit,
+    required this.part,
+  });
+
+  final String groupe;
+  final int jour;
+  final double pourcentage;
+  final String produit;
+  final double part;
+}
+
 /// Ce qu'un classeur contient. Une feuille ou une colonne absente, ou une ligne
 /// invalide, est signalée dans [erreurs] (en français) ; la ligne invalide est
 /// ignorée, le reste est lu. Une valeur inconnue dans une liste (famille, rayon) est
@@ -262,12 +352,18 @@ class ClasseurLu {
     this.produits = const [],
     this.stocks = const [],
     this.historique = const [],
+    this.repas = const [],
+    this.groupes = const [],
     this.erreurs = const [],
   });
 
   final List<ProduitClasseur> produits;
   final List<StockClasseur> stocks;
   final List<LigneHistorique> historique;
+
+  /// Les feuilles Repas et Groupes (facultatives, vides si absentes ou refusées).
+  final List<RepasClasseur> repas;
+  final List<LigneGroupeClasseur> groupes;
   final List<String> erreurs;
 
   /// Y a-t-il de quoi importer dans la Préparation ? Des lignes de stock ou d'historique,
@@ -276,6 +372,8 @@ class ClasseurLu {
   bool get contenuUtile =>
       stocks.isNotEmpty ||
       historique.isNotEmpty ||
+      repas.isNotEmpty ||
+      groupes.isNotEmpty ||
       erreurs.any((e) => e.contains(', ligne '));
 }
 
@@ -477,8 +575,10 @@ void _feuilleAccueil(Excel classeur, {bool avecExemple = false}) {
     ('2', 'Recettes', 'Les ingrédients d\'un produit composé (croque…), une ligne par ingrédient, avec son rayon des courses.'),
     ('3', 'Stock de départ', 'Ce que vous avez déjà, gymnase par gymnase, avant le tournoi. Vide = produit non suivi.'),
     ('4', 'Historique', 'Les ventes d\'un tournoi passé : l\'application en tire la prévision du prochain. La dernière colonne se calcule.'),
-    ('5', 'Courses', 'Rempli par l\'application à l\'export du tournoi : ce qui a été acheté, rayon par rayon. Ignoré à l\'import.'),
-    ('6', 'Importer', 'Dans l\'application, à l\'écran de l\'événement : bouton « Excel ».'),
+    ('5', 'Repas', 'Le nombre de repas de chaque gymnase, jour par jour (joueuses et accompagnateurs, bénévoles et famille, spectateurs ; midi et soir). Vide = l\'application garde « personnes × durée ».'),
+    ('6', 'Groupes', 'Les groupes de consommation du club (plat, dessert, boissons…) : le pourcentage du groupe et la part de chaque produit, jour par jour, en pourcentages.'),
+    ('7', 'Courses', 'Rempli par l\'application à l\'export du tournoi : ce qui a été acheté, rayon par rayon. Ignoré à l\'import.'),
+    ('8', 'Importer', 'Dans l\'application, à l\'écran de l\'événement : bouton « Excel ».'),
   ];
   for (var i = 0; i < etapes.length; i++) {
     final r = 6 + i * 2;
@@ -665,6 +765,8 @@ const _voletsFiges = {
   feuilleRecettes: 6,
   feuilleStock: 6,
   feuilleHistorique: 6,
+  feuilleRepas: 6,
+  feuilleGroupes: 6,
   feuilleCourses: 6,
   feuilleComparaisonProduits: 6,
 };
@@ -821,6 +923,88 @@ void _feuilleRecettes(
       formats: {2: NumFormat.custom(formatCode: '0.###')},
     );
 
+/// Un pourcentage écrit pour la personne : la fraction (0,7) devient 70, sans bruit de
+/// calcul (0,35 x 100 s'écrit 35).
+CellValue? _pourcent(double fraction) =>
+    _nombre(double.parse((fraction * 100).toStringAsFixed(6)));
+
+/// Les lignes de la feuille Repas : par jour puis par gymnase (dans l'ordre des gymnases),
+/// une ligne par repas enregistré.
+List<List<CellValue?>> _lignesRepas(
+    Map<String, Map<int, RepasGymnaseJour>> repas, List<Gymnase> gymnases) {
+  final jours = <int>{for (final p in repas.values) ...p.keys}.toList()..sort();
+  return [
+    for (final jour in jours)
+      for (final g in gymnases)
+        if (repas[g.id]?[jour] != null)
+          [
+            _nombre(jour),
+            TextCellValue(g.nom),
+            _nombre(repas[g.id]![jour]!.joueusesMidi),
+            _nombre(repas[g.id]![jour]!.joueusesSoir),
+            _nombre(repas[g.id]![jour]!.benevolesMidi),
+            _nombre(repas[g.id]![jour]!.benevolesSoir),
+            _nombre(repas[g.id]![jour]!.spectateursMidi),
+            _nombre(repas[g.id]![jour]!.spectateursSoir),
+          ],
+  ];
+}
+
+/// Les lignes de la feuille Groupes : par groupe, par jour, puis par produit du menu (dans
+/// l'ordre de [produits]) ayant une part ce jour-là. Un groupe sans part un jour n'a pas de
+/// ligne ce jour-là ; un produit qui n'est plus dans l'événement est laissé de côté.
+List<List<CellValue?>> _lignesGroupes(
+    List<GroupeConso> groupes, List<ProduitEvenement> produits) {
+  final lignes = <List<CellValue?>>[];
+  for (final g in groupes) {
+    final jours = <int>{
+      for (final parts in g.produits.values) ...parts.keys,
+    }.toList()
+      ..sort();
+    for (final jour in jours) {
+      for (final p in produits) {
+        final part = g.produits[p.id]?[jour];
+        if (part == null) continue;
+        lignes.add([
+          TextCellValue(g.nom),
+          _nombre(jour),
+          _pourcent(g.pourcentages[jour] ?? 0),
+          TextCellValue(p.nom),
+          _pourcent(part),
+        ]);
+      }
+    }
+  }
+  return lignes;
+}
+
+void _feuilleRepas(Excel classeur, String aide, String sousTitre,
+        List<List<CellValue?>> lignes) =>
+    _feuilleDonnees(
+      classeur,
+      feuilleRepas,
+      titre: 'Repas',
+      sousTitre: sousTitre,
+      aide: aide,
+      entetes: entetesRepas,
+      largeurs: const [8, 26, 18, 18, 18, 18, 16, 16],
+      lignes: lignes,
+    );
+
+void _feuilleGroupes(Excel classeur, String aide, String sousTitre,
+        List<List<CellValue?>> lignes) =>
+    _feuilleDonnees(
+      classeur,
+      feuilleGroupes,
+      titre: 'Groupes',
+      sousTitre: sousTitre,
+      aide: aide,
+      entetes: entetesGroupes,
+      largeurs: const [28, 8, 20, 32, 20],
+      lignes: lignes,
+      formats: {2: NumFormat.custom(formatCode: 'General'), 4: NumFormat.custom(formatCode: 'General')},
+    );
+
 /// Le modèle du classeur rempli avec les données de l'événement : le menu (consommation
 /// du MENU, pas de la prévision), les recettes et le stock de départ des [gymnases]
 /// donnés. L'Historique ne contient que les formules de consommation ; les Courses
@@ -876,6 +1060,16 @@ Uint8List construireModele({
         ],
     ],
   );
+  _feuilleRepas(
+      classeur,
+      _aideModele(feuilleRepas),
+      'Les repas de chaque gymnase, jour par jour : la base du calcul à la manière du club.',
+      const []);
+  _feuilleGroupes(
+      classeur,
+      _aideModele(feuilleGroupes),
+      'Les groupes de consommation : pourcentage du groupe et part de chaque produit, jour par jour.',
+      const []);
   _feuilleDonnees(
     classeur,
     feuilleCourses,
@@ -914,6 +1108,8 @@ Uint8List construireDonneesMenu({required List<ProduitEvenement> produits}) {
 /// référence du stock de chaque gymnase (stock de départ plus réapprovisionnements),
 /// [stocksActuels] : ce qu'il en reste (pour le bilan). [courses] : la liste de courses ;
 /// [coursesVisibles] faux = la personne n'y a pas droit (ni séries, ni coût, ni résultat).
+/// [calculClub] : les repas et les groupes du calcul du club (feuilles Repas et Groupes,
+/// vides s'il est absent).
 Uint8List construireExport({
   required Evenement evenement,
   required List<ProduitEvenement> produits,
@@ -925,6 +1121,7 @@ Uint8List construireExport({
   bool coursesVisibles = true,
   bool limite = false,
   List<Apport> apports = const [],
+  CalculClub? calculClub,
 }) {
   final classeur = _nouveauClasseur();
   _feuilleAccueil(classeur);
@@ -961,6 +1158,16 @@ Uint8List construireExport({
     formats: {6: _formatDecimal},
     lignes: _lignesHistoriqueExport(evenement, produits, gymnases, tableau),
   );
+  _feuilleRepas(
+      classeur,
+      _aidesExport[feuilleRepas]!,
+      'Les repas de ${evenement.nom}, jour par jour.',
+      _lignesRepas(calculClub?.repas ?? const {}, gymnases));
+  _feuilleGroupes(
+      classeur,
+      _aidesExport[feuilleGroupes]!,
+      'Les groupes de consommation de ${evenement.nom}.',
+      _lignesGroupes(calculClub?.groupes ?? const [], produits));
   _feuilleDonnees(
     classeur,
     feuilleCourses,
@@ -1717,10 +1924,152 @@ ClasseurLu lireClasseur(List<int> octets) {
     }
   }
 
+  // ---------- Repas et Groupes (facultatives : l'ancien format n'en a pas)
+  final repas = _lireRepas(feuille(feuilleRepas, facultative: true), erreurs);
+  final groupes = _lireGroupes(feuille(feuilleGroupes, facultative: true), erreurs);
+
   return ClasseurLu(
     produits: produits,
     stocks: stocks,
     historique: historique,
+    repas: repas,
+    groupes: groupes,
     erreurs: erreurs,
   );
+}
+
+/// Un nombre entier entre [min] et [max] ; vide = [vide] (ou erreur si [vide] est nul).
+int _entierBorne(Data? d, String quoi, int min, int max, {int? vide}) {
+  final n = _entierDe(d, quoi);
+  if (n == null) {
+    if (vide != null) return vide;
+    throw FormatException('$quoi est obligatoire');
+  }
+  if (n < min || n > max) {
+    throw FormatException('$quoi doit être entre $min et $max');
+  }
+  return n;
+}
+
+/// Un pourcentage (70 = 70 %) entre 0 et [max], rendu en fraction (0,7).
+double _fractionBornee(Data? d, String quoi, double max) {
+  final n = _nombreDe(d);
+  if (n == null) throw FormatException('$quoi est obligatoire');
+  if (n < 0 || n > max) {
+    throw FormatException('$quoi doit être entre 0 et ${_nombreTexte(max)} %');
+  }
+  return n / 100;
+}
+
+/// La feuille Repas. Une seule ligne invalide refuse la feuille entière (rien n'est repris :
+/// des repas à moitié lus fausseraient le calcul) ; les raisons sont dans [erreurs].
+List<RepasClasseur> _lireRepas(Sheet? f, List<String> erreurs) {
+  if (f == null) return const [];
+  final locales = <String>[];
+  final t = _entete(f, entetesRepas, const [], locales);
+  if (t == null) {
+    erreurs.addAll(locales);
+    return const [];
+  }
+  final res = <RepasClasseur>[];
+  final vus = <String>{};
+  final lignes = f.rows;
+  for (var i = t.ligne + 1; i < lignes.length; i++) {
+    final l = lignes[i];
+    if (_vide(l)) continue;
+    try {
+      Data? c(String nom) => _cellule(l, t.colonnes[nom]!);
+      final jour = _entierBorne(c(enteteJour), 'le jour', 1, _jourClasseurMax);
+      final g = _texteDe(c(enteteGymnase));
+      if (g == null) throw const FormatException('le gymnase est obligatoire');
+      if (!vus.add('$jour|${cleIngredient(g)}')) {
+        throw FormatException('le jour $jour et le gymnase « $g » sont déjà donnés plus haut');
+      }
+      int n(String entete) =>
+          _entierBorne(c(entete), 'le nombre de repas', 0, _repasClasseurMax, vide: 0);
+      res.add(RepasClasseur(
+        jour,
+        g,
+        RepasGymnaseJour(
+          joueusesMidi: n(entetesRepas[2]),
+          joueusesSoir: n(entetesRepas[3]),
+          benevolesMidi: n(entetesRepas[4]),
+          benevolesSoir: n(entetesRepas[5]),
+          spectateursMidi: n(entetesRepas[6]),
+          spectateursSoir: n(entetesRepas[7]),
+        ),
+      ));
+    } on FormatException catch (e) {
+      locales.add('Feuille « $feuilleRepas », ligne ${i + 1} : ${e.message}');
+    }
+  }
+  if (locales.isNotEmpty) {
+    erreurs.addAll(locales);
+    erreurs.add('Feuille « $feuilleRepas » refusée : corrigez ces lignes, aucun repas '
+        'n\'est repris tant que la feuille n\'est pas juste.');
+    return const [];
+  }
+  return res;
+}
+
+/// La feuille Groupes (mêmes règles que [_lireRepas] : une ligne invalide refuse la feuille).
+/// Pourcentage de groupe de 0 à 500 %, part de 0 à 100 %, 40 groupes au plus.
+List<LigneGroupeClasseur> _lireGroupes(Sheet? f, List<String> erreurs) {
+  if (f == null) return const [];
+  final locales = <String>[];
+  final t = _entete(f, entetesGroupes, const [], locales);
+  if (t == null) {
+    erreurs.addAll(locales);
+    return const [];
+  }
+  final res = <LigneGroupeClasseur>[];
+  final vus = <String>{};
+  final pourcentages = <String, double>{};
+  final groupes = <String>{};
+  final lignes = f.rows;
+  for (var i = t.ligne + 1; i < lignes.length; i++) {
+    final l = lignes[i];
+    if (_vide(l)) continue;
+    try {
+      Data? c(String nom) => _cellule(l, t.colonnes[nom]!);
+      final nom = _texteDe(c(enteteGroupe));
+      if (nom == null || nom.length > nomGroupeMax) {
+        throw const FormatException(
+            'le nom du groupe est vide ou dépasse $nomGroupeMax caractères');
+      }
+      final jour = _entierBorne(c(enteteJour), 'le jour', 1, _jourClasseurMax);
+      final pct = _fractionBornee(
+          c(entetePourcentageGroupe), 'le pourcentage du groupe', pourcentageGroupeMax * 100);
+      final produit = _texteDe(c(enteteProduit));
+      if (produit == null) throw const FormatException('le produit est obligatoire');
+      final part =
+          _fractionBornee(c(entetePartGroupe), 'la part dans le groupe', partProduitMax * 100);
+      final cle = cleIngredient(nom);
+      if (!vus.add('$cle|$jour|${cleIngredient(produit)}')) {
+        throw FormatException(
+            'le produit « $produit » est déjà donné pour le groupe « $nom » ce jour-là');
+      }
+      final avant = pourcentages['$cle|$jour'];
+      if (avant != null && (avant - pct).abs() > toleranceParts) {
+        throw FormatException(
+            'le groupe « $nom » a deux pourcentages différents pour le jour $jour');
+      }
+      pourcentages['$cle|$jour'] = pct;
+      groupes.add(cle);
+      if (groupes.length > groupesMax) {
+        throw const FormatException('il y a plus de $groupesMax groupes');
+      }
+      res.add(LigneGroupeClasseur(
+          groupe: nom, jour: jour, pourcentage: pct, produit: produit, part: part));
+    } on FormatException catch (e) {
+      locales.add('Feuille « $feuilleGroupes », ligne ${i + 1} : ${e.message}');
+    }
+  }
+  if (locales.isNotEmpty) {
+    erreurs.addAll(locales);
+    erreurs.add('Feuille « $feuilleGroupes » refusée : corrigez ces lignes, aucun groupe '
+        'n\'est repris tant que la feuille n\'est pas juste.');
+    return const [];
+  }
+  return res;
 }

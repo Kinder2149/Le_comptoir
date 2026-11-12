@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'calcul_club.dart';
 import 'classeur.dart';
 import 'depot_associations.dart';
 import 'depot_caisses.dart';
@@ -29,6 +30,7 @@ class DonneesTournoi {
     required this.courses,
     required this.apports,
     required this.portee,
+    this.calculClub,
   });
 
   final Evenement evenement;
@@ -44,6 +46,9 @@ class DonneesTournoi {
   final ListeCourses? courses;
   final List<Apport> apports;
   final PorteeGestion portee;
+
+  /// Repas et groupes du calcul du club ; null si aucun détail (feuilles Repas et Groupes vides).
+  final CalculClub? calculClub;
 }
 
 /// La portée de la personne sur un tournoi : tout pour le responsable, ses gymnases sinon.
@@ -98,6 +103,12 @@ Future<DonneesTournoi> lireTournoi({
       portee.toutVoir ? await depot.suivreListeCourses(id).first : null;
   final tousApports = await depot.suivreApports(id).first;
   final visibles = {for (final g in gymnases) g.id};
+  CalculClub? calculClub;
+  try {
+    calculClub = await depot.suivreCalculClub(id).first;
+  } catch (_) {
+    calculClub = null;
+  }
   return DonneesTournoi(
     evenement: evenement,
     produits: produits,
@@ -111,6 +122,7 @@ Future<DonneesTournoi> lireTournoi({
         if (visibles.contains(a.gymnaseId)) a
     ],
     portee: portee,
+    calculClub: calculClub,
   );
 }
 
@@ -132,6 +144,7 @@ Future<Uint8List> construireExportTournoi({
     coursesVisibles: d.portee.toutVoir,
     limite: !d.portee.toutVoir,
     apports: d.apports,
+    calculClub: d.calculClub,
   );
 }
 

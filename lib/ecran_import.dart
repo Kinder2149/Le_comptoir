@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show LengthLimitingTextInputFormatter, rootBundle;
 
+import 'calcul_club.dart';
 import 'classeur.dart';
 import 'depot_evenements.dart';
 import 'depot_menus.dart';
@@ -42,6 +43,7 @@ class SourcesImport {
     required this.contexte,
     required this.appliquerImport,
     required this.appliquerReference,
+    this.appliquerCalculClub,
   });
 
   /// Les dépôts réels de l'association.
@@ -65,6 +67,7 @@ class SourcesImport {
         ),
         appliquerImport: evenements.appliquerImport,
         appliquerReference: evenements.appliquerReference,
+        appliquerCalculClub: evenements.appliquerCalculClub,
       );
 
   final Future<List<Menu>> Function() menus;
@@ -77,6 +80,16 @@ class SourcesImport {
   final Future<void> Function(String? evenementId, PlanImport plan) appliquerImport;
   final Future<void> Function(String evenementId, ReferenceImportee reference)
       appliquerReference;
+
+  /// Pose les repas et les groupes du classeur dans le tournoi (feuilles Repas et Groupes ;
+  /// null = non branché, rien n'est posé). [annulationRangee] : la prévision vient de ranger
+  /// l'état d'avant pour « Annuler ce changement ».
+  final Future<void> Function(
+    String evenementId, {
+    Map<String, Map<int, RepasGymnaseJour>>? repas,
+    List<GroupeConso>? groupes,
+    bool annulationRangee,
+  })? appliquerCalculClub;
 }
 
 /// L'assistant d'import unique (décision 77) : départ (modèle ou classeur) -> menu ->
@@ -251,7 +264,8 @@ class _EtatImport extends State<EcranImport> {
   }
 
   /// Les écritures, par les méthodes existantes seulement : le menu (créé, jamais
-  /// modifié), les références et le stock de départ, puis la prévision. Rejouable : un menu
+  /// modifié), les références et le stock de départ, puis la prévision, puis les repas et
+  /// les groupes du club. Rejouable : un menu
   /// déjà créé est ensuite repris, une référence de même nom est remplacée.
   Future<void> _appliquer(PlanAssistant plan) async {
     try {
@@ -263,6 +277,15 @@ class _EtatImport extends State<EcranImport> {
       }
       if (plan.tournoi != null && plan.referencePrevision != null) {
         await widget.sources.appliquerReference(plan.tournoi!.id, plan.referencePrevision!);
+      }
+      final calcul = plan.calculClub;
+      if (plan.tournoi != null && !calcul.vide && widget.sources.appliquerCalculClub != null) {
+        await widget.sources.appliquerCalculClub!(
+          plan.tournoi!.id,
+          repas: calcul.repas,
+          groupes: calcul.groupes,
+          annulationRangee: plan.referencePrevision != null,
+        );
       }
       _dire(plan.phraseConfirmation);
     } catch (_) {
@@ -314,7 +337,8 @@ class _EtatImport extends State<EcranImport> {
             child: Text(
               'Classeur lu : ${_lu!.produits.length} produits de menu, '
               '${_lu!.stocks.length} lignes de stock, '
-              '${_lu!.historique.length} lignes d\'historique.',
+              '${_lu!.historique.length} lignes d\'historique'
+              '${_lu!.repas.isEmpty && _lu!.groupes.isEmpty ? '' : ', ${_lu!.repas.length} lignes de repas, ${_lu!.groupes.length} lignes de groupes'}.',
               key: const Key('import_classeur_lu'),
             ),
           ),

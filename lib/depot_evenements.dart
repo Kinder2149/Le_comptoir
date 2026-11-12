@@ -690,6 +690,32 @@ class DepotEvenements {
   Future<void> definirGroupes(String evenementId, List<GroupeConso> groupes) =>
       _calculClub(evenementId).doc('groupes').set(groupesVersMap(groupes));
 
+  /// Pose d'un coup les repas et les groupes du classeur (assistant d'import, V5) : seul ce
+  /// qui est donné est remplacé (null = on n'y touche pas). Les groupes d'avant entrent dans
+  /// « Annuler ce changement » : sauf si [annulationRangee] (la prévision vient de ranger
+  /// l'état d'avant, groupes compris), l'état d'avant est rangé ici avant d'écrire.
+  Future<void> appliquerCalculClub(
+    String evenementId, {
+    Map<String, Map<int, RepasGymnaseJour>>? repas,
+    List<GroupeConso>? groupes,
+    bool annulationRangee = false,
+  }) async {
+    if (groupes != null) {
+      if (!annulationRangee) {
+        await _rangerAnnulation(evenementId, await _lirePrevisions(evenementId));
+      }
+      // Sans document « groupes » avant l'import, l'état d'avant est « aucun groupe » : le
+      // champ est alors une liste vide, pour qu'« Annuler ce changement » retire les groupes
+      // importés (un champ absent voudrait dire « ne pas y toucher »).
+      final rangee = await _annulation(evenementId).get(const GetOptions(source: Source.server));
+      if (rangee.exists && rangee.data()?['groupes'] == null) {
+        await _annulation(evenementId).update({'groupes': <Object?>[]});
+      }
+    }
+    if (repas != null) await definirRepas(evenementId, repas);
+    if (groupes != null) await definirGroupes(evenementId, groupes);
+  }
+
   /// Produits d'un événement, lus une fois sur le serveur (sans stock).
   Future<List<ProduitEvenement>> _lireProduits(String evenementId) async {
     final s = await _evenements

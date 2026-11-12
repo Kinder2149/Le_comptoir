@@ -779,6 +779,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
               .suivreStocksReference(ev.id, gymnases: portee.filtre),
           courses: flux.courses,
           apports: widget.depot.suivreApports(ev.id),
+          calculClub: widget.depot.suivreCalculClub(ev.id),
           commun: portee.toutVoir,
           limite: !portee.toutVoir,
         ),

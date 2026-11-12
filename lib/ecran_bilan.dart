@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'actualisation.dart';
 
+import 'calcul_club.dart';
 import 'classeur.dart';
 import 'courses.dart';
 import 'depot_caisses.dart';
@@ -73,6 +74,7 @@ class EcranBilan extends StatefulWidget {
     this.stocksReference,
     this.courses,
     this.apports,
+    this.calculClub,
     this.commun = true,
     this.limite = false,
     this.partager = partagerFichier,
@@ -106,6 +108,10 @@ class EcranBilan extends StatefulWidget {
   /// Les apports nommés de l'événement (« Quiche, 8 parts, Léa, Gymnase A »). Seuls ceux des
   /// gymnases visibles, et de la vue affichée, sont listés.
   final Stream<List<Apport>>? apports;
+
+  /// Les repas et groupes du calcul du club (feuilles Repas et Groupes de l'export). Sans lui,
+  /// ou sans détail, ces feuilles restent vides.
+  final Stream<CalculClub?>? calculClub;
 
   /// La vue commune est-elle offerte (responsable, ou gestionnaire de tous) ?
   final bool commun;
@@ -184,6 +190,12 @@ class _EtatBilan extends State<EcranBilan> {
     try {
       final actuels = stocks ?? const <String, Map<String, int>>{};
       final reference = await widget.stocksReference?.first ?? actuels;
+      CalculClub? calculClub;
+      try {
+        calculClub = await widget.calculClub?.first;
+      } catch (_) {
+        calculClub = null;
+      }
       final octets = construireExport(
         evenement: evenement,
         produits: produits,
@@ -195,6 +207,7 @@ class _EtatBilan extends State<EcranBilan> {
         coursesVisibles: widget.courses != null,
         limite: limite,
         apports: apports,
+        calculClub: calculClub,
       );
       await widget.partager(nomFichierExport(evenement), octets, typeMimeClasseur);
       if (mounted) setState(() => _erreurExport = null);

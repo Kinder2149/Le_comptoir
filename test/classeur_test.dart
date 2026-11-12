@@ -117,8 +117,8 @@ List<Object?> _valeurs(List<Data?> l) => [
 
 void main() {
   group('critère 1 : Accueil d\'abord, puis les feuilles du modèle', () {
-    test('six feuilles dans l\'ordre : Accueil, Menu, Recettes, Stock de départ, '
-        'Historique, Courses', () {
+    test('huit feuilles dans l\'ordre : Accueil, Menu, Recettes, Stock de départ, '
+        'Historique, Repas, Groupes, Courses', () {
       final o = _modele();
       expect(o.sublist(0, 2), [0x50, 0x4B]); // « PK » : début d'un zip
       final x = Excel.decodeBytes(o);
@@ -128,6 +128,8 @@ void main() {
         'Recettes',
         'Stock de départ',
         'Historique',
+        'Repas',
+        'Groupes',
         'Courses',
       ]);
       expect(feuillesModele, x.tables.keys.toList());

@@ -1,3 +1,4 @@
+import 'calcul_club.dart';
 import 'classeur.dart';
 import 'depot_menus.dart' show Menu, cleIngredient;
 import 'evenement.dart';
@@ -50,6 +51,152 @@ Menu? menuDeMemeNom(List<Menu> menus, String nom) {
   return null;
 }
 
+/// Les repas et les groupes du classeur (feuilles Repas et Groupes, décision 91), prêts à être
+/// écrits dans le tournoi choisi. Un gymnase ou un produit introuvable dans le tournoi est
+/// ignoré et dit dans [ignorees] (jamais créé) ; les parts qui ne font pas 100 % sont reprises
+/// telles quelles (la Prévision les signale).
+class PlanCalculClub {
+  const PlanCalculClub({
+    this.repas,
+    this.groupes,
+    this.nbJours = 0,
+    this.nbGymnases = 0,
+    this.nbProduits = 0,
+    this.ignorees = const [],
+  });
+
+  /// Gymnase (id) -> jour -> repas ; null = le classeur n'en donne pas (rien n'est touché).
+  final Map<String, Map<int, RepasGymnaseJour>>? repas;
+
+  /// Les groupes ; null = le classeur n'en donne pas (rien n'est touché).
+  final List<GroupeConso>? groupes;
+
+  /// Jours et gymnases distincts des repas repris ; produits rangés dans les groupes.
+  final int nbJours;
+  final int nbGymnases;
+  final int nbProduits;
+  final List<String> ignorees;
+
+  bool get vide => repas == null && groupes == null;
+
+  static String _n(int n, String mot) => '$n $mot${n > 1 ? 's' : ''}';
+
+  /// « Repas : 2 jours, 2 gymnases. » puis « Groupes : 7 groupes, 18 produits. ».
+  List<String> get phrases => [
+        if (repas != null)
+          'Repas : ${_n(nbJours, 'jour')}, ${_n(nbGymnases, 'gymnase')}.',
+        if (groupes != null)
+          'Groupes : ${_n(groupes!.length, 'groupe')}, ${_n(nbProduits, 'produit')}.',
+      ];
+}
+
+/// Ce que les feuilles Repas et Groupes de [lu] donnent au [tournoi] : les gymnases et les
+/// produits sont retrouvés par leur nom (sans casse ni accents) dans [contexte].
+PlanCalculClub preparerCalculClub(ClasseurLu lu, Evenement tournoi, ContexteTournoi contexte) {
+  final ignorees = <String>[];
+  if (lu.repas.isEmpty && lu.groupes.isEmpty) return const PlanCalculClub();
+  if (!contexte.portee.toutVoir) {
+    return const PlanCalculClub(ignorees: [
+      'Repas et groupes : réservés à la personne qui gère tout l\'événement, non repris.',
+    ]);
+  }
+  final dernierJour = tournoi.nbJours.ceil();
+
+  // ---------- Repas
+  Map<String, Map<int, RepasGymnaseJour>>? repas;
+  var nbJours = 0;
+  var nbGymnases = 0;
+  if (lu.repas.isNotEmpty) {
+    final gymnases = {for (final g in contexte.gymnases) cleIngredient(g.nom): g.id};
+    final reprises = <String, Map<int, RepasGymnaseJour>>{};
+    final inconnus = <String>{};
+    final horsDuree = <int>{};
+    for (final r in lu.repas) {
+      final id = gymnases[cleIngredient(r.gymnase)];
+      if (id == null) {
+        if (inconnus.add(cleIngredient(r.gymnase))) {
+          ignorees.add('Repas : gymnase « ${r.gymnase} » introuvable dans le tournoi, '
+              'ses lignes sont ignorées.');
+        }
+      } else if (r.jour > dernierJour) {
+        if (horsDuree.add(r.jour)) {
+          ignorees.add('Repas : le jour ${r.jour} dépasse la durée du tournoi '
+              '($dernierJour jour${dernierJour > 1 ? 's' : ''}), ses lignes sont ignorées.');
+        }
+      } else {
+        reprises.putIfAbsent(id, () => {})[r.jour] = r.repas;
+      }
+    }
+    if (reprises.isNotEmpty) {
+      repas = reprises;
+      nbGymnases = reprises.length;
+      nbJours = {for (final p in reprises.values) ...p.keys}.length;
+    }
+  }
+
+  // ---------- Groupes
+  List<GroupeConso>? groupes;
+  var nbProduits = 0;
+  if (lu.groupes.isNotEmpty) {
+    final produits = {for (final p in contexte.produits) cleIngredient(p.nom): p.id};
+    final ordre = <String>[];
+    final noms = <String, String>{};
+    final pourcentages = <String, Map<int, double>>{};
+    final parts = <String, Map<String, Map<int, double>>>{};
+    final groupeDuProduit = <String, String>{};
+    final inconnus = <String>{};
+    final horsDuree = <int>{};
+    for (final l in lu.groupes) {
+      final cle = cleIngredient(l.groupe);
+      if (l.jour > dernierJour) {
+        if (horsDuree.add(l.jour)) {
+          ignorees.add('Groupes : le jour ${l.jour} dépasse la durée du tournoi '
+              '($dernierJour jour${dernierJour > 1 ? 's' : ''}), ses lignes sont ignorées.');
+        }
+        continue;
+      }
+      if (!noms.containsKey(cle)) {
+        ordre.add(cle);
+        noms[cle] = l.groupe;
+        pourcentages[cle] = {};
+        parts[cle] = {};
+      }
+      pourcentages[cle]![l.jour] = l.pourcentage;
+      final id = produits[cleIngredient(l.produit)];
+      if (id == null) {
+        if (inconnus.add(cleIngredient(l.produit))) {
+          ignorees.add('Groupes : produit « ${l.produit} » introuvable dans le tournoi, '
+              'ignoré (groupe « ${l.groupe} »).');
+        }
+        continue;
+      }
+      final dans = groupeDuProduit.putIfAbsent(id, () => cle);
+      if (dans != cle) {
+        ignorees.add('Groupes : produit « ${l.produit} » déjà rangé dans le groupe '
+            '« ${noms[dans]} », ignoré dans « ${l.groupe} ».');
+        continue;
+      }
+      parts[cle]!.putIfAbsent(id, () => {})[l.jour] = l.part;
+    }
+    groupes = [
+      for (final cle in ordre)
+        GroupeConso(
+            nom: noms[cle]!, pourcentages: pourcentages[cle]!, produits: parts[cle]!),
+    ];
+    nbProduits = groupeDuProduit.length;
+    if (groupes.isEmpty) groupes = null;
+  }
+
+  return PlanCalculClub(
+    repas: repas,
+    groupes: groupes,
+    nbJours: nbJours,
+    nbGymnases: nbGymnases,
+    nbProduits: nbProduits,
+    ignorees: ignorees,
+  );
+}
+
 /// Tout ce que l'assistant écrirait, et ce qu'il laisse de côté.
 class PlanAssistant {
   const PlanAssistant({
@@ -64,6 +211,8 @@ class PlanAssistant {
     required this.stocksIgnoresSansTournoi,
     required this.ignorees,
     required this.erreurs,
+    this.calculClub = const PlanCalculClub(),
+    this.calculClubSansTournoi = false,
   });
 
   final ActionMenu actionMenu;
@@ -93,8 +242,14 @@ class PlanAssistant {
   final List<String> ignorees;
   final List<String> erreurs;
 
-  /// Rien à écrire : ni menu, ni référence, ni stock.
-  bool get vide => actionMenu == ActionMenu.aucune && import.vide;
+  /// Les repas et les groupes du classeur pour le tournoi choisi (feuilles Repas et Groupes).
+  final PlanCalculClub calculClub;
+
+  /// Le classeur donne des repas ou des groupes, mais aucun tournoi n'est choisi.
+  final bool calculClubSansTournoi;
+
+  /// Rien à écrire : ni menu, ni référence, ni stock, ni repas, ni groupes.
+  bool get vide => actionMenu == ActionMenu.aucune && import.vide && calculClub.vide;
 
   /// Les phrases du résumé, dans l'ordre : menu, références, stock, prévision.
   List<String> get phrases {
@@ -126,6 +281,11 @@ class PlanAssistant {
       res.add(referencePrevision == null
           ? 'Prévision : inchangée.'
           : 'Prévision : réglée sur « ${referencePrevision!.nom} ».');
+      res.addAll(calculClub.phrases);
+    }
+    if (calculClubSansTournoi) {
+      res.add('Aucun tournoi choisi : les repas et les groupes du classeur ne sont pas '
+          'utilisés.');
     }
     return res;
   }
@@ -141,6 +301,8 @@ class PlanAssistant {
       'références : ${import.references.length}',
       if (tournoi != null) 'stocks appliqués : ${import.stocks.length}',
       if (referencePrevision != null) 'prévision réglée sur « ${referencePrevision!.nom} »',
+      if (calculClub.repas != null) 'repas posés : ${calculClub.nbJours} jours',
+      if (calculClub.groupes != null) 'groupes posés : ${calculClub.groupes!.length}',
     ];
     return '${parts.join(' ; ')}.';
   }
@@ -204,11 +366,16 @@ PlanAssistant preparerAssistant(
     );
   }
 
+  final calculClub = avecTournoi
+      ? preparerCalculClub(lu, tournoi, contexte)
+      : const PlanCalculClub();
+
   final ignorees = <String>[
     ...menu.ignorees,
     for (final n in nonRepris)
       'Produit « $n » : pas dans le menu « ${menuExistant!.nom} », qui n\'est pas modifié.',
     ...import.ignorees,
+    ...calculClub.ignorees,
   ];
   final erreurs = <String>[
     ...menu.erreurs,
@@ -228,5 +395,8 @@ PlanAssistant preparerAssistant(
     stocksIgnoresSansTournoi: avecTournoi ? 0 : stocksLus,
     ignorees: ignorees,
     erreurs: erreurs,
+    calculClub: calculClub,
+    calculClubSansTournoi:
+        !avecTournoi && (lu.repas.isNotEmpty || lu.groupes.isNotEmpty),
   );
 }

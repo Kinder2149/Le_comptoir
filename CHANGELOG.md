@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V5 : feuilles Repas et Groupes du classeur
+- Le modèle, l'export d'un tournoi et l'assistant d'import gagnent les feuilles « Repas » et « Groupes » (résumé avant écriture : jours, gymnases, groupes, produits ; gymnase ou produit introuvable listé et ignoré ; classeur sans ces feuilles importé comme avant ; l'import range l'état d'avant dans « Annuler ce changement »). `recette/classeur-notre-club.xlsx` porte les repas et les groupes de l'an dernier (Dimanche = bloc Dimanche, décision de Kinder), sans aucun nom. Relevé des écarts dans PLAN_STOCK_COURSES.md. 638 tests verts ; preuve réelle (N2) à lancer.
+
 ## 12/11/2026 — Calcul du club, V4 : groupes dans la Prévision
 - Zone « Groupes du club » : une carte par groupe (pourcentage de chaque jour, produits et parts de chaque jour, quantité prévue par jour sous le produit, pastille « 100 % » verte ou écart en ocre) ; créer, renommer, supprimer, ranger un produit (un seul groupe par produit). « Annuler ce changement » couvre aussi les groupes (champ facultatif `groupes`, règles déployées). 616 tests, 276 tests de règles.
 
