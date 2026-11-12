@@ -1236,3 +1236,184 @@ Tu es la session mère de la mission « Prêt pour le tournoi » de Le Comptoir 
 9. Clôture (T9, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+## 17. Mission « Clôture du tournoi » — NOTE DE CADRAGE (phase 1, 11/11/2026 au soir, rien de figé)
+
+> Cette section est une **mémoire**, pas un plan. Elle consigne les retours de Kinder du 11/11/2026 (soir) et les
+> constats faits dans le code et dans les deux classeurs fournis, pour cadrer plus tard (phases 2 à 4).
+> Aucune décision n'est figée, aucun numéro de décision n'est attribué, aucun critère n'est validé. Rien n'est codé.
+> Sources : capture de l'écran « Produit » (Croque tartiflette, 11/11/2026, 22:42), `classeur-notre-club.xlsx`
+> (celui produit par l'application / T3) et `Nouvelle_feuille_2.xlsx` (le classeur d'origine du club, 20 feuilles).
+> **Validée par Kinder le 12/11/2026** (« je valide ») comme mémoire de cadrage : les douze points et le scénario de simulation sont retenus ; la réponse à la question « ratio » est la recommandation de Claude (les deux, effectifs d'abord : à reconfirmer en phase 2). Les décisions restent à figer en phase 3.
+> Pièces : la capture est rangée dans `recette/capture-produit-croque-tartiflette.jpg`. Les deux classeurs ne sont PAS dans le dépôt (`recette/*.xlsx` est ignoré par git, et l'original contient des noms de bénévoles) : Kinder les redonne au cadrage.
+
+### 17.1 Les douze points à modifier (verbatim reformulé, + constat dans le code)
+
+| # | Retour de Kinder | Constat au 11/11/2026 | À trancher en phase 2 |
+|---|---|---|---|
+| 1 | On propose de rejoindre par QR code, mais **aucun écran n'affiche** le QR code pour rejoindre l'association. | Le scan existe (accueil `ecran_accueil.dart`, association `ecran_association.dart`). Le seul affichage d'un QR est `EcranQr` (`lib/ecran_qr.dart`), ouvert depuis l'icône « Partager (QR code) » d'**un gymnase d'un événement** (`ecran_gymnases.dart`). Rien dans Paramètres, ni sur l'écran de l'association, pour montrer un QR « rejoindre l'association ». | Où l'afficher (Paramètres › Association et code ? écran de l'association ?). Que contient-il (code seul = devenir bénévole). Qui le voit (gestion). |
+| 2 | Un membre peut avoir **plusieurs associations**, avec **un rôle différent dans chacune**. | Le modèle est « un téléphone = une association » : `utilisateurs/{uid}.assoId` (un seul champ, `depot_associations.dart` l. 64-72, 139-172) ; le rôle est dans `associations/{a}/membres/{uid}`. Tout l'écran racine suppose une seule association. **Changement de fond** : modèle de données, règles d'accès, racine, accueil, suppression d'association, QR. Touche les décisions 19 et 23. | Écran de choix d'association (liste + « Créer / Rejoindre »), association « active » retenue sur le téléphone, migration des utilisateurs existants, règles d'accès. **À challenger : plus gros chantier de la liste ; à isoler.** |
+| 3 | Page **Paramètres** « toujours moche » : l'explication des rôles est du texte brut sans mise en page ; je veux des **badges de couleur par rôle**, bien visibles. | `_quiPeutQuoi` (`ecran_association.dart` l. 616-637) = un `Text` unique de trois lignes séparées par `\n`. La décision 79 (c) / étape **T7** (cartes, badge de statut par membre) était au plan « Prêt pour le tournoi » ; au 11/11/2026 le tableau de suivi T1–T9 est **vide** (rien de livré). Reprendre T7 en y ajoutant : une carte par rôle (titre, badge coloré, liste à puces de ce qu'il peut / ne peut pas faire) et les mêmes badges partout où un rôle s'affiche (liste des membres, sélecteur d'association du point 2). | Une couleur par rôle (responsable, gestionnaire, gestionnaire en attente, bénévole), dans la palette de la décision 31. |
+| 4 | Le fichier **« Produits / classeur de notre club »** ne précise pas le **ratio du nombre de personnes** qu'on avait : on perd des données par rapport à l'Excel initial. | Feuille Historique (`classeur.dart` l. 100-115) : une seule colonne **Personnes** et une colonne **Jours** par gymnase. Or le classeur d'origine détaille, **par gymnase ET par jour (samedi / dimanche)** : joueuses + accompagnateurs, bénévoles + famille, spectateurs ; **repas midi et repas soir** séparés ; la part de chaque catégorie de produit (ex. croque-monsieur 70 % des personnes le samedi, 80 % le dimanche ; dessert 110 % / 100 % ; boissons froides 150 % ; boissons chaudes 110 % / 150 %) ; la répartition entre produits (croque standard 40 % / végé 25 % / tartiflette 35 %) ; les équipes (14 équipes, 109 joueuses, 112 avec accompagnateurs) et le total « environ 150 personnes ». Voir 17.2. | **Quel niveau de détail garder** : (a) personnes par catégorie, par jour et par gymnase ; (b) les pourcentages de consommation et de répartition ; (c) les deux. **Question à poser à Kinder (« ratio » = laquelle des deux ?).** Contrôle de cohérence : le fichier annonce 53 et 60 personnes ; l'Excel d'origine donne 49 + 10/11 bénévoles (G1 sam.), 56 + 9 (G1 dim.), 63 + 7/8 (G2 sam.), 56 + 6/3 (G2 dim.) : **les chiffres du fichier ne se retrouvent pas** dans l'original — à retracer. |
+| 5 | Le **modèle de notre club** ne garde toujours pas **le menu**, alors qu'il est générique et inspiré du club. | Feuilles Menu et Recettes du classeur du club : **vides** (en-têtes seulement), avec la mention « menu laissé vide : le menu est déjà dans l'association ». C'était la réponse de Kinder du 11/11/2026 (T3) pour éviter un menu en double ; il demande maintenant l'inverse. **Contradiction apparente avec la réponse T3 à lever** : le classeur doit **porter** le menu (18 produits : familles, prix, type, provenance, verres par litre, parts par gâteau, rayon, consommation) et les recettes ; c'est l'assistant d'import (décision 77) qui reprend le menu existant de même nom sans le dupliquer. | Confirmer : le classeur contient le menu **et** les recettes ; l'import ne crée rien si le menu existe. Sinon le « modèle » n'est pas réutilisable seul. |
+| 6 | **Préparation de l'événement, produits composés** : je veux noter la **quantité en stock du produit composé**, ou la quantité de **ses composants**, ou **certains composants en stock**, pour ajuster la liste de courses. | Stock de départ (`ecran_stock_depart.dart`) : une quantité par produit fini. Les composants (pain de mie, jambon…) n'existent que dans le calcul des courses (« Ce qu'il reste » par article, `courses.dart` l. 199, 355). | Saisie du stock d'un composé à trois niveaux : produits finis déjà faits (ex. 20 croques) / composants (ex. 3 paquets de pain) / un seul composant (ex. le jambon). Règle de calcul : le stock de composants vient en déduction des courses **avant** celui des ingrédients à acheter ; les produits finis déduisent leurs ingrédients. **Touche les calculs des courses (décision de ne pas toucher à lever).** |
+| 7 | Toujours **dans les stocks initiaux** : je n'ai **ni la quantité, ni la mesure de référence**, donc impossible d'être juste. | Le champ du stock de départ n'affiche pas l'unité : je ne sais pas si « 12 » veut dire 12 bouteilles, 12 verres ou 12 litres. `mesure.dart` porte pourtant les unités de base (verres par litre, parts par gâteau). | Afficher, **à côté de chaque quantité saisie**, l'unité de référence du produit (bouteille de 2 L, verre de 25 cl, part, pièce) et la conversion en clair (« 3 bouteilles = 24 verres »). |
+| 8 | **Écran de paramétrage d'un article** moche et mal rangé ; il faut s'y pencher et faire **rebondir** mesure, composition, provenance, consommation par jour **sur les autres modules**. | Capture : une seule liste verticale dans une boîte de dialogue (Nom, Prix, Type, Famille, Ingrédients, Quantité + unité + Rayon répétés par ingrédient, puis Provenance, Rayon, Consommation) ; les champs de saisie se chevauchent (étiquette « Quantité » écrasée sur le champ Ingrédient au-dessus), l'unité (« tranche ») est un menu sans cadre, « Supprimer / Annuler / Valider » sans hiérarchie. Code : `ecran_menu.dart` l. 353-574. Les valeurs saisies (verres par litre, parts par gâteau, composition, provenance, consommation) servent déjà aux courses et à la prévision, mais **ne sont lues ni affichées** dans le stock, la caisse ni le bilan. | Remplacer la boîte de dialogue par **un écran en cartes** : Identité (nom, prix, famille), Mesure (type, verre/part/pièce), Composition (recette), Provenance et rayon, Consommation par jour. Cartographier **où chaque donnée doit rebondir** (voir 17.3). |
+| 9 | **Liste de courses** : pour chaque produit, un bloc « **Il reste** » alors qu'on a déjà validé le stock dans les actions précédentes : il devrait **s'afficher simplement**. | `ecran_courses.dart` l. 704-720 : un champ `TextFormField` « Il reste » par article, **modifiable**, qui double la saisie du stock de départ. | La valeur vient du stock déjà saisi (Préparation, ou fin de journée) et s'affiche en **lecture seule** (« En stock : 3 bouteilles »), avec un lien « Modifier le stock » ; plus de champ de saisie dans les courses. |
+| 10 | Toujours dans les courses : un bloc en dessous « **Quantités par produit** », je ne comprends pas : **qu'est-ce qu'il fait là ? Ancien module pas nettoyé ?** | `ecran_courses.dart` l. 495-515 : sous les rayons, un tableau « Produits : gymnase » avec `_ligneProduit` par gymnase et produit = les **quantités de produits finis à faire** (par gymnase) dont se déduisent les achats (étape 5 / décision 56 : « la quantité, le stock et le report »). Ce n'est pas du reste d'un ancien module, c'est **l'entrée du calcul**, mais **mal nommé et mal placé** (après la liste, sans explication). | **À trancher** : (a) le déplacer dans la Préparation / la Prévision (là où on règle les quantités) et le retirer des Courses ; (b) le garder dans Courses mais en tête, sous le titre « Ce qu'on prévoit de vendre » avec une phrase d'explication, en repliable. **Recommandation de Claude : (a)**, les Courses ne montrent que quoi acheter. |
+| 11 | Je **ne peux pas valider les lignes** quand j'ai pris l'article. Je veux pouvoir **cocher** l'article au fur et à mesure, mais **garder la saisie finale des courses** pour la mise à jour des stocks réels. | Deux notions confondues : la **case à cocher** (`_basculerCoche`, `case_<clé>`, « Déjà acheté », partagée entre téléphones) et la **validation de la série** (« Valider les courses » : coût, quantités achetées, ajout au stock, `ecran_validation_courses.dart`). Kinder voit la case comme inactive (la ligne reste/refuse de se valider) ; à reproduire à l'écran avant de conclure (capture demandée). | Cocher = « dans le panier » (réversible, sans effet sur le stock) ; **Valider la série** = saisie finale des quantités et prix réels → seul moment où le stock réel est mis à jour. Rendre la différence lisible (bouton « Valider les courses (n/m cochés) » en bas). |
+| 12 | Pour **chaque article et son affichage de stock**, afficher **la mesure** : nombre de **verres**, nombre de **parts**, etc. | Le stock s'affiche en nombre brut. Les conversions existent (`mesure.dart` : verres par litre, parts par gâteau). | Affichage partout où un stock apparaît (Stock de départ, Gymnases et stocks, caisse « stock bas », Courses, Bilan) : « 3 bouteilles · 24 verres », « 2 gâteaux · 16 parts », « 5 paquets · 75 tranches ». Un seul mot d'ordre : l'unité **de vente** (verre, part, tranche) à côté de l'unité **d'achat**. |
+
+(Douze points au total : la demande de Kinder compte douze tirets.)
+
+### 17.2 Ce que le classeur d'origine du club contient (relevé de `Nouvelle_feuille_2.xlsx`, à ne pas perdre)
+
+- **Feuille Paramètre** : 2 gymnases, 2 jours (samedi, dimanche) ; **14 équipes** (nom, nombre de joueuses, gymnase, accompagnateurs) : **109 joueuses, 112 avec accompagnateurs, « environ 150 personnes au total »** ; colonnes Standard / Végan par équipe ; **bénévoles + famille** (nom, prénom, gymnase, repas midi/soir samedi et dimanche, ex. « Caro ou Laurent » = 2 repas) ; totaux joueuses/accompagnateurs **par gymnase et par jour** (G1 : 49 samedi, 56 dimanche ; G2 : 63 samedi, 56 dimanche).
+- **Feuille Repas** : pour chaque jour, les **% de consommation sur l'ensemble des participants/bénévoles/spectateurs** et la répartition entre produits : plat de résistance (croque-monsieur) 70 % sam. / 80 % dim. ; dessert + 4 h 110 % / 100 % ; fruit 50 % / 60 % ; barres 20 % / 25 % ; boissons froides 150 % ; boisson alcoolisée 30 % ; boissons chaudes 110 % / 150 % ; nombre de sucres 0,5 / 0,6. Unités de service : croque ×2, crêpe ×4, verre 25 cl (**4 verres = 1 L**), canette, sachet, clémentines vendues par 2, bière par pack de 12.
+- **Feuilles Gymnase n Jour** : personnes (joueuses + accompagnateurs / bénévoles + famille / spectateurs, midi et soir) × % = quantités prévues par produit ; **feuilles Achat gymnase n** : conversion en **conditionnements d'achat** (paquets de 15 tranches de pain, de 10 tranches de jambon, 1 kg de gruyère râpé, pot de 2 kg de Nutella, bouteille de 2 L, pack de 12 bières) avec **« Reste de l'an dernier »**, et des erreurs `#REF!` (le « reste » n'était jamais branché).
+- **Feuilles Achats 2025** : par article, **acheté en 2024, prévu 2025, commentaire de terrain** (ex. pain de mie 700 → 750 « on a un peu manqué » ; barres de céréales « ça part vraiment pas beaucoup » ; sucre roux « personne n'en prend » ; thé « environ 50 par gymnase pour tout le week-end ») ; articles hors menu (liquide vaisselle, sopalin, café, lait, sacs poubelles…).
+- **Autres feuilles** : listes à imprimer (fin de journée, ticket buvette à 0,50 €, étiquettes de plats, fiches de composition croque standard / végé / tartiflette / nutella), et `Tabelle1` : une liste de choses à faire (réappro automatique entre samedi et dimanche, prendre en compte les gâteaux restants, régimes spéciaux, % mineurs/majeurs, plan de travail).
+- **Écarts entre l'export de l'application et l'original** (point 4) : Personnes = 53 / 60 et Jours = 2 ; consommations calculées 0,16 (barre chocolat) à 1,58 (Coca) par personne et par jour ; **aucun pourcentage, aucune catégorie de personnes, aucun détail par jour, rien sur les équipes ni les bénévoles, pas de colonne Standard / Végan**.
+
+### 17.3 « Faire rebondir » une donnée d'article sur les autres modules (point 8, cartographie à confirmer)
+
+| Donnée de l'article | Doit se retrouver dans |
+|---|---|
+| Mesure (verre, part, pièce, litre) et conversions | Stock de départ, Gymnases et stocks, caisse (stock bas), Courses (conditionnement), Bilan (quantités vendues) |
+| Composition (recette) | Courses (ingrédients), Préparation (stock du composé, point 6), Stock (ingrédients restants) |
+| Provenance (acheté / fait sur place / apporté) | Préparation (qui apporte quoi), Courses (exclus si apporté), fiches à imprimer |
+| Consommation par personne et par jour | Prévision, Préparation, Comparateur, Bilan (consommation réelle vs prévue) |
+| Rayon | Courses (rangement par rayons), liste partagée |
+
+### 17.4 Test de clôture : simulation complète du tournoi sur émulateur (cadrage du scénario)
+
+**But (demandé par Kinder)** : jouer, sur émulateur, un tournoi entier avec des données fictives, **de la création de l'événement jusqu'à la clôture et au bilan financier**, au plus près du réel. Il **conclut** la mission et sert de critère de fin (à écrire en phase 4). Cible : `integration_test/parcours_tournoi_simule_test.dart` (à créer) avec des captures dans `audit_front/tournoi/` ; Kinder valide **sur capture d'écran**.
+
+**Jeu de données fictives, bâti sur le réel** (les chiffres viennent des classeurs ; les prix sont inventés, sauf **1,00 € pour le croque tartiflette**, vu sur la capture) :
+
+1. **Association** « Club test » : 1 responsable (Kinder), 1 gestionnaire, 4 bénévoles ; **deux associations** pour tester le point 2 (rôle différent dans chacune).
+2. **Événement** « Tournoi 2026 (simulation) » : 2 gymnases, 2 jours ; effectifs par gymnase et par jour tirés de l'original : G1 samedi 49 joueuses + 10 bénévoles (midi) / 11 (soir), dimanche 56 + 9 ; G2 samedi 63 + 7 / 8, dimanche 56 + 6 / 3 ; spectateurs 0 ; 14 équipes (109 joueuses), % repas du classeur (70 % / 80 %…).
+3. **Menu** (18 produits du classeur) : croque-monsieur, végé, tartiflette, chocolat ; crêpes sucre / Nutella ; fruit ; Mars, Twix, 2 barres de céréales ; Coca, Ice Tea, Orangina, Oasis ; bière ; café, thé, infusion ; **recettes** : ex. croque tartiflette = 2 tranches de pain de mie + 0,45 tranche de jambon blanc + … (capture) ; **mesures** : 4 verres de 25 cl par litre, bouteilles de 2 L, packs de 12 bières, parts de gâteau, paquets de 15 tranches de pain.
+4. **Historique de référence** : « Tournoi de l'an passé » (53 / 60 personnes, 2 jours, consommations du classeur : Coca 1,58, café 1,55, crêpe Nutella 1,29, etc.).
+5. **Stocks de départ fictifs** (restes de l'an dernier, par gymnase, avec leur unité) : p. ex. G1 : 6 bouteilles de Coca 2 L, 2 paquets de café, 40 sachets de thé, 1 pot de Nutella de 2 kg, 3 paquets de pain de mie ; G2 : 4 bouteilles de Coca, 1 paquet de café, 30 sachets de thé ; **un composé en stock fini** (12 croques tartiflette déjà faits) **et un composant seul** (2 paquets de jambon) pour tester le point 6.
+6. **Courses fictives** : 2 séries (vendredi, samedi matin) rayon par rayon, quantités **en conditionnements** (paquets de 15 tranches, bouteilles de 2 L, packs de 12) avec coûts réalistes ; cases cochées au fur et à mesure puis **validation finale** qui met à jour le stock (points 9 à 11) ; une ligne libre (sopalin, filtres à café).
+7. **Ventes fictives** : générées par un script déterministe à partir de la consommation de l'an passé × personnes × jours (± 10 %), réparties sur **4 caisses** (une par bénévole, 2 par gymnase), **espèces / carte / chèque**, avec **heures de pointe** (midi, 16 h) ; samedi et dimanche ; quelques **annulations et corrections** ; une rupture de stock (bière) et un stock bas (Coca) ; **une caisse clôturée de force** (signalement dans le bilan).
+8. **Clôture** : chaque bénévole clôture sa caisse (récapitulatif par mode de paiement), l'événement se clôture, **bilan financier** (total, par produit, par mode, par caisse, par jour, heures de pointe, coût des courses, **résultat**), export Excel, **comparaison** avec « le tournoi de l'an passé », import du classeur sans perte (point 4).
+9. **Contrôles à l'écran** (futurs critères, écrits en phase 4) : badges de rôle visibles ; QR de l'association affiché puis scanné par un faux lecteur ; un membre dans deux associations avec deux rôles ; unités et verres / parts affichés sur chaque stock ; « Il reste » en lecture seule ; cases cochées sans toucher au stock jusqu'à la validation ; totaux du bilan = somme des ventes simulées (vérifiable par script) ; coût des courses = somme des séries.
+
+### 17.5 À faire pour la suite (phases 2 à 4)
+
+1. **Phase 2 — questions à trancher avec Kinder, une à la fois** : (a) point 4 : « ratio » = effectifs par catégorie / pourcentages de consommation / les deux ; (b) point 5 : le classeur contient le menu et les recettes (annule la réponse T3) ; (c) point 10 : Quantités par produit déplacé dans la Préparation (recommandé) ou gardé ; (d) point 2 : association active choisie au lancement ou dernière utilisée.
+2. **Ordre proposé (à valider)** : Paramètres et badges (3, avec T7) → article en cartes et mesures (8, 7, 12) → classeur (4, 5) → stock des composés (6) → Courses (9, 10, 11) → QR de l'association (1) → **plusieurs associations (2), en dernier et seul** → simulation du tournoi (17.4).
+3. **Limites de Kinder** : ≤ 20 modules (19 aujourd'hui : le point 2 et le test de simulation peuvent en demander un ou deux : **signalé avant tout code**) ; ≤ 5 fichiers de documentation (5 aujourd'hui : cette note vit ici, section 17, pas dans un nouveau fichier) ; zéro dépendance ajoutée.
+4. **Statut** : « T1 à T9 » (Prêt pour le tournoi) n'est pas suivi dans le tableau de la section 16 : **vérifier ce qui est réellement livré** avant de ré-ouvrir T7 (Paramètres) et T8 (Courses). Les points 3, 9 et 10 recoupent T7 et T8 : à fusionner, pas à doubler.
+5. **Phase 3** : décisions 80 et suivantes à figer, section 6 de `PROJET_CONTEXTE.md` ; revue d'équipe par le Coordinateur (Recherche et Technique) pour le point 2 (modèle de comptes Firebase) avant validation.
+
+## 18. Plan complet fusionné « Prêt pour le tournoi » + « Clôture du tournoi » — PROPOSITION (12/11/2026, à valider par Kinder)
+
+> Fusion des étapes T1 à T9 (section 16, plan validé le 11/11/2026) et des douze points de la note de cadrage (section 17).
+> **Rien n'est figé** : les points de la section 17 passent par la phase 2 (questions une à une), puis 3 (décisions 80 et suivantes) et 4 (critères) avant tout code.
+> Constat au 12/11/2026 : **aucune des étapes T1 à T9 n'est livrée** (rien dans le code, suivi de la section 16 vide). Branche de travail : `claude/pret-tournoi` (contient cette note).
+
+### 18.1 Recoupements (pour ne rien faire deux fois)
+
+| Étape du plan validé | Points de la note qui s'y ajoutent | Écran |
+|---|---|---|
+| T2 Assistant d'import + T3 Classeur du club | 5 (le classeur porte le menu et les recettes ; l'import reprend le menu existant sans le doubler) | Extraction et modèle |
+| T7 Paramètres en cartes | 3 (une carte et un badge de couleur par rôle) + 1 (QR code pour rejoindre l'association, dans la carte « Association et code ») | Paramètres |
+| T8 Courses en cartes | 9 (« Il reste » en lecture seule) + 10 (« Quantités par produit » rangé) + 11 (cocher ≠ valider) | Courses |
+| — (nouvelle étape, affichage seul) | 7 + 12 (unité et verres / parts à côté de chaque stock) | Stock de départ, stocks, caisse, courses, bilan |
+
+### 18.2 Découpage proposé : ce qui sert au tournoi du week-end, et ce qui vient après
+
+**Lot A — avant l'essai à blanc de vendredi (mission « Prêt pour le tournoi » élargie)** : uniquement de l'affichage et du rangement, **aucun calcul ne change** (règle de la section 16 conservée).
+
+| # | Étape | Origine | Ce que Kinder voit |
+|---|---|---|---|
+| A1 | Enregistrer sur le téléphone | T1 | Chaque fichier : « Enregistrer sur le téléphone » ou « Partager » |
+| A2 | Assistant d'import unique | T2 + point 5 | Une carte « Importer » ; le menu du classeur est repris sans doublon |
+| A3 | Classeur du club | T3 + point 5 | `recette/classeur-notre-club.xlsx` avec menu et recettes remplis |
+| A4 | Ajouter un produit | T4 | Bouton dans « Produits et images » |
+| A5 | Annuler un changement de source | T5 | Bouton dans la prévision |
+| A6 | Heure de la dernière actualisation | T6 | « Actualisé le JJ/MM à HH:MM » |
+| A7 | Paramètres en cartes, badges de rôle, QR de l'association | T7 + points 3 et 1 | Cartes, badge coloré par rôle, QR à montrer aux bénévoles |
+| A8 | Courses en cartes, « Il reste » affiché, cocher ≠ valider, « Quantités par produit » rangé | T8 + points 9, 10, 11 | Liste qu'on coche en magasin ; une seule validation finale met le stock à jour |
+| A9 | Unités et verres / parts partout | points 7 et 12 | « 3 bouteilles · 24 verres » sur chaque stock |
+| A10 | Clôture du lot A | T9 | Vérification complète, APK 1.5.0 à installer sur les téléphones du week-end |
+
+**Lot B — après le tournoi (mission « Clôture du tournoi »)** : ce qui touche aux calculs ou au modèle de comptes, trop risqué la veille d'un tournoi.
+
+| # | Étape | Origine | Pourquoi après |
+|---|---|---|---|
+| B1 | Écran article en cartes, données qui « rebondissent » (17.3) | point 8 | Refonte d'un écran central ; à faire à froid |
+| B2 | Effectifs par catégorie / jour / gymnase et pourcentages dans le classeur et la prévision | point 4 | Change le calcul de la prévision |
+| B3 | Stock des produits composés et de leurs composants | point 6 | Change le calcul des courses |
+| B4 | Plusieurs associations, un rôle par association | point 2 | Change le modèle de comptes et les règles d'accès ; seul, en dernier, avec revue |
+| B5 | Simulation complète du tournoi sur émulateur (17.4) | note 17.4 | Critère de fin de la mission ; s'appuie sur les vrais chiffres du week-end |
+
+### 18.3 Questions à trancher avant de coder (phase 2, une à la fois)
+
+1. Le découpage lot A (avant le tournoi) / lot B (après) est-il le bon ? → **Validé par Kinder le 12/11/2026** (« Oui, ce découpage »).
+2. Point 5 : le classeur du club porte le menu et les recettes (revient sur la réponse T3 du 11/11/2026) ? → **Oui, validé par Kinder le 12/11/2026** (« Oui, il les garde ») : le classeur porte les 18 produits (prix, type, mesures, rayon) et les recettes ; l'assistant reprend tel quel le menu existant de même nom. Remplace la réponse T3 du 11/11/2026.
+3. Point 10 : « Quantités par produit » déplacé dans la Préparation (recommandé) ou gardé en tête des Courses ? → **Déplacé dans la Préparation, validé par Kinder le 12/11/2026** (« Oui, en Préparation ») : à côté de la prévision, sous un titre clair ; la page Courses ne montre plus que ce qu'il faut acheter. Aucun calcul ne change.
+4. Point 1 : le QR de l'association est visible par la gestion seulement, dans Paramètres › Association et code ? → **Oui, gestion seule, validé par Kinder le 12/11/2026** (« Oui, gestion seule ») : le QR contient le code de l'association ; le scanner fait entrer comme bénévole, comme le code tapé.
+   - **Constat au cadrage (12/11/2026), point 9** : « Il reste » dans les Courses n'est pas une copie du stock de départ. Il porte les restes **d'ingrédients et de conditionnements** (pain de mie, jambon, sucre…), qui ne se saisissent nulle part ailleurs (le stock de départ ne porte que les produits finis ; les composants viennent avec le point 6, lot B). Le passer en lecture seule ferait perdre cette saisie. → **Tranché par Kinder le 12/11/2026** (« Oui, avec Modifier ») : chaque article affiche « En stock : n [unité] » sans champ de saisie, et un bouton « Modifier » ouvre la saisie. La saisie du stock des composants en Préparation reste au lot B (point 6).
+
+### 18.5 Décisions et critères du lot A — VALIDÉS par Kinder le 12/11/2026 (phases 3 et 4 closes)
+
+**Décisions** (figées en section 6 de PROJET_CONTEXTE.md, numéros 80 à 84) :
+
+- **80. QR code de l'association** : affiché dans Paramètres › carte « Association et code », pour la gestion seulement (responsable et gestionnaires). Il contient le code de l'association ; le scanner fait entrer comme bénévole, exactement comme le code tapé. Les droits (décisions 19, 23) ne changent pas.
+- **81. Badges de rôle** (complète 79 c) : une couleur par rôle (responsable, gestionnaire, gestionnaire en attente, bénévole), prise dans la palette de la décision 31. « Qui peut quoi » devient une carte par rôle (badge + liste à puces de ce qu'il peut et ne peut pas faire). Les mêmes badges partout où un rôle s'affiche.
+- **82. Courses** (complète 79 d) : (a) « Il reste » s'affiche « En stock : n [unité] » avec un bouton « Modifier » ; (b) la case à cocher veut dire « dans le panier » : réversible, partagée entre téléphones, sans effet sur le stock ; seul « Valider les courses (n / m cochés) », en bas, met le stock à jour avec les quantités et prix réels ; (c) le bloc « Quantités par produit » quitte les Courses pour la Préparation, à côté de la prévision, sous le titre « Ce qu'on prévoit de vendre ». Aucun calcul ne change.
+- **83. Unités affichées** : à côté de chaque quantité de stock (Stock de départ, Gymnases et stock, caisse, Courses, Bilan), l'unité d'achat et l'unité de vente : « 3 bouteilles · 24 verres », « 2 gâteaux · 16 parts ». Affichage seul, aucun calcul ne change.
+- **84. Classeur du club** (précise 77, remplace la réponse T3 du 11/11/2026) : le classeur porte le menu (produits, prix, type, mesures, rayon, consommation) et les recettes ; à l'import, un menu de même nom déjà présent est repris tel quel, sans doublon ni modification.
+
+**Critères par étape** (A1, A4, A5, A6 et A10 = critères de T1, T4, T5, T6 et T9 inchangés, section 16) :
+
+| # | Critères ajoutés ou changés |
+|---|---|
+| A2 | Critères de T2, plus : (9) un classeur qui porte un menu de même nom que celui de l'association ne crée aucun menu et ne modifie pas l'existant ; le résumé le dit |
+| A3 | Critères de T3, sauf (2) remplacé par : les feuilles Menu et Recettes sont remplies d'après le menu de l'association test ; importé par l'assistant sur émulateur : aucun menu en double |
+| A7 | Critères de T7, plus : (6) un badge de couleur par rôle, identique partout ; (7) « Qui peut quoi » = une carte par rôle avec liste à puces ; (8) la gestion voit le QR code de l'association et peut le scanner depuis un autre téléphone pour entrer comme bénévole ; un bénévole ne voit pas le QR |
+| A8 | Critères de T8, plus : (6) aucun champ « Il reste » : « En stock : n [unité] » et un bouton « Modifier » qui garde la saisie ; (7) cocher un article ne change pas le stock ; seul « Valider les courses (n / m cochés) » le change ; (8) « Quantités par produit » n'est plus dans Courses et se trouve dans la Préparation ; (9) tous les tests de calcul des courses passent sans modification |
+| A9 | (1) chaque quantité de stock affiche son unité d'achat et, s'il y en a une, son unité de vente (verres, parts) sur les cinq écrans cités ; (2) les conversions sont justes (4 verres par litre, parts par gâteau du produit) ; (3) aucun test de calcul ne change |
+
+**Critère de fin du lot A** (étend celui de « Prêt pour le tournoi ») : critère de la section 16, plus : « je montre le QR code de l'association depuis Paramètres ; chaque membre a un badge de couleur ; en magasin je coche les articles sans toucher au stock, puis je valide les courses et le stock se met à jour ; chaque stock affiche son unité et ses verres ou parts ; le classeur du club contient le menu et ne le duplique pas à l'import. »
+5. (Lot B) Point 4 : « ratio » = effectifs, pourcentages, ou les deux (recommandé : les deux, effectifs d'abord).
+6. (Lot B) Point 2 : association active = la dernière utilisée, avec un sélecteur dans l'en-tête ?
+
+### 18.4 Limites
+
+Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à vérifier qu'un affichage de QR existe déjà, `EcranQr`). Cinq fichiers de documentation : ce plan vit ici. Le point 2 (B4) et la simulation (B5) peuvent demander un module de plus : signalé avant le code.
+
+**Ordre et dépendances du lot A** : A1 avant A2 et A8 (boutons de fichier) ; A2 avant A3 (le classeur s'importe par l'assistant) ; A9 avant A8 (l'affichage « En stock : n [unité] » de A8 reprend les unités de A9) ; A4 à A7 indépendantes ; A10 en dernier. Ordre retenu : A1 → A2 → A3 → A4 → A5 → A6 → A7 → A9 → A8 → A10.
+
+**Préalables, ce qu'on ne touche pas, arrêts** : ceux de la section 16, inchangés. Seule différence : les calculs restent intouchés **aussi** pour A8 et A9 (affichage et rangement seulement).
+
+**Suivi** (une ligne par étape close)
+
+| Étape | État | Date | Critères |
+|---|---|---|---|
+
+### 18.6 Prompt de lancement de la session mère du lot A (remplace celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
+
+```
+Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres, tu confies chaque étape à une sous-session neuve, tu vérifies ses tests et tu tiens le suivi. Le tournoi a lieu ce week-end (essai à blanc vendredi) : va droit au but.
+
+1. Lis, dans cet ordre : METHODO\3_CHANTIER.md (dossier DEV du poste), PROJET_CONTEXTE.md (bloc STATUT, décisions 13, 19, 23, 31, 56, 70 à 84, section 12 « Reprendre » pour les commandes et pièges), PLAN_STOCK_COURSES.md sections 16 (T1 à T9 : critères, constats, préalables, arrêts) et 18 (plan complet : lot A = A1 à A10, recoupements, critères ajoutés en 18.5, ordre), section 17 pour le détail des points 1, 3, 5, 7, 9 à 12, CHANGELOG.md (dernière entrée), graphify-out/GRAPH_REPORT.md.
+2. Préalable : vérifie que la branche de cadrage `claude/pret-tournoi` (sections 17 et 18, décisions 80 à 84) est fusionnée dans main. Sinon, tu t'arrêtes là et tu le dis à Kinder.
+3. Hygiène git : rien de non enregistré (le dossier `graphify-out/converted/`, produit par graphify, n'est pas du travail de Kinder : laisse-le), main à jour avec le dépôt en ligne, puis branche `claude/lot-a-tournoi` depuis main. Jamais de travail sur main.
+4. Pour chaque étape, dans l'ordre A1 → A2 → A3 → A4 → A5 → A6 → A7 → A9 → A8 → A10 :
+   a. Phase 5 : cadre l'étape toi-même (stratégie, fichiers touchés, ce qu'on ne fait pas) et écris ce cadrage sous la section 18 (« Cadrage An »), critères repris tels quels (section 16 pour l'étape T d'origine + ajouts de 18.5).
+   b. Phase 6 : confie l'étape à une sous-session neuve au format MISSION (R14), modèle selon R17 : Sonnet, sauf A2 en « opus ». Dossier minimal : le cadrage, les critères, les décisions utiles, les commandes de test. Elle rend un BILAN au format unique (R15, 10 lignes max).
+   c. Vérifie la preuve au niveau écrit au plan (N1 : flutter analyze, flutter test, tests_regles/lancer.ps1 ; N2 : le seul parcours Android qui prouve le critère, sur l'émulateur LC2). Règles d'accès modifiées : déploie-les dès que leurs tests passent (préalable 2 de la section 16).
+   d. Ligne dans le tableau de suivi de la section 18, ligne dans CHANGELOG.md, commit sur la branche. Puis étape suivante, sans attendre Kinder.
+5. Pas de banc d'essai dans cette mission (décision 75) : N3 de la clôture = powershell -File tests_regles/lancer_integration.ps1 ; rouges connus : evenements_test, menus_test, images_test, et les parcours à captures figés (parcours_ergonomie_test, parcours_retours_terrain_test). Une sous-session n'enquête jamais sur un rouge connu.
+6. A3 : le classeur du club part de recette/historique-tournoi-an-passe.xlsx et porte le menu et les recettes de l'association test (décision 84) ; l'import ne crée aucun menu en double. Les classeurs du club ne sont pas dans le dépôt : s'ils manquent sur le poste, demande-les à Kinder avant A3.
+7. A8 et A9 : affichage et rangement seulement (décisions 82 et 83) ; tous les tests de calcul des courses et de la prévision passent sans modification. « Il reste » garde sa saisie derrière un bouton « Modifier ».
+8. Aucune dépendance nouvelle sans accord de Kinder (A7 : réutiliser l'affichage de QR existant, `EcranQr`). Les calculs, le bilan et les droits des rôles ne changent pas ; le nom et le prix d'un produit déjà dans un événement restent figés.
+9. Arrêts (et seulement ceux-là) : contradiction avec une décision figée ; dépendance nouvelle nécessaire ; clé, paiement ou conditions ; action irréversible autre que le déploiement des règles ; deux échecs de suite.
+10. Clôture (A10, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin du lot A, 18.5). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
+Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
+```
