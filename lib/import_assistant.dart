@@ -105,6 +105,9 @@ class PlanAssistant {
             'produit${menu.produits.length > 1 ? 's' : ''}).');
       case ActionMenu.reprendre:
         res.add('Menu « ${menuRepris!.nom} » : existe déjà, repris sans aucune modification.');
+        if (menu.produits.any((p) => p.fiche.ingredients.isNotEmpty)) {
+          res.add('Les recettes du classeur ne sont pas reprises : aucune recette n\'est écrite.');
+        }
       case ActionMenu.aucune:
         res.add('Menu : aucun menu lisible dans ce classeur, rien n\'est créé.');
     }

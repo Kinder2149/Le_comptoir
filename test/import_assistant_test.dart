@@ -35,8 +35,10 @@ ClasseurLu _lu({
   List<List<Object?>> menu = const [],
   List<List<Object?>> stock = const [],
   List<List<Object?>> historique = const [],
+  List<List<Object?>> recettes = const [],
 }) =>
-    lireClasseur(classeurDeTest(menu: menu, stock: stock, historique: historique));
+    lireClasseur(classeurDeTest(
+        menu: menu, stock: stock, historique: historique, recettes: recettes));
 
 void main() {
   group('critère 2 : menu créé ou repris sans modification', () {
@@ -86,6 +88,41 @@ void main() {
 
     test('un classeur sans rien d\'utile donne un plan vide', () {
       expect(preparerAssistant(_lu(), nomMenu: 'Menu').vide, isTrue);
+    });
+  });
+
+  group('critère 9 : menu de même nom porté par le classeur (Menu et Recettes remplis)', () {
+    final lu = _lu(menu: [
+      ['Croque', 3, 'Composé (recette)', 'Acheté par l\'association', null, null, null, null],
+      _menu('Soda', 1),
+    ], recettes: [
+      ['Croque', 'Pain', 2, 'tranche', null],
+      ['Croque', 'Fromage', 30, 'g', null],
+    ]);
+
+    test('menu de même nom : repris sans modification, aucun menu créé, recettes non reprises et dites',
+        () {
+      expect(lu.erreurs, isEmpty);
+      expect(lu.produits.firstWhere((x) => x.nom == 'Croque').fiche.ingredients, hasLength(2));
+      final p = preparerAssistant(lu,
+          nomMenu: 'Menu 2026',
+          menuExistant: const Menu('m1', 'Menu 2026'),
+          produitsExistants: ['Croque']);
+      expect(p.actionMenu, ActionMenu.reprendre);
+      expect(p.menuRepris?.id, 'm1');
+      expect(p.produitsNonRepris, ['Soda']);
+      expect(p.phrases.first, contains('repris sans aucune modification'));
+      expect(p.phrases,
+          contains('Les recettes du classeur ne sont pas reprises : aucune recette n\'est écrite.'));
+      expect(p.phraseConfirmation, startsWith('Menu « Menu 2026 » repris'));
+      expect(p.phraseConfirmation, isNot(contains('créé')));
+    });
+
+    test('sans menu de même nom : le menu est créé, la phrase des recettes non reprises n\'apparaît pas',
+        () {
+      final p = preparerAssistant(lu, nomMenu: 'Menu 2026');
+      expect(p.actionMenu, ActionMenu.creer);
+      expect(p.phrases.any((s) => s.contains('ne sont pas reprises')), isFalse);
     });
   });
 

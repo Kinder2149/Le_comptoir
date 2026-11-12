@@ -1400,6 +1400,7 @@ Aucune dépendance nouvelle (A1 utilise `file_picker`, déjà accordé ; A7 : à
 | A4 (T4) | Faite, N1, règles et N2 (commit 549d18e) | 11/11/2026 | critères de T4 ; N3 à refaire en A10 |
 | A5 (T5) | Faite, N1 et règles (commit dc70268) ; règles `previsions_annulation` déployées | 11/11/2026 | critères de T5 |
 | A6 (T6) | Faite, N1 (commit d8dcb26) | 11/11/2026 | critères de T6 |
+| A2 (T2 + critère 9) | Faite, N1 (analyse sans erreur, 523 tests ; menu de même nom porté par un classeur Menu + Recettes : aucun menu créé, aucune recette écrite, résumé qui le dit) | 12/11/2026 | critères de T2 + (9) ; N2 de T2 rejoué en A3 |
 
 ### 18.6 Prompt de lancement de la session mère du lot A — REMPLACÉ par 18.8 le 12/11/2026, gardé pour trace (remplaçait celui de la section 16 ; à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_comptoir du poste utilisé)
 

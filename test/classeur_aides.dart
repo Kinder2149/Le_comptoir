@@ -17,11 +17,13 @@ const entetesMenuAncien = [
 ];
 
 /// Un classeur de test avec les feuilles « Menu » (ancien format), « Stock de départ » et
-/// « Historique » : ligne d'aide, ligne d'en-têtes, puis les données.
+/// « Historique » : ligne d'aide, ligne d'en-têtes, puis les données. [recettes] (facultatif)
+/// remplit la feuille « Recettes » ; sans lui, cette feuille n'est pas écrite.
 Uint8List classeurDeTest({
   List<List<Object?>> menu = const [],
   List<List<Object?>> stock = const [],
   List<List<Object?>> historique = const [],
+  List<List<Object?>> recettes = const [],
 }) {
   final x = Excel.createExcel();
   final defaut = x.getDefaultSheet() ?? 'Sheet1';
@@ -44,6 +46,7 @@ Uint8List classeurDeTest({
   feuille(feuilleMenu, entetesMenuAncien, menu);
   feuille(feuilleStock, entetesStock, stock);
   feuille(feuilleHistorique, entetesHistorique, historique);
+  if (recettes.isNotEmpty) feuille(feuilleRecettes, entetesRecettes, recettes);
   feuille(feuilleCourses, entetesCourses, const []);
   return Uint8List.fromList(x.encode()!);
 }

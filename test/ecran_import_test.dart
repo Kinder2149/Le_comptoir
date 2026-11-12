@@ -79,12 +79,22 @@ final _histoOk = <List<Object?>>[
   ['Tournoi 2025', 'Gymnase B', 20, 2, 'Croque', 60],
 ];
 
+final _menuCompose = <List<Object?>>[
+  ['Croque', 3, 'Composé (recette)', 'Acheté par l\'association', null, null, null, null],
+  ['Soda', 1, null, null, null, null, null, null],
+];
+final _recettesCroque = <List<Object?>>[
+  ['Croque', 'Pain', 2, 'tranche', null],
+  ['Croque', 'Fromage', 30, 'g', null],
+];
+
 Uint8List _fichier({
   List<List<Object?>> menu = const [],
   List<List<Object?>> stock = const [],
   List<List<Object?>> histo = const [],
+  List<List<Object?>> recettes = const [],
 }) =>
-    classeurDeTest(menu: menu, stock: stock, historique: histo);
+    classeurDeTest(menu: menu, stock: stock, historique: histo, recettes: recettes);
 
 Future<void> _afficher(
   WidgetTester tester,
@@ -343,6 +353,26 @@ void main() {
     await tester.tap(find.text('Lignes ignorées (12)'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Produit 3'), findsOneWidget);
+  });
+
+  testWidgets('critère 9 : menu de même nom, classeur Menu et Recettes remplis : aucun menu '
+      'créé, aucune recette écrite, le résumé dit que les recettes ne sont pas reprises',
+      (tester) async {
+    final faux = _Faux()..menus = const [Menu('m1', 'Menu 2026')];
+    await _afficher(tester, faux,
+        classeur: _fichier(menu: _menuCompose, recettes: _recettesCroque, histo: _histoOk));
+    await _choisir(tester);
+    expect(_texte(tester, 'import_menu_etat'),
+        contains('existe déjà : il sera repris sans aucune modification'));
+    await _voirResume(tester);
+    expect(find.textContaining('repris sans aucune modification'), findsWidgets);
+    expect(find.textContaining('Les recettes du classeur ne sont pas reprises'), findsOneWidget);
+    expect(faux.ecritures, 0);
+    await _appliquer(tester);
+    expect(faux.menusCrees, isEmpty); // ni menu ni recette créés
+    expect(faux.imports.single.$2.stocks, isEmpty);
+    expect(faux.imports.single.$2.references.single.nom, 'Tournoi 2025 (Excel)');
+    expect(_texte(tester, 'confirmation_import_assistant'), contains('repris'));
   });
 
   testWidgets('un nom de menu vide à créer est refusé avant le résumé', (tester) async {
