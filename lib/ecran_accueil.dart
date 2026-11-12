@@ -123,7 +123,7 @@ class _EtatAccueil extends State<EcranAccueil> {
     }
     final prenom = await showDialog<String>(
       context: context,
-      builder: (_) => const _DialoguePrenom(),
+      builder: (_) => _DialoguePrenom(gymnase: !lien.sansGymnase),
     );
     if (prenom == null || !mounted) return;
     setState(() {
@@ -238,7 +238,10 @@ class _EtatAccueil extends State<EcranAccueil> {
 
 /// Le prénom, demandé quand on rejoint en scannant un QR code.
 class _DialoguePrenom extends StatefulWidget {
-  const _DialoguePrenom();
+  const _DialoguePrenom({required this.gymnase});
+
+  /// Le lien vise un gymnase (sinon : l'association seule).
+  final bool gymnase;
 
   @override
   State<_DialoguePrenom> createState() => _EtatDialoguePrenom();
@@ -265,7 +268,8 @@ class _EtatDialoguePrenom extends State<_DialoguePrenom> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Rejoindre ce gymnase'),
+      title: Text(
+          widget.gymnase ? 'Rejoindre ce gymnase' : "Rejoindre l'association"),
       content: TextField(
         key: const Key('prenom_qr'),
         controller: _prenom,
