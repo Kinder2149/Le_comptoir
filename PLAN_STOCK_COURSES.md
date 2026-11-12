@@ -1554,12 +1554,12 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 **Preuve** : N2 : `classeur_club_test` seul (LC2, vrai moteur local), joué par la mère.
 
-## 19. Mission « Calcul du club » — version 1.6.0 (décisions 85 à 92) — PLAN PROPOSÉ (phase 4, 12/11/2026, à valider par Kinder)
+## 19. Mission « Calcul du club » — version 1.6.0 (décisions 85 à 92) — PLAN PRÊT : plan, critères et préalables validés par Kinder le 12/11/2026 (« Je valide »)
 
 > Origine : le 12/11/2026 au soir, Kinder avance au week-end trois points du lot B (section 18.2) : **4** (effectifs et pourcentages du classeur d'origine), **6** (stock des produits composés et de leurs composants), **8** (écran de l'article en cartes), plus la **simulation complète** sur les chiffres de l'an dernier (17.4). Phase 2 menée le 12/11/2026 dans Claude Code (sept questions, une à une, toutes tranchées par Kinder) ; décisions 85 à 92 en section 6 de `PROJET_CONTEXTE.md`. Le point 2 (plusieurs associations) reste après le tournoi.
 > Garde-fou (décision 85) : la 1.5.0 (lot A) reste la version du tournoi ; la 1.6.0 ne sert ce week-end que si Kinder le décide, au vu de la simulation, étape par étape (« je te dirai ce que je valide et ce qu'on prend pour ce week-end », Kinder, 12/11/2026).
 
-**Critère de fin de mission (proposé)** : « Dans un tournoi à 2 gymnases et 2 jours, j'importe le classeur de notre club : les repas jour par jour et les groupes du club sont en place, et les quantités prévues sont celles de notre classeur d'origine ; je saisis mes ingrédients en stock dans la Préparation et les courses en tiennent compte ; la fiche d'un article s'ouvre en cinq cartes ; la simulation complète du tournoi sur les chiffres de l'an dernier va jusqu'au bilan, juste au centime. »
+**Critère de fin de mission (validé par Kinder, 12/11/2026)** : « Dans un tournoi à 2 gymnases et 2 jours, j'importe le classeur de notre club : les repas jour par jour et les groupes du club sont en place, et les quantités prévues sont celles de notre classeur d'origine ; je saisis mes ingrédients en stock dans la Préparation et les courses en tiennent compte ; la fiche d'un article s'ouvre en cinq cartes ; la simulation complète du tournoi sur les chiffres de l'an dernier va jusqu'au bilan, juste au centime. »
 
 ### 19.1 Constats faits au cadrage (12/11/2026)
 
