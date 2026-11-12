@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'calcul_club.dart';
+import 'carte_groupe_club.dart';
 import 'champ_reglage.dart';
 import 'evenement.dart';
 import 'gymnase.dart';
@@ -35,6 +36,7 @@ class EcranPrevision extends StatelessWidget {
     this.annulable,
     this.annulerChangement,
     this.calcul,
+    this.definirGroupes,
   });
 
   final Stream<Evenement?> evenement;
@@ -73,6 +75,9 @@ class EcranPrevision extends StatelessWidget {
 
   /// Le calcul du club de l'événement (V3) : les totaux suivent les repas détaillés (null = ancien total).
   final Stream<CalculClub?>? calcul;
+
+  /// Enregistre les groupes du club (V4) : null = pas de zone « Groupes du club ».
+  final Future<void> Function(List<GroupeConso> groupes)? definirGroupes;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +172,19 @@ class EcranPrevision extends StatelessWidget {
         children: [
           _bandeau(context, ev, personnes, enregistrees, lignes, reglable, peutAnnuler),
           const SizedBox(height: 12),
+          if (definirGroupes != null) ...[
+            ZoneGroupesClub(
+              jours: ev.nbJours >= 1 && ev.nbJours == ev.nbJours.roundToDouble()
+                  ? ev.nbJours.round()
+                  : null,
+              groupes: club?.groupes ?? const [],
+              calcul: club,
+              produits: avecPrevision,
+              reglable: reglable,
+              definir: definirGroupes!,
+            ),
+            const SizedBox(height: 16),
+          ],
           Text(
             reglable
                 ? 'Combien chaque personne consomme-t-elle de chaque produit, par '

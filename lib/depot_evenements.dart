@@ -621,11 +621,19 @@ class DepotEvenements {
       _evenements.doc(evenementId).collection('previsions_annulation').doc('dernier');
 
   /// Range l'état d'avant un changement de source. Liste vide = aucune prévision.
-  Future<void> _rangerAnnulation(String evenementId, Map<String, Prevision> avant) =>
-      _annulation(evenementId).set({
-        'lignes': lignesAnnulation(avant),
-        'creeLe': FieldValue.serverTimestamp(),
-      });
+  /// Les groupes du club d'avant y sont rangés aussi (V4) : sans document « groupes », le champ
+  /// est absent et l'annulation ne touche pas aux groupes.
+  Future<void> _rangerAnnulation(String evenementId, Map<String, Prevision> avant) async {
+    final g = await _calculClub(evenementId)
+        .doc('groupes')
+        .get(const GetOptions(source: Source.server));
+    final groupes = g.exists ? groupesDepuisMap(g.data()) : null;
+    await _annulation(evenementId).set({
+      'lignes': lignesAnnulation(avant),
+      'creeLe': FieldValue.serverTimestamp(),
+      if (groupes != null) 'groupes': groupesPourAnnulation(groupes),
+    });
+  }
 
   /// Remet tous les produits au chiffre du menu (efface les prévisions). Ce n'est pas un
   /// changement annulable : le document d'annulation d'un changement précédent est effacé.
@@ -648,6 +656,9 @@ class DepotEvenements {
       ecrire: voulues,
       effacer: actuelles.keys.where((id) => !voulues.containsKey(id)),
     );
+    // Les groupes d'avant reviennent aussi (V4), quand le document en gardait.
+    final groupes = groupesDepuisAnnulation(s.data()?['groupes']);
+    if (groupes != null) await definirGroupes(evenementId, groupes);
     await _annulation(evenementId).delete();
   }
 

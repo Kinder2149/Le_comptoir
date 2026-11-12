@@ -315,3 +315,92 @@ int? totalClubProduit({
   });
   return detaille ? total : null;
 }
+
+// ---------- Groupes dans la Prévision (mission « Calcul du club », V4) ----------
+
+/// Bornes tenues par l'application (les règles ne bornent que le nombre de groupes).
+const groupesMax = 40;
+const nomGroupeMax = 40;
+const pourcentageGroupeMax = 5.0; // 500 %
+const partProduitMax = 1.0; // 100 %
+
+/// Quantité prévue d'un produit pour un jour, tous gymnases réunis, non arrondie. Null si le
+/// produit n'est dans aucun groupe. Les gymnases sans repas détaillés comptent pour 0.
+double? quantiteClubProduitJour(CalculClub calcul, String produitId, int jour) {
+  if (_groupeDuProduit(calcul, produitId) == null) return null;
+  var somme = 0.0;
+  for (final gymnaseId in calcul.repas.keys) {
+    somme += quantiteClubJour(calcul, gymnaseId, produitId, jour) ?? 0.0;
+  }
+  return somme;
+}
+
+/// Les écarts d'un seul groupe (parts des produits ≠ 100 % pour un jour).
+List<EcartGroupe> ecartsDuGroupe(GroupeConso groupe) =>
+    ecartsGroupes(CalculClub(groupes: [groupe]));
+
+/// Les groupes avec [produitId] rangé dans le groupe d'indice [index] : un produit n'est que
+/// dans un seul groupe, il est retiré de l'ancien. Ses parts de départ sont 0 pour chacun des
+/// [jours] (le groupe affiche alors l'écart, rien n'est inventé). S'il y était déjà : inchangé.
+List<GroupeConso> rangerProduit(
+    List<GroupeConso> groupes, int index, String produitId, int jours) {
+  if (index < 0 || index >= groupes.length) return groupes;
+  if (groupes[index].produits.containsKey(produitId)) return groupes;
+  return [
+    for (var i = 0; i < groupes.length; i++)
+      GroupeConso(
+        nom: groupes[i].nom,
+        pourcentages: groupes[i].pourcentages,
+        produits: {
+          for (final e in groupes[i].produits.entries)
+            if (e.key != produitId) e.key: e.value,
+          if (i == index) produitId: {for (var j = 1; j <= jours; j++) j: 0.0},
+        },
+      ),
+  ];
+}
+
+/// Les groupes sans [produitId] (le produit retourne à l'ancien calcul).
+List<GroupeConso> retirerProduit(List<GroupeConso> groupes, String produitId) => [
+      for (final g in groupes)
+        GroupeConso(
+          nom: g.nom,
+          pourcentages: g.pourcentages,
+          produits: {
+            for (final e in g.produits.entries)
+              if (e.key != produitId) e.key: e.value,
+          },
+        ),
+    ];
+
+/// Le groupe d'indice [index] avec un pourcentage de jour changé (fraction : 70 % = 0.7).
+GroupeConso groupeAvecPourcentage(GroupeConso g, int jour, double fraction) => GroupeConso(
+      nom: g.nom,
+      pourcentages: {...g.pourcentages, jour: fraction},
+      produits: g.produits,
+    );
+
+/// Le groupe avec la part d'un produit pour un jour changée (fraction).
+GroupeConso groupeAvecPart(GroupeConso g, String produitId, int jour, double fraction) =>
+    GroupeConso(
+      nom: g.nom,
+      pourcentages: g.pourcentages,
+      produits: {
+        for (final e in g.produits.entries)
+          e.key: e.key == produitId ? {...e.value, jour: fraction} : e.value,
+      },
+    );
+
+/// Le groupe renommé.
+GroupeConso groupeRenomme(GroupeConso g, String nom) =>
+    GroupeConso(nom: nom, pourcentages: g.pourcentages, produits: g.produits);
+
+/// Les groupes tels que le document d'annulation les range : le même format que le document
+/// « groupes » (liste).
+List<Object?> groupesPourAnnulation(List<GroupeConso> groupes) =>
+    groupesVersMap(groupes)['groupes'] as List<Object?>;
+
+/// Les groupes relus du champ `groupes` du document d'annulation. Null si le champ est absent
+/// (l'annulation ne touche alors pas aux groupes) ; une entrée hors format est ignorée.
+List<GroupeConso>? groupesDepuisAnnulation(Object? champ) =>
+    champ is List ? groupesDepuisMap({'groupes': champ}) : null;

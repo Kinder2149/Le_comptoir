@@ -384,4 +384,84 @@ void main() {
       expect(sans.groupes.length, 2);
     });
   });
+
+  group('Groupes dans la Prévision (V4)', () {
+    test('quantité d un produit pour un jour, tous gymnases : 33,32 + 39,48 = 72,8', () {
+      final c = calculClasseur();
+      expect(quantiteClubProduitJour(c, 'croque', 1), closeTo(72.8, 1e-9));
+      expect(quantiteClubProduitJour(c, 'croque', 2), closeTo(70.28, 1e-9));
+      // Hors groupe : null (l'ancien calcul s'applique) ; jour sans pourcentage : 0.
+      expect(quantiteClubProduitJour(c, 'coca', 1), isNull);
+      expect(quantiteClubProduitJour(c, 'croque', 3), 0.0);
+    });
+
+    test('les écarts d un seul groupe : 100 % ne signale rien, 95 % est signalé', () {
+      final juste = calculClasseur().groupes[0];
+      expect(ecartsDuGroupe(juste), isEmpty);
+      final faux = GroupeConso(nom: 'Plat', produits: {
+        'croque': {1: 0.4},
+        'vege': {1: 0.25},
+        'tartiflette': {1: 0.30},
+      });
+      final e = ecartsDuGroupe(faux).single;
+      expect(e.jour, 1);
+      expect(e.ecart, closeTo(-0.05, 1e-9));
+    });
+
+    test('ranger un produit : un seul groupe, parts de départ à 0, ancien groupe vidé', () {
+      final groupes = calculClasseur().groupes;
+      final apres = rangerProduit(groupes, 0, 'fruit', 2);
+      expect(apres[0].produits['fruit'], {1: 0.0, 2: 0.0});
+      expect(apres[1].produits, isEmpty);
+      expect(apres.where((g) => g.produits.containsKey('fruit')), hasLength(1));
+      // Les autres produits gardent leurs parts, les pourcentages ne bougent pas.
+      expect(apres[0].produits['croque'], {1: 0.40, 2: 0.35});
+      expect(apres[0].pourcentages, {1: 0.70, 2: 0.80});
+      // Déjà dans le groupe, ou groupe inconnu : inchangé.
+      expect(identical(rangerProduit(apres, 0, 'fruit', 2), apres), isTrue);
+      expect(identical(rangerProduit(apres, 7, 'croque', 2), apres), isTrue);
+    });
+
+    test('retirer, renommer, changer un pourcentage et une part', () {
+      final g = calculClasseur().groupes[0];
+      expect(retirerProduit([g], 'vege').single.produits.keys, ['croque', 'tartiflette']);
+      expect(groupeRenomme(g, 'Plats').nom, 'Plats');
+      expect(groupeAvecPourcentage(g, 2, 0.9).pourcentages, {1: 0.70, 2: 0.9});
+      expect(groupeAvecPart(g, 'croque', 1, 0.5).produits['croque'], {1: 0.5, 2: 0.35});
+      expect(groupeAvecPart(g, 'croque', 1, 0.5).produits['vege'], {1: 0.25, 2: 0.30});
+    });
+
+    test('annulation : les groupes rangés puis relus sont identiques (aller-retour)', () {
+      final avant = calculClasseur().groupes;
+      final champ = groupesPourAnnulation(avant);
+      expect(champ, hasLength(2));
+      final relus = groupesDepuisAnnulation(champ)!;
+      expect(groupesVersMap(relus), groupesVersMap(avant));
+      // Un changement de groupes après le rangement, puis l'annulation : l'état d'avant revient.
+      final apres = rangerProduit(avant, 0, 'fruit', 2);
+      expect(groupesVersMap(apres), isNot(groupesVersMap(avant)));
+      expect(groupesVersMap(groupesDepuisAnnulation(champ)!), groupesVersMap(avant));
+    });
+
+    test('annulation : sans champ, les groupes ne sont pas touchés ; une entrée hors format est ignorée',
+        () {
+      expect(groupesDepuisAnnulation(null), isNull);
+      expect(groupesDepuisAnnulation('texte'), isNull);
+      expect(groupesDepuisAnnulation(const []), isEmpty);
+      final relus = groupesDepuisAnnulation([
+        {'nom': 'Plat', 'pourcentages': {'1': 0.7}, 'produits': {'croque': {'1': 1}}},
+        {'pourcentages': {'1': 0.5}},
+        'x',
+      ])!;
+      expect(relus.single.nom, 'Plat');
+      expect(relus.single.produits['croque'], {1: 1.0});
+    });
+
+    test('les bornes de l application', () {
+      expect(groupesMax, 40);
+      expect(nomGroupeMax, 40);
+      expect(pourcentageGroupeMax, 5.0);
+      expect(partProduitMax, 1.0);
+    });
+  });
 }

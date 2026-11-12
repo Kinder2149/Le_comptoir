@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V4 : groupes dans la Prévision
+- Zone « Groupes du club » : une carte par groupe (pourcentage de chaque jour, produits et parts de chaque jour, quantité prévue par jour sous le produit, pastille « 100 % » verte ou écart en ocre) ; créer, renommer, supprimer, ranger un produit (un seul groupe par produit). « Annuler ce changement » couvre aussi les groupes (champ facultatif `groupes`, règles déployées). 616 tests, 276 tests de règles.
+
 ## 12/11/2026 — Calcul du club, V3 : repas jour par jour dans la Préparation
 - Carte « Personnes et durée » : bouton « Détailler par jour (méthode du club) », une carte par jour, par gymnase les trois catégories (midi et soir) et le total du jour ; la Prévision et les Courses suivent le calcul du club quand les repas sont détaillés et que le produit est dans un groupe, sinon l'ancien calcul, inchangé. 593 tests verts.
 

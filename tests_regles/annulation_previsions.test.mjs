@@ -113,3 +113,41 @@ test('un changement de source rangé puis effacé : le scénario au niveau des r
   assert.equal(await lot(chef, [effacer(c.annul)]), 200);
   assert.equal(await lire(chef, c.annul), 404);
 });
+
+/** Un groupe du club, dans le format du document « groupes ». */
+const groupe = (nom = 'Plat') => ({
+  mapValue: { fields: { nom: texte(nom), pourcentages: { mapValue: { fields: { 1: decimal(0.7) } } }, produits: { mapValue: { fields: {} } } } },
+});
+const listeGroupes = (n = 1) => ({ arrayValue: { values: Array.from({ length: n }, () => groupe()) } });
+const avecGroupes = (c, groupes) => annulation(c, { lignes: lignes(), creeLe: temps, groupes });
+
+test('groupes du club (V4) : champ facultatif, liste de 40 éléments au plus', async () => {
+  const { chef, gestionnaire: gus, lea, c } = await enPreparation();
+  // Avec les groupes d'avant : accepté, par le responsable et par le gestionnaire.
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(2))]), 200);
+  assert.equal(await lot(gus, [avecGroupes(c, listeGroupes(1))]), 200);
+  // Une liste vide (« d'avant, aucun groupe ») est acceptée ; sans le champ, comme avant.
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(0))]), 200);
+  assert.equal(await lot(chef, [normale(c)]), 200);
+  // Bornes : 40 acceptés, 41 refusés.
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(40))]), 200);
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(41))]), 403);
+  // Le champ doit être une liste.
+  assert.equal(await lot(chef, [avecGroupes(c, texte('x'))]), 403);
+  assert.equal(await lot(chef, [avecGroupes(c, lignes())]), 403);
+  // Un champ de plus est toujours refusé ; lignes et creeLe restent obligatoires.
+  assert.equal(await lot(chef, [annulation(c, {
+    lignes: lignes(), creeLe: temps, groupes: listeGroupes(1), autre: texte('x'),
+  })]), 403);
+  assert.equal(await lot(chef, [annulation(c, { lignes: lignes(), groupes: listeGroupes(1) })]), 403);
+  assert.equal(await lot(chef, [annulation(c, { creeLe: temps, groupes: listeGroupes(1) })]), 403);
+  // Un bénévole n'écrit toujours pas, avec ou sans groupes.
+  assert.equal(await lot(lea, [avecGroupes(c, listeGroupes(1))]), 403);
+});
+
+test('groupes du club (V4) : écriture refusée une fois l événement clôturé', async () => {
+  const { chef, c } = await enPreparation();
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(1))]), 200);
+  assert.equal(await passerEn(c, 'cloture'), 200);
+  assert.equal(await lot(chef, [avecGroupes(c, listeGroupes(1))]), 403);
+});

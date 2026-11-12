@@ -661,7 +661,7 @@ service cloud.firestore {
         // Annulation d'un changement de source (mission « Annuler un changement de source »,
         // T5, décision 79 a) : l'état des prévisions d'avant le dernier changement, un seul
         // document « dernier », champ `lignes` (produit -> {conso, source}, 400 entrées au plus)
-        // et `creeLe`. Lu, écrit et effacé par la gestion complète, tant que l'événement est
+        // et `creeLe`, et un champ facultatif `groupes` (les groupes du club d'avant, liste de 40 au plus, V4). Lu, écrit et effacé par la gestion complète, tant que l'événement est
         // en préparation ou en cours.
         match /previsions_annulation/{d} {
           allow read: if gereTout(a, e);
@@ -670,11 +670,14 @@ service cloud.firestore {
           allow create, update: if d == 'dernier'
             && gereTout(a, e)
             && reglable(a, e)
-            && request.resource.data.keys().hasOnly(['lignes', 'creeLe'])
+            && request.resource.data.keys().hasOnly(['lignes', 'creeLe', 'groupes'])
             && request.resource.data.keys().hasAll(['lignes', 'creeLe'])
             && request.resource.data.lignes is map
             && request.resource.data.lignes.size() <= 400
-            && request.resource.data.creeLe is timestamp;
+            && request.resource.data.creeLe is timestamp
+            && (!('groupes' in request.resource.data)
+                || (request.resource.data.groupes is list
+                    && request.resource.data.groupes.size() <= 40));
         }
 
         // Calcul du club (mission « Calcul du club », V2, décision 88) : deux documents dans

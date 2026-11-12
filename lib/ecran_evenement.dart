@@ -632,6 +632,7 @@ class _EtatBlocGestion extends State<_BlocGestion> {
             annulable: widget.depot.suivreAnnulation(ev.id),
             annulerChangement: () => widget.depot.annulerChangementPrevision(ev.id),
             calcul: widget.depot.suivreCalculClub(ev.id),
+            definirGroupes: (g) => widget.depot.definirGroupes(ev.id, g),
             definirPrevisionVerifiee: (v) =>
                 widget.depot.definirPrevisionVerifiee(ev.id, v),
             onVoirCourses: portee.toutVoir
