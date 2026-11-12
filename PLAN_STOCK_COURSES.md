@@ -1465,3 +1465,15 @@ Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temp
 9. Clôture (A10, R11) : complète le texte de vérification T9 (section 16) avec les critères ajoutés de 18.5 et le critère de fin du lot A ; N3 ; puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche envoyée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+### Cadrage A2 — Assistant d'import : menu de même nom porté par le classeur (phase 5, 12/11/2026)
+
+**Critères (repris tels quels)** : ceux de T2 (section 16, 1 à 8, déjà tenus) + **(9) un classeur qui porte un menu de même nom que celui de l'association ne crée aucun menu et ne modifie pas l'existant ; le résumé le dit.**
+
+**Constat dans le code** : `preparerAssistant` (`lib/import_assistant.dart`) reprend déjà un menu existant de même nom (`ActionMenu.reprendre`, phrase « existe déjà, repris sans aucune modification », produits du classeur absents du menu listés en « ignorées »). `ecran_import_test.dart` joue déjà ce cas avec une feuille Menu à produits, sans recettes. Reste : (a) prouver le cas que le classeur du club (A3) va produire, c'est-à-dire un classeur dont la feuille **Menu ET la feuille Recettes sont remplies** avec un menu de même nom : aucune écriture de menu, de produit ni de recette, et le résumé le dit (y compris pour les recettes du classeur, non reprises) ; (b) si la phrase du résumé ne mentionne pas les recettes non reprises, l'ajouter (texte seul).
+
+**Stratégie** : test de logique (`test/import_assistant_test.dart`) et test d'écran (`test/ecran_import_test.dart`) avec un classeur Menu + Recettes remplis (helper `classeurDeTest` : étendre avec un paramètre `recettes` si besoin, sans changer les usages existants). Vérifier que `faux.menusCrees` reste vide et qu'aucune écriture de recette n'est demandée. Correction de code seulement si le test montre une écriture ou une phrase manquante.
+
+**Fichiers touchés** : `test/import_assistant_test.dart`, `test/ecran_import_test.dart`, `test/classeur_aides.dart`, au besoin `lib/import_assistant.dart` (phrase du résumé). **On ne fait pas** : aucun changement de lecture du classeur, de calcul, de règle, de dépendance ; menu existant jamais modifié.
+
+**Preuve** : N1 seulement (`flutter analyze`, `flutter test test/import_assistant_test.dart test/ecran_import_test.dart`, puis `flutter test` complet) ; le parcours N2 de T2 (`assistant_import_test`) est déjà vert et rejoué en A3.
