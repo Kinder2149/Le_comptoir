@@ -507,6 +507,7 @@ captures : `audit_front/captures_stock_courses/verif_ia/`. Points relevés et tr
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+| V1 Calcul du club (logique) | Close | 12/11/2026 | 1 à 5 réussis : analyse sans problème, 17 tests dédiés, suite entière 566 verts sans test existant modifié (N1) |
 | T1 Enregistrer sur le téléphone | Close (test de code) | 11/11/2026 | 1 à 4 réussis : N1 (analyse, 471 tests) ; N2 sur LC2 : fichier enregistré dans Téléchargements via le sélecteur Android, relu par adb ; le tap sur « Enregistrer » est fait par adb, pas par le test |
 | T2 Assistant d'import unique (opus) | Close (test de code) | 11/11/2026 | 1 à 8 réussis : N1 (analyse, 486 tests) ; N2 sur LC2 avec le vrai moteur local : menu de même nom repris sans changement, référence de l'an passé, stock par noms, prévision réglée, bénévole sans l'assistant ; règles inchangées. Six parcours N2 anciens adaptés, compilés mais non relancés (un seul N2 par étape) |
 | T3 Classeur du club | Close (test de code) | 11/11/2026 | 1 à 4 réussis : `recette/classeur-notre-club.xlsx` (menu vide, historique 38 lignes, stock de départ à remplir) ; N2 sur LC2 : importé par l'assistant sans erreur, 19 consommations égales au relevé. À confirmer par Kinder : noms des gymnases et des produits identiques à ceux du tournoi |
@@ -1605,6 +1606,22 @@ Parle à Kinder en français, en termes fonctionnels, une seule question à la f
 
 | Étape | État | Date | Critères |
 |---|---|---|---|
+
+### Cadrage V1 — Calcul du club, logique pure (12/11/2026, session mère « Calcul du club »)
+
+**Constat sur le classeur d'origine (à garder pour V5 et V7)** : les feuilles « Gymnase 1/2 Dimanche » du classeur d'origine sont branchées sur les pourcentages du bloc **Samedi** de la feuille « Repas » (plat 70 %, dessert 110 %, parts du samedi), pas sur le bloc Dimanche (plat 80 %, dessert 100 %, fruit 60 %…). Leurs valeurs calculées sont donc celles « samedi % × repas du dimanche » (ex. G1 dimanche : plat 91, croque standard 36,4). Pour le croque standard, 130 × 0,8 × 0,35 et 130 × 0,7 × 0,4 donnent le même 36,4 (coïncidence) ; pour les autres groupes, les deux lectures diffèrent. V1 est neutre (la logique prend un pourcentage par jour) ; la lecture à retenir pour le classeur du club et la preuve 1 est une question à Kinder, posée avant V5.
+
+**Stratégie** : nouveau fichier `lib/calcul_club.dart`, logique pure sans Firebase ni écran (comme `lib/courses.dart`). Modèles de valeur immuables : `RepasGymnaseJour` (trois catégories — joueuses et accompagnateurs, bénévoles et famille, spectateurs —, chacune avec midi et soir ; `total` = somme des six nombres) ; `GroupeConso` (nom, pourcentage par jour, produits avec une part par jour) ; `CalculClub` (repas par gymnase et par jour, groupes). Fonctions : `repasDuJour`, `quantiteClubJour` (repas × % du groupe ce jour × part du produit ce jour, nombre décimal), `quantiteClub` (Σ jours, **un seul arrondi à l'unité supérieure par gymnase** via `arrondiHaut` de `courses.dart`), `ecartsGroupes` (parts d'un groupe ≠ 100 % pour un jour : liste d'écarts, jamais de correction). Un événement sans repas détaillés : `CalculClub` absent (null), les fonctions existantes de `courses.dart` ne sont pas modifiées.
+
+**Fichiers touchés** : `lib/calcul_club.dart` (nouveau) ; `test/calcul_club_test.dart` (nouveau). Rien d'autre.
+
+**Ce qu'on ne fait pas** : aucune modification de `quantitePrevue`, `quantiteAPrevoir`, `Gymnase`, `Evenement`, du dépôt de données, des règles, des écrans ; pas de lecture de classeur Excel dans l'application ; pas d'enregistrement (V2) ; pas de conversion « vendu par 2 » (écart relevé en V5) ; aucune dépendance.
+
+**Critères (repris tels quels du plan)** : (1) repas d'un gymnase pour un jour = somme des trois catégories, midi et soir ; (2) quantité d'un produit = Σ jours (repas du jour × % du groupe ce jour × part du produit ce jour), arrondie à l'unité supérieure par gymnase ; (3) un événement sans repas détaillés garde exactement l'ancien calcul (tous les tests existants de prévision et de courses passent sans modification) ; (4) un test reprend les chiffres du classeur d'origine (repas, %, parts des deux jours, deux gymnases) et retrouve ses quantités (ex. croque standard Gymnase 1 samedi 33,32, dimanche 36,4) ; (5) les parts d'un groupe qui ne font pas 100 % sont signalées, jamais corrigées en silence.
+
+**Chiffres du test** (relevés dans le classeur d'origine, aucun nom) : repas samedi G1 : 49 joueuses et accompagnateurs ×2 (midi, soir), bénévoles et famille 10 midi / 11 soir, spectateurs 0 → 119 ; dimanche G1 : 56 ×2, 9 / 9 → 130 ; samedi G2 : 63 ×2, 7 / 8 → 141 ; dimanche G2 : 56 ×2, 6 / 3 → 121. Groupe Plat : samedi 70 %, dimanche 80 % ; croque standard 40 % / 35 %, végé 25 % / 30 %, tartiflette 35 % / 35 %. Attendus : croque standard G1 samedi 33,32 ; G1 dimanche 130 × 0,8 × 0,35 = 36,4 ; G2 samedi 141 × 0,7 × 0,4 = 39,48 ; G2 dimanche 121 × 0,8 × 0,35 = 33,88. Le total G1 sur deux jours est 69,72, arrondi à 70.
+
+**Preuve** : N1 — `flutter analyze`, `flutter test test/calcul_club_test.dart` puis `flutter test` (suite entière, pour le critère 3 : aucun test existant modifié). Pas de règles, pas d'émulateur.
 
 ### 19.4 Prompt de lancement de la session mère — REMPLACÉ par 19.5 le 12/11/2026, gardé pour trace (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_Comptoir du poste utilisé, une fois le plan validé et le lot A fusionné)
 

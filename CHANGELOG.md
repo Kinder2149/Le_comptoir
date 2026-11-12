@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V1 : logique du calcul (1.6.0)
+- `lib/calcul_club.dart` : repas par gymnase et par jour (3 catégories, midi et soir), quantité = Σ jours (repas × % du groupe × part du produit ce jour), un seul arrondi haut par gymnase, parts ≠ 100 % signalées sans correction. Aucun fichier existant modifié : l'ancien calcul est intact. Test sur les chiffres du classeur d'origine (croque standard 33,32 / 36,4 / 39,48 / 33,88). N1 : analyse sans problème, 566 tests verts.
+
 ## 12/11/2026 — Mission « Calcul du club » : départ anticipé (écart à R29, décision de Kinder)
 - Le chantier de la 1.6.0 démarre pendant la clôture du lot A, dans un second dossier (`Le_Comptoir_calcul_club`, branche `claude/calcul-club`) ; conditions (émulateur partagé, reprise des corrections du lot A avant V6 et V9, fusion après le lot A) et prompt en PLAN_STOCK_COURSES.md 19.5, qui remplace 19.4.
 
