@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 12/11/2026 — Calcul du club, V6 : ingrédients et emballages en stock dans la Préparation
+- La carte « Stock de départ » gagne un bloc « Ingrédients et emballages » (tout l'événement, unité de chaque article) : même chiffre que « En stock » des Courses, saisi à un endroit et vu à l'autre. Aucun calcul des courses modifié. 642 tests verts.
+
 ## 12/11/2026 — Calcul du club, V5 : feuilles Repas et Groupes du classeur
 - Le modèle, l'export d'un tournoi et l'assistant d'import gagnent les feuilles « Repas » et « Groupes » (résumé avant écriture : jours, gymnases, groupes, produits ; gymnase ou produit introuvable listé et ignoré ; classeur sans ces feuilles importé comme avant ; l'import range l'état d'avant dans « Annuler ce changement »). `recette/classeur-notre-club.xlsx` porte les repas et les groupes de l'an dernier (Dimanche = bloc Dimanche, décision de Kinder), sans aucun nom. Relevé des écarts dans PLAN_STOCK_COURSES.md. 638 tests verts ; preuve réelle (N2) à lancer.
 

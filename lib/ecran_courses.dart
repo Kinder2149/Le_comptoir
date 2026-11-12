@@ -1384,3 +1384,265 @@ class _EtatQuantites extends State<QuantitesParProduit> {
     );
   }
 }
+
+/// « Ingrédients et emballages » de la carte « Stock de départ » (V6, décision 89) : pour
+/// tout l'événement, un article par ingrédient ou emballage des recettes, avec son unité
+/// et un champ « En stock ». C'est le même chiffre que « En stock » de la page Courses : il
+/// lit et écrit le champ `restes` de la même liste de courses (même clé d'article, même
+/// méthode du dépôt) ; chaque page relit l'autre en direct. Aucun calcul ne change.
+class StockIngredients extends StatefulWidget {
+  const StockIngredients({
+    super.key,
+    required this.depot,
+    required this.evenementId,
+  });
+
+  final DepotEvenements depot;
+  final String evenementId;
+
+  @override
+  State<StockIngredients> createState() => _EtatStockIngredients();
+}
+
+class _EtatStockIngredients extends State<StockIngredients> {
+  bool _charge = false;
+  Object? _erreur;
+  List<ProduitEvenement> _produits = const [];
+  ListeCourses _liste = const ListeCourses();
+  StreamSubscription<ListeCourses?>? _abonnementListe;
+  Timer? _minuteur;
+  bool _listeModifiee = false;
+  bool _erreurEnregistrement = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _charger();
+  }
+
+  @override
+  void dispose() {
+    if (_minuteur?.isActive ?? false) {
+      _minuteur!.cancel();
+      _enregistrer();
+    }
+    _abonnementListe?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _charger() async {
+    try {
+      final id = widget.evenementId;
+      final evenement = await widget.depot.suivreEvenement(id).first;
+      final produits = await widget.depot.suivreProduits(id).first;
+      final gymnases = await widget.depot.suivreGymnases(id).first;
+      final stocks = await widget.depot.suivreStocksParGymnase(id).first;
+      final calcul = await _lireCalculClub(widget.depot, id);
+      final enregistree = await widget.depot.suivreListeCourses(id).first;
+      var previsions = const <String, Prevision>{};
+      try {
+        previsions = await widget.depot.suivrePrevisions(id).first;
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _produits = produitsAvecPrevisions(produits, previsions);
+        _liste = enregistree ??
+            listeParDefaut(
+                produits: produits,
+                gymnases: gymnases,
+                jours: evenement?.nbJours ?? joursParDefaut,
+                stocks: stocks,
+                calcul: calcul);
+        _charge = true;
+      });
+      _abonnementListe ??= widget.depot.suivreListeCourses(id).listen(
+        (l) {
+          if (!mounted || l == null) return;
+          if (_listeModifiee || (_minuteur?.isActive ?? false)) return;
+          setState(() => _liste = l);
+        },
+        onError: (_) {},
+      );
+    } catch (e) {
+      if (mounted) setState(() => _erreur = e);
+    }
+  }
+
+  Future<void> _enregistrer() async {
+    final ecrire = _listeModifiee;
+    _listeModifiee = false;
+    try {
+      if (ecrire) {
+        final articles =
+            clesArticles(calculerAchats(_produits, _liste), _liste.libres);
+        await widget.depot.enregistrerListeCourses(
+            widget.evenementId, _liste.avec(articles: articles));
+      }
+      if (mounted) setState(() => _erreurEnregistrement = false);
+    } catch (_) {
+      _listeModifiee = _listeModifiee || ecrire;
+      if (mounted) setState(() => _erreurEnregistrement = true);
+    }
+  }
+
+  /// Même règle de saisie que « En stock » des Courses : vide = non renseigné.
+  void _surReste(String cle, String texte) {
+    final t = texte.trim().replaceAll(',', '.');
+    final restes = {..._liste.restes};
+    if (t.isEmpty) {
+      restes.remove(cle);
+    } else {
+      final v = double.tryParse(t);
+      if (v == null || v < 0 || v > 1000000) return;
+      restes[cle] = v;
+    }
+    setState(() {
+      _liste = _liste.avec(restes: restes);
+      _listeModifiee = true;
+      _minuteur?.cancel();
+      _minuteur = Timer(const Duration(milliseconds: 700), _enregistrer);
+    });
+  }
+
+  static String _nombre(double? v) => v == null
+      ? ''
+      : v == v.roundToDouble()
+          ? v.toInt().toString()
+          : v.toString().replaceAll('.', ',');
+
+  @override
+  Widget build(BuildContext context) {
+    if (_erreur != null) {
+      return const Text('Impossible de charger les ingrédients.',
+          key: Key('erreur_stock_ingredients'));
+    }
+    if (!_charge) return const Center(child: CircularProgressIndicator());
+    final achats = calculerAchats(_produits, _liste);
+    final validee = _liste.validation != null;
+    return Card(
+      key: const Key('carte_stock_ingredients'),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: ExpansionTile(
+        key: const Key('stock_ingredients'),
+        title: const Text('Ingrédients et emballages',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          achats.isEmpty
+              ? 'Aucun ingrédient dans les recettes'
+              : '${achats.where((a) => _liste.restes[a.cle] != null).length}'
+                  ' sur ${achats.length} comptés · pour tout l\'événement',
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Le même chiffre que « En stock » dans les Courses. '
+                'Laissez vide ce que vous ne comptez pas.',
+                key: Key('aide_stock_ingredients'),
+                style: TextStyle(fontSize: 12),
+              ),
+              if (_erreurEnregistrement)
+                const Text('Enregistrement impossible. Vérifiez le réseau.',
+                    key: Key('erreur_ecriture_ingredients'),
+                    style: TextStyle(color: Palette.briqueFonce, fontSize: 12)),
+              for (final a in achats)
+                _LigneIngredient(
+                  key: Key('ligne_ing_${a.cle}'),
+                  achat: a,
+                  valeur: _liste.restes[a.cle],
+                  modifiable: !validee,
+                  onChange: (t) => _surReste(a.cle, t),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LigneIngredient extends StatefulWidget {
+  const _LigneIngredient({
+    super.key,
+    required this.achat,
+    required this.valeur,
+    required this.modifiable,
+    required this.onChange,
+  });
+
+  final Achat achat;
+  final double? valeur;
+  final bool modifiable;
+  final ValueChanged<String> onChange;
+
+  @override
+  State<_LigneIngredient> createState() => _EtatLigneIngredient();
+}
+
+class _EtatLigneIngredient extends State<_LigneIngredient> {
+  late final TextEditingController _texte =
+      TextEditingController(text: _EtatStockIngredients._nombre(widget.valeur));
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void didUpdateWidget(_LigneIngredient ancien) {
+    super.didUpdateWidget(ancien);
+    // Une valeur venue de la page Courses remplace le champ, sauf pendant la saisie.
+    if (!_focus.hasFocus) {
+      final attendu = _EtatStockIngredients._nombre(widget.valeur);
+      if (_texte.text != attendu) _texte.text = attendu;
+    }
+  }
+
+  @override
+  void dispose() {
+    _texte.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.achat;
+    final unite = libelleUniteReste(a.uniteBase);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(a.nom,
+                    key: Key('nom_ing_${a.cle}'),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                Text(unite,
+                    key: Key('unite_ing_${a.cle}'),
+                    style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 96,
+            child: widget.modifiable
+                ? TextField(
+                    key: Key('stock_ing_${a.cle}'),
+                    controller: _texte,
+                    focusNode: _focus,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(hintText: '—'),
+                    onChanged: widget.onChange,
+                  )
+                : Text(widget.valeur == null ? 'non renseigné' : _texte.text,
+                    key: Key('lecture_ing_${a.cle}'), textAlign: TextAlign.end),
+          ),
+        ],
+      ),
+    );
+  }
+}

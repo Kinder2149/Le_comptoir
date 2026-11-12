@@ -686,6 +686,9 @@ class _EtatBlocGestion extends State<_BlocGestion> {
                 widget.depot.suivreStocksDepart(ev.id, gymnases: portee.filtre),
             definirStock: (g, p, q) => widget.depot.definirStock(ev.id, g, p, q),
             onVoirGymnases: () => _voirGymnases(context, ev, portee),
+            ingredients: portee.toutVoir
+                ? StockIngredients(depot: widget.depot, evenementId: ev.id)
+                : null,
           ),
         ),
       );

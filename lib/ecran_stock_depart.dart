@@ -25,7 +25,12 @@ class EcranStockDepart extends StatefulWidget {
     required this.stocks,
     required this.definirStock,
     required this.onVoirGymnases,
+    this.ingredients,
   });
+
+  /// Partie « Ingrédients et emballages » (V6) : un seul bloc pour tout l'événement, sous
+  /// les onglets de gymnase (null = non affichée : gestion partielle).
+  final Widget? ingredients;
 
   final Stream<Evenement?> evenement;
   final PorteeGestion portee;
@@ -168,7 +173,14 @@ class _EtatEcranStockDepart extends State<EcranStockDepart> {
                   child: const Text('Voir Gymnases et stocks'),
                 ),
               ),
+            // Le bloc défile dans sa part de la hauteur : jamais de débordement.
+            if (widget.ingredients != null)
+              Flexible(
+                flex: 2,
+                child: SingleChildScrollView(child: widget.ingredients!),
+              ),
             Expanded(
+              flex: 3,
               child: liste.isEmpty
                   ? const Center(
                       child: Text('Aucun produit dans cet événement.',
