@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 13/11/2026 — Calcul du club, V7 : simulation complète du tournoi
+- Parcours `integration_test/parcours_tournoi_simule_test.dart` sur émulateur : import du classeur du club, quantités prévues égales à celles du classeur d'origine (108 comparaisons, aucun écart), stock de départ et deux séries de courses (rien de racheté en stock), 203 ventes sur 4 caisses et 2 jours (annulations, rupture, caisse clôturée de force), bilan égal à la somme des ventes (3 406,00 €) et résultat juste (2 912,75 €). 649 tests verts.
+
 ## 12/11/2026 — Calcul du club, V6 : ingrédients et emballages en stock dans la Préparation
 - La carte « Stock de départ » gagne un bloc « Ingrédients et emballages » (tout l'événement, unité de chaque article) : même chiffre que « En stock » des Courses, saisi à un endroit et vu à l'autre. Aucun calcul des courses modifié. 642 tests verts.
 

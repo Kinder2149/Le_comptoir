@@ -388,3 +388,54 @@ Future<void> assistantJusquAuResume(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
   await tester.pump(const Duration(seconds: 1));
 }
+
+/// Vente « d'un autre téléphone » datée, avec la baisse des stocks du gymnase dans le MÊME
+/// envoi (comme `enregistrerVente` de l'application : vente et stocks partent ensemble).
+/// [base] = `associations/{a}/evenements/{e}` ; [baisses] : produit -> quantité vendue. Les
+/// règles d'accès s'appliquent avec le jeton du membre. Renvoie « code HTTP : corps » si refusé,
+/// sinon null.
+Future<String?> restVenteAvecStock({
+  required String base,
+  required String caisseId,
+  required String venteId,
+  required String gymnaseId,
+  required String jeton,
+  required Map<String, dynamic> champsVente,
+  required Map<String, int> baisses,
+}) async {
+  const racine = 'projects/le-comptoir-60ba8/databases/(default)/documents';
+  final client = HttpClient();
+  final req = await client.postUrl(Uri.parse('$restRacine:commit'));
+  req.headers.set('Authorization', 'Bearer $jeton');
+  req.headers.set('Content-Type', 'application/json');
+  req.write(jsonEncode({
+    'writes': [
+      {
+        'update': {
+          'name': '$racine/$base/caisses/$caisseId/ventes/$venteId',
+          'fields': champsVente,
+        },
+        'currentDocument': {'exists': false},
+      },
+      for (final e in baisses.entries)
+        {
+          'update': {
+            'name': '$racine/$base/gymnases/$gymnaseId/stocks/${e.key}',
+            'fields': <String, dynamic>{},
+          },
+          'updateMask': {'fieldPaths': <String>[]},
+          'updateTransforms': [
+            {
+              'fieldPath': 'quantite',
+              'increment': {'integerValue': '${-e.value}'},
+            },
+          ],
+          'currentDocument': {'exists': true},
+        },
+    ],
+  }));
+  final rep = await req.close();
+  final corps = await rep.transform(utf8.decoder).join();
+  client.close();
+  return rep.statusCode == 200 ? null : '${rep.statusCode} : $corps';
+}
