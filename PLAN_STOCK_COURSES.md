@@ -1801,3 +1801,29 @@ Tu es la session mère de la mission « Calcul du club » (version 1.6.0) de Le 
 11. Clôture (V9, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin et par preuve de la simulation, captures dans audit_front/tournoi/simulation/). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche envoyée, APK de recette 1.6.0. Kinder dit ce qu'il prend pour le week-end. Fusion dans main seulement APRÈS celle du lot A et sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+### 19.6 Prompt de vérification (V9, R9) — Calcul du club 1.6.0
+
+```
+PROMPT DE VÉRIFICATION — Calcul du club (1.6.0) — projet Le Comptoir
+TYPE : finale
+
+Tu es l'IA de vérification. Tu n'as pas codé cette mission. Tu ne corriges rien (ni le code, ni les tests, ni les documents).
+
+CRITÈRES DE FIN DE MISSION (validés par Kinder le 12/11/2026) — un écran par critère :
+1. Dans un tournoi à 2 gymnases et 2 jours, j'importe le classeur de notre club : les repas jour par jour (Préparation, carte « Personnes et durée », une carte par jour) sont en place.
+2. Après le même import : les groupes du club (Prévision, une carte par groupe, % et parts de chaque jour, « 100 % » en vert) sont en place, et la quantité prévue par jour sous un produit est celle du classeur d'origine (ex. croque-monsieur Gymnase 1 : 33,32 le samedi, 36,4 le dimanche, 70 au total).
+3. Je saisis mes ingrédients en stock dans la Préparation (carte « Stock de départ », partie « Ingrédients et emballages ») et les courses en tiennent compte (même chiffre « En stock » dans Courses).
+4. La fiche d'un article (Menu > un produit) s'ouvre en cinq cartes : Identité, Mesure, Composition, Provenance et rayon, Consommation habituelle ; « Enregistrer » principal, « Supprimer » en brique à part.
+5. La simulation complète du tournoi sur les chiffres de l'an dernier va jusqu'au bilan, juste au centime : une capture du Bilan après la simulation (total 3 406,00 €, coût des courses 493,25 €, résultat 2 912,75 € ; modes espèces 1 158,00 € / carte 1 206,00 € / chèque 1 042,00 € ; jours 1 684,50 € / 1 721,50 €) ; et une capture de la Prévision montrant la quantité prévue d'un produit par jour (preuve 1).
+
+CE QUI A ÉTÉ FAIT ET TESTÉ : V1 à V8 (PLAN_STOCK_COURSES.md section 19, tableau de suivi), tests de code verts (N1), parcours réels de V5 (import du classeur du club) et V7 (simulation, quatre preuves vertes), N3 de la clôture (résumé dans le CHANGELOG).
+
+NOUVEAUTÉS À VÉRIFIER EN PRIORITÉ : repas jour par jour ; groupes dans la Prévision ; feuilles Repas et Groupes du classeur ; stock des ingrédients en Préparation ; page de l'article. Voisins à surveiller (sans capture en plus) : un événement SANS repas détaillés garde l'ancien calcul (Prévision et Courses inchangées) ; le menu et ses familles.
+
+COMMENT LANCER LE PROJET : dossier V:\DEV\PROJETS\applications_mobile\Le_Comptoir_calcul_club, branche claude/calcul-club. Socle mobile Flutter : émulateur Android LC2 (`emulator -avd LC2 -gpu swiftshader_indirect -no-snapshot -no-audio`) et émulateurs Firebase locaux (Java 21 du jbr d'Android Studio : `$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"`). Pas de banc d'essai : écris un parcours jetable `integration_test/zz_verif_calcul_club.dart` (NON versionné, à supprimer après) qui, avec les outils de integration_test/outils.dart et la donnée du parcours `parcours_tournoi_simule_test.dart`, amène l'application aux écrans des critères et s'y arrête (pause), et prends les captures de l'extérieur avec `adb exec-out screencap -p` (jamais depuis le test, R34). Aucune écriture hors émulateur local, jamais le vrai projet. Une capture par critère, `critere-N.png`, dans audit_front/tournoi/simulation/ ; regarde chaque capture une seule fois et note le verdict aussitôt ; challenge le visuel (chevauchements, textes coupés, cohérence avec le reste de l'application).
+
+TON TRAVAIL : 1. Lance selon le socle. 2. Utilise comme un utilisateur. 3. Une capture et un verdict par critère (réussi / échoué / non vérifié avec la raison). 4. Ne rejoue pas les tests des étapes.
+
+RENDU : tableau critère | capture | verdict | ce que tu as vu (en français) ; l'écran exact que Kinder utilise pour son test final.
+```
