@@ -200,17 +200,20 @@ class ListeProduitsMenu extends StatelessWidget {
   }
 }
 
-/// Formulaire d'un produit de menu (nouveau si [produit] est null). Renvoie la
-/// saisie validée, ou null si on annule.
+/// Formulaire d'un produit de menu (nouveau si [produit] est null), en page
+/// entière (décision 90). Renvoie la saisie validée, ou null si on revient sans
+/// enregistrer.
 Future<ProduitSaisi?> demanderProduit(
   BuildContext context, {
   ProduitMenu? produit,
   SelecteurPhoto selecteurPhoto = selecteurPhotoReel,
 }) {
-  return showDialog<ProduitSaisi>(
-    context: context,
-    builder: (c) =>
-        _DialogueProduit(produit: produit, selecteurPhoto: selecteurPhoto),
+  return Navigator.push<ProduitSaisi>(
+    context,
+    MaterialPageRoute(
+      builder: (c) =>
+          PageProduit(produit: produit, selecteurPhoto: selecteurPhoto),
+    ),
   );
 }
 
@@ -227,16 +230,6 @@ class ProduitSaisi {
   final bool supprimer;
   final String? icone;
   final Uint8List? photo;
-}
-
-class _DialogueProduit extends StatefulWidget {
-  const _DialogueProduit({this.produit, required this.selecteurPhoto});
-
-  final ProduitMenu? produit;
-  final SelecteurPhoto selecteurPhoto;
-
-  @override
-  State<_DialogueProduit> createState() => _EtatDialogueProduit();
 }
 
 /// Une ligne de la recette en cours de saisie.
@@ -259,7 +252,19 @@ class _LigneIngredient {
   }
 }
 
-class _EtatDialogueProduit extends State<_DialogueProduit> {
+/// Page d'un produit de menu, en cinq cartes : Identité, Mesure, Composition,
+/// Provenance et rayon, Consommation habituelle (décision 90).
+class PageProduit extends StatefulWidget {
+  const PageProduit({super.key, this.produit, required this.selecteurPhoto});
+
+  final ProduitMenu? produit;
+  final SelecteurPhoto selecteurPhoto;
+
+  @override
+  State<PageProduit> createState() => _EtatPageProduit();
+}
+
+class _EtatPageProduit extends State<PageProduit> {
   late String _type = widget.produit?.fiche.type ?? 'unite';
   late final _conso = TextEditingController(
       text: widget.produit?.fiche.conso == null
@@ -342,130 +347,221 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
     }
   }
 
-  Widget _champsType() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 4),
-        DropdownButtonFormField<String>(
-          key: const Key('type_produit'),
-          initialValue: _type,
-          decoration: const InputDecoration(labelText: 'Type de produit'),
-          items: [
-            for (final t in typesProduit)
-              DropdownMenuItem(
-                  key: Key('type_$t'), value: t, child: Text(libellesTypes[t]!)),
+  Future<void> _supprimer() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Supprimer ce produit ?'),
+        content: const Text('Le produit sera retiré du menu.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Annuler')),
+          FilledButton(
+            key: const Key('confirmer_suppression_produit'),
+            style: TypeAction.danger.plein,
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    Navigator.pop(context, const ProduitSaisi('', 0, supprimer: true));
+  }
+
+  String _nomAffiche() {
+    final n = _nom.text.trim();
+    return n.isEmpty ? 'produit' : n;
+  }
+
+  Widget _carte(Key cle, String titre, List<Widget> enfants) {
+    return Card(
+      key: cle,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(titre, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            ...enfants,
           ],
-          onChanged: (v) => setState(() {
-            _type = v ?? 'unite';
-            _erreur = null;
-          }),
         ),
+      ),
+    );
+  }
+
+  Widget _carteIdentite() {
+    return _carte(const Key('carte_identite'), 'Identité', [
+      TextField(
+        key: const Key('nom_produit'),
+        controller: _nom,
+        decoration: const InputDecoration(labelText: 'Nom'),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        key: const Key('prix_produit'),
+        controller: _prix,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: const InputDecoration(labelText: 'Prix en €'),
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(
+        key: const Key('famille_produit'),
+        isExpanded: true,
+        initialValue: _famille,
+        decoration: const InputDecoration(labelText: 'Famille'),
+        items: [
+          for (final f in famillesProduit)
+            DropdownMenuItem(
+                key: Key('famille_$f'),
+                value: f,
+                child: Text(libellesFamilles[f]!)),
+        ],
+        onChanged: (v) => setState(() => _famille = v ?? 'autre'),
+      ),
+      const SizedBox(height: 16),
+      SelecteurImage(
+        icone: _icone,
+        photo: _photo,
+        selecteurPhoto: widget.selecteurPhoto,
+        onChanged: (i, p) => setState(() {
+          _icone = i;
+          _photo = p;
+        }),
+        onErreur: (e) => setState(() => _erreur = e),
+      ),
+    ]);
+  }
+
+  Widget _carteMesure() {
+    return _carte(const Key('carte_mesure'), 'Mesure', [
+      DropdownButtonFormField<String>(
+        key: const Key('type_produit'),
+        isExpanded: true,
+        initialValue: _type,
+        decoration: const InputDecoration(labelText: 'Type de produit'),
+        items: [
+          for (final t in typesProduit)
+            DropdownMenuItem(
+                key: Key('type_$t'), value: t, child: Text(libellesTypes[t]!)),
+        ],
+        onChanged: (v) => setState(() {
+          _type = v ?? 'unite';
+          _erreur = null;
+        }),
+      ),
+      if (_type == 'litre') ...[
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: const Key('famille_produit'),
-          isExpanded: true,
-          initialValue: _famille,
-          decoration: const InputDecoration(labelText: 'Famille'),
-          items: [
-            for (final f in famillesProduit)
-              DropdownMenuItem(
-                  key: Key('famille_$f'),
-                  value: f,
-                  child: Text(libellesFamilles[f]!)),
-          ],
-          onChanged: (v) => setState(() => _famille = v ?? 'autre'),
+        TextField(
+          key: const Key('verres_par_litre'),
+          controller: _verres,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Verres par litre'),
         ),
-        if (_type == 'litre') ...[
-          const SizedBox(height: 12),
-          TextField(
-            key: const Key('verres_par_litre'),
-            controller: _verres,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Verres par litre'),
+        ListenableBuilder(
+          listenable: _verres,
+          builder: (context, _) {
+            final v = parserNombre(_verres.text);
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                v == null || v <= 0
+                    ? '1 litre : indiquez le nombre de verres.'
+                    : '1 litre = ${nombrePourSaisie(v)} verres',
+                key: const Key('conversion_litre'),
+              ),
+            );
+          },
+        ),
+      ],
+      if (_type == 'part') ...[
+        const SizedBox(height: 12),
+        TextField(
+          key: const Key('parts_par_gateau'),
+          controller: _parts,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+              labelText: 'Parts par gâteau', helperText: 'Facultatif'),
+        ),
+        ListenableBuilder(
+          listenable: _parts,
+          builder: (context, _) {
+            final p = int.tryParse(_parts.text.trim());
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                p == null || p <= 0
+                    ? '1 gâteau : nombre de parts facultatif.'
+                    : '1 gâteau = $p parts',
+                key: const Key('conversion_part'),
+              ),
+            );
+          },
+        ),
+      ],
+    ]);
+  }
+
+  Widget _carteComposition() {
+    return _carte(const Key('carte_composition'), 'Composition', [
+      if (_type != 'compose')
+        const Text(
+            'Un produit composé se choisit dans Type de produit : ses ingrédients s\'affichent ici.'),
+      if (_type == 'compose') ...[
+        ListenableBuilder(
+          listenable: _nom,
+          builder: (context, _) => Text(
+            'Pour 1 ${_nomAffiche()}',
+            style: Theme.of(context).textTheme.labelLarge,
           ),
-        ],
-        if (_type == 'part') ...[
-          const SizedBox(height: 12),
-          TextField(
-            key: const Key('parts_par_gateau'),
-            controller: _parts,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-                labelText: 'Parts par gâteau', helperText: 'Facultatif'),
-          ),
-        ],
-        if (_type == 'compose') ...[
-          const SizedBox(height: 12),
-          Text('Ingrédients pour UN produit',
-              style: Theme.of(context).textTheme.labelLarge),
-          for (var i = 0; i < _lignes.length; i++) _ligneIngredient(i),
-          TextButton.icon(
+        ),
+        for (var i = 0; i < _lignes.length; i++) _ligneIngredient(i),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
             key: const Key('ajouter_ingredient'),
             icon: const Icon(Icons.add),
             label: const Text('Ingrédient'),
             onPressed: () => setState(() => _lignes.add(_LigneIngredient())),
           ),
-        ],
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: const Key('provenance_produit'),
-          isExpanded: true,
-          initialValue: _provenance,
-          decoration: const InputDecoration(labelText: 'Provenance'),
-          items: [
-            for (final v in provenancesProduit)
-              DropdownMenuItem(
-                  key: Key('provenance_$v'),
-                  value: v,
-                  child: Text(libellesProvenances[v]!)),
-          ],
-          onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
-        ),
-        if (_type != 'compose' && _provenance == 'achete') ...[
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            key: const Key('rayon_produit'),
-            isExpanded: true,
-            initialValue: _rayon,
-            decoration: const InputDecoration(labelText: 'Rayon des courses'),
-            items: [
-              for (final r in rayonsCourses)
-                DropdownMenuItem(
-                    key: Key('rayon_$r'),
-                    value: r,
-                    child: Text(libellesRayons[r]!)),
-            ],
-            onChanged: (v) => setState(() => _rayon = v ?? 'autre'),
-          ),
-        ],
-        const SizedBox(height: 8),
-        TextField(
-          key: const Key('conso_produit'),
-          controller: _conso,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-              labelText: 'Consommation par personne et par jour',
-              helperText: 'Facultatif'),
         ),
       ],
-    );
+    ]);
   }
 
   Widget _ligneIngredient(int i) {
     final l = _lignes[i];
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            key: Key('ingredient_nom_$i'),
-            controller: l.nom,
-            decoration: const InputDecoration(labelText: 'Ingrédient'),
-          ),
           Row(
             children: [
               Expanded(
+                child: TextField(
+                  key: Key('ingredient_nom_$i'),
+                  controller: l.nom,
+                  decoration:
+                      InputDecoration(labelText: 'Ingrédient ${i + 1}'),
+                ),
+              ),
+              IconButton(
+                key: Key('retirer_ingredient_$i'),
+                tooltip: 'Retirer cet ingrédient',
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => _lignes.removeAt(i)),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              SizedBox(
+                width: 110,
                 child: TextField(
                   key: Key('ingredient_qte_$i'),
                   controller: l.quantite,
@@ -475,22 +571,20 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
                 ),
               ),
               const SizedBox(width: 8),
-              DropdownButton<String>(
-                key: Key('ingredient_unite_$i'),
-                value: l.unite,
-                items: [
-                  for (final u in unitesIngredient)
-                    DropdownMenuItem(
-                        key: Key('unite_${i}_$u'),
-                        value: u,
-                        child: Text(libellesUnites[u]!)),
-                ],
-                onChanged: (v) => setState(() => l.unite = v ?? 'unite'),
-              ),
-              IconButton(
-                key: Key('retirer_ingredient_$i'),
-                icon: const Icon(Icons.close),
-                onPressed: () => setState(() => _lignes.removeAt(i)),
+              Expanded(
+                child: DropdownButton<String>(
+                  key: Key('ingredient_unite_$i'),
+                  isExpanded: true,
+                  value: l.unite,
+                  items: [
+                    for (final u in unitesIngredient)
+                      DropdownMenuItem(
+                          key: Key('unite_${i}_$u'),
+                          value: u,
+                          child: Text(libellesUnites[u]!)),
+                  ],
+                  onChanged: (v) => setState(() => l.unite = v ?? 'unite'),
+                ),
               ),
             ],
           ),
@@ -513,67 +607,119 @@ class _EtatDialogueProduit extends State<_DialogueProduit> {
     );
   }
 
+  Widget _carteProvenance() {
+    return _carte(const Key('carte_provenance'), 'Provenance et rayon', [
+      DropdownButtonFormField<String>(
+        key: const Key('provenance_produit'),
+        isExpanded: true,
+        initialValue: _provenance,
+        decoration: const InputDecoration(labelText: 'Provenance'),
+        items: [
+          for (final v in provenancesProduit)
+            DropdownMenuItem(
+                key: Key('provenance_$v'),
+                value: v,
+                child: Text(libellesProvenances[v]!)),
+        ],
+        onChanged: (v) => setState(() => _provenance = v ?? 'achete'),
+      ),
+      if (_type != 'compose' && _provenance == 'achete') ...[
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          key: const Key('rayon_produit'),
+          isExpanded: true,
+          initialValue: _rayon,
+          decoration: const InputDecoration(labelText: 'Rayon des courses'),
+          items: [
+            for (final r in rayonsCourses)
+              DropdownMenuItem(
+                  key: Key('rayon_$r'),
+                  value: r,
+                  child: Text(libellesRayons[r]!)),
+          ],
+          onChanged: (v) => setState(() => _rayon = v ?? 'autre'),
+        ),
+      ],
+      if (_type == 'compose') ...[
+        const SizedBox(height: 12),
+        const Text('Un produit composé se range ingrédient par ingrédient.'),
+      ],
+    ]);
+  }
+
+  Widget _carteConsommation() {
+    return _carte(const Key('carte_consommation'), 'Consommation habituelle', [
+      const Text('Sert quand les repas ne sont pas détaillés.'),
+      const SizedBox(height: 12),
+      TextField(
+        key: const Key('conso_produit'),
+        controller: _conso,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: const InputDecoration(
+            labelText: 'Consommation par personne et par jour',
+            helperText: 'Facultatif'),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.produit == null ? 'Nouveau produit' : 'Produit'),
-      content: SingleChildScrollView(
+    final erreur = _erreur;
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(widget.produit == null ? 'Nouveau produit' : 'Produit')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              key: const Key('nom_produit'),
-              controller: _nom,
-              decoration: const InputDecoration(labelText: 'Nom'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('prix_produit'),
-              controller: _prix,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Prix en €'),
-            ),
-            _champsType(),
-            const SizedBox(height: 8),
-            SelecteurImage(
-              icone: _icone,
-              photo: _photo,
-              selecteurPhoto: widget.selecteurPhoto,
-              onChanged: (i, p) => setState(() {
-                _icone = i;
-                _photo = p;
-              }),
-              onErreur: (e) => setState(() => _erreur = e),
-            ),
-            if (_erreur != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(_erreur!,
-                    key: const Key('erreur_produit'),
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+            _carteIdentite(),
+            _carteMesure(),
+            _carteComposition(),
+            _carteProvenance(),
+            _carteConsommation(),
+            if (widget.produit != null) ...[
+              const SizedBox(height: 4),
+              OutlinedButton(
+                key: const Key('supprimer_produit'),
+                style: TypeAction.danger.contour,
+                onPressed: _supprimer,
+                child: const Text('Supprimer ce produit'),
               ),
+            ],
           ],
         ),
       ),
-      actions: [
-        if (widget.produit != null)
-          TextButton(
-            key: const Key('supprimer_produit'),
-            style: TypeAction.danger.texte,
-            onPressed: () => Navigator.pop(
-                context, const ProduitSaisi('', 0, supprimer: true)),
-            child: const Text('Supprimer'),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (erreur != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(erreur,
+                      key: const Key('erreur_produit'),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                ),
+              FilledButton(
+                key: const Key('valider_produit'),
+                style: TypeAction.gerer.plein,
+                onPressed: _valider,
+                child: const Text('Enregistrer'),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+            ],
           ),
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler')),
-        FilledButton(
-          key: const Key('valider_produit'),
-          onPressed: _valider,
-          child: const Text('Valider'),
         ),
-      ],
+      ),
     );
   }
 }

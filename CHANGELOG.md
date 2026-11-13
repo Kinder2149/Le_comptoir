@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 13/11/2026 — Calcul du club, V8 : page de l'article en cinq cartes
+- La boîte de dialogue de l'article devient une page entière en cinq cartes (Identité, Mesure, Composition, Provenance et rayon, Consommation habituelle) ; « Enregistrer » principal, « Supprimer » en brique avec confirmation ; aucun champ ne se chevauche à 360 px ; mêmes données enregistrées. 656 tests verts.
+
 ## 13/11/2026 — Calcul du club, V7 : simulation complète du tournoi
 - Parcours `integration_test/parcours_tournoi_simule_test.dart` sur émulateur : import du classeur du club, quantités prévues égales à celles du classeur d'origine (108 comparaisons, aucun écart), stock de départ et deux séries de courses (rien de racheté en stock), 203 ventes sur 4 caisses et 2 jours (annulations, rupture, caisse clôturée de force), bilan égal à la somme des ventes (3 406,00 €) et résultat juste (2 912,75 €). 649 tests verts.
 
