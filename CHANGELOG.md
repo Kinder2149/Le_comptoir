@@ -1,5 +1,8 @@
 # CHANGELOG — Le Comptoir
 
+## 16/11/2026 — Séance de captures de Kinder : 3 missions closes
+- Séance de captures de Kinder : Retours du terrain, Stock et courses (étapes 1 à 8) et C1 Courses closes sur son « tout est bon » (test final avec capture, validation finale) ; plus aucune mission de ce projet en attente de capture (R36). Chantier : Point complet sur l'atelier (v7.3).
+
 ## 12/11/2026 — Lot A, A10 : N3 de clôture
 - N3 (suite d'intégration complète, 12/11/2026) : tout vert sauf les rouges connus (`evenements_test`, `menus_test`, `images_test`) ; `parcours_ergonomie_test` fige sur ce poste (rouge connu à captures), `parcours_retours_terrain_test` non rejoué (idem). `parcours_mission_test` (arrêt du N3 du 11/11) rejoué : vert. Rouges nouveaux, tous des parcours périmés : `courses_test`, `chantier_complet_test` (les quantités sont en Préparation : assistant `versPrevision` corrigé, onglet Pendant pour lire le bilan), `clotures_test` (échec en cascade, vert au rejeu). Aucune assertion affaiblie. Parcours du QR de l'association non prouvé (deux échecs, décision de Kinder : N1).
 
