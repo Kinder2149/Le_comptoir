@@ -1277,3 +1277,48 @@ Tu es la session mère du lot A « Prêt pour le tournoi » de Le Comptoir (temp
 10. Clôture (A10, R11) : N3, puis vérification par une autre IA dans une conversation neuve sur Sonnet (capture et verdict par critère de fin du lot A, 18.5). En cas d'échec, retour en phase 6 sur les seuls critères échoués. Puis documentation et CHANGELOG, branche poussée, APK de recette 1.5.0 ; rappel à Kinder : installer 1.5.0 sur tous les téléphones du week-end, essai à blanc vendredi sur deux téléphones (vraie coupure de réseau, connexion Google). Fusion dans main seulement sur accord écrit de Kinder ; la mission ne passe « Close » qu'après son test final avec capture.
 Parle à Kinder en français, en termes fonctionnels, une seule question à la fois, UNE option avec sa justification.
 ```
+
+## 20. Mission « Banc d'essai » (décisions 93 à 101, plan et critères validés par Kinder le 18/11/2026 ; Plan prêt différé, R29)
+
+> Numérotée 20 : la section 19 est celle de « Calcul du club », sur sa propre branche. « Plan prêt » ne s'écrit que lorsque le lot A et « Calcul du club » sont clos ou en attente de la capture de Kinder (décision 101, R29). Le chantier part alors de `main` à jour.
+
+### 20.1 Étapes, critères et preuves
+
+Ordre : E1 → E2 → E3 → E4 → E5 → E6 → E7. Aucune dépendance nouvelle : scripts PowerShell, Flutter et la copie locale de Firebase, déjà utilisés.
+
+| Étape | Ce que Kinder peut voir | Critère | Preuve (R34) |
+|---|---|---|---|
+| E1 Préparer le poste | « banc préparer » démarre l'émulateur LC2 et la copie locale de la base, puis dit « poste prêt » | (1) depuis un poste vide, la commande démarre ce qu'il faut et le note ; (2) relancée pendant que tout tourne, elle refuse et dit depuis quand le poste est occupé ; (3) avec un verrou périmé, elle le retire et continue ; (4) si LC2 tourne sans le banc, elle s'arrête et demande à Kinder de le fermer ; (5) à la fin, elle arrête ce qu'elle a démarré, et rien d'autre (décision 98) | N2 — service du système (démarrer et arrêter l'émulateur et la base locale) |
+| E2 Page de résumé et N1 | « banc N1 » joue l'analyse, les tests de logique et d'écrans et les tests de règles, puis ouvre la page dans le navigateur | (1) la page affiche bandeau vert ou rouge, date, version du code, niveau, une ligne par groupe de tests avec sa durée et la cause de chaque rouge (décision 99) ; (2) un rouge provoqué exprès s'affiche en rouge avec sa cause ; (3) si N1 dépasse 5 minutes, la page le signale comme panne de banc | N1 |
+| E3 Parcours réparés | les trois rouges connus passent au vert, plus aucune capture dans les parcours, « enregistrer un fichier » sort de la suite automatique | (1) `evenements_test`, `menus_test`, `images_test` verts ; (2) `parcours_ergonomie_test` et `parcours_retours_terrain_test` vont au bout sans gel ; (3) `enregistrer_fichier_test` n'est plus joué par la suite automatique et se lance seul, à la main (décision 100) | N2 — vrai moteur de données vu depuis l'application ; les cinq parcours en un seul passage du banc |
+| E4 Une seule installation — **opus** | « banc N3 » installe l'application une seule fois et joue tous les parcours, base vidée avant chacun | (1) une seule installation pour toute la suite ; (2) base vide (données et comptes) au début de chaque parcours ; (3) les parcours qui coupent le réseau passent en dernier et le rétablissent ; (4) l'écran noir est reconnu et l'émulateur relancé (décisions 97, 98) — prouvé sur un échantillon de trois parcours (deux téléphones, réseau coupé, un ordinaire) | N2 — plusieurs comptes et absence de réseau ; la suite entière n'est jouée qu'en E7 (N3 une fois par mission) |
+| E5 Mode démonstration | « banc démo » ouvre l'application sur l'émulateur, déjà remplie | (1) l'association de démonstration a le menu du club ; (2) trois tournois : en préparation, ouvert sur deux gymnases avec ventes, clôturé avec bilan ; (3) passage du compte responsable au compte bénévole ; (4) le vrai serveur n'est jamais touché (décision 96) | N2 — vrai moteur de données vu depuis l'application |
+| E6 Mesure | « banc N2 actualisation » chronomètre ce parcours ; la page affiche le total de la mission type | (1) la page donne les durées de la préparation, de N1, du N2 « actualisation », de N3 et de la démonstration ; (2) elle calcule préparation + 7 × N1 + 3 × N2 + N3 + démonstration ; (3) elle le place à côté des 7 à 8 h de « Retours du terrain » (décision 94) | N2 — plusieurs comptes |
+| E7 Clôture | N3 complet, vérification par une autre IA dans la même session du banc, documentation | C1 à C9, R9 et R11 ; les sections 10 et 12 du PROJET_CONTEXTE renvoient au banc et la consigne « en arrière-plan » disparaît ; `graphify . --update` ; fusion sur accord écrit de Kinder, puis son test avec capture | N3 par le banc, sous 30 minutes (décision 95) |
+
+**Pourquoi E4 est « opus »** : 42 parcours dans une seule installation peuvent révéler des dépendances cachées (connexions à la base ouvertes deux fois, second téléphone simulé, réseau resté coupé) ; c'est la seule étape où une erreur de conception coûte cher.
+
+**Rouges connus au départ** : `evenements_test`, `menus_test`, `images_test` (libellés périmés) ; ils sont l'objet de E3, donc traités par la mission elle-même.
+
+### 20.2 Critère de fin de mission (deux écrans, R32)
+
+- **F1** : je lance le banc d'une seule commande ; il prépare le poste, joue toute la suite en moins de 30 minutes, et la page s'ouvre avec vert ou rouge par parcours, les cinq durées et leur total pour la mission type, à côté des 7 à 8 heures de « Retours du terrain ».
+- **F2** : ensuite, l'application s'ouvre en mode démonstration sur l'émulateur, sans redémarrage, et montre les trois tournois de l'association de démonstration.
+
+### 20.3 Prompt de lancement du chantier (à coller dans une conversation neuve de Claude Code, sur Sonnet, dans le dossier Le_Comptoir, une fois « Plan prêt » écrit)
+
+```
+Tu es la session mère de la mission « Banc d'essai » de Le Comptoir (temps de réalisation : phases 5, 6 et clôture). Tu ne codes pas toi-même : tu cadres chaque étape, tu la confies à une sous-session neuve (R13, R14, modèle selon R17), tu lis son bilan (R15) et le résumé du banc, et tu tiens le suivi.
+
+1. Lis, dans cet ordre : METHODO\3_CHANTIER.md, PROJET_CONTEXTE.md (bloc STATUT, décisions 93 à 101, sections 10 et 12), PLAN_STOCK_COURSES.md section 20, CHANGELOG.md (dernières entrées), graphify-out/GRAPH_REPORT.md.
+2. Vérifie que le STATUT dit « Plan prêt » pour « Banc d'essai ». Sinon, arrête-toi et dis-le à Kinder.
+3. Branche `claude/banc-essai` depuis `main` à jour. Rouges connus au départ : evenements_test, menus_test, images_test (objet de E3).
+4. Pour chaque étape, dans l'ordre E1 → E7 :
+   a. Phase 5 : cadre l'étape (stratégie, fichiers touchés, ce qu'on ne fait pas), critère repris tel quel de 20.1, écrit dans la section 20.
+   b. Phase 6 : une sous-session neuve la réalise ; E4 sur Opus (marquée au plan), les autres sur Sonnet.
+   c. Preuve au niveau écrit en 20.1 : N1 = analyse, tests de logique et d'écrans, tests de règles ; N2 = le seul passage qui prouve le critère, sur l'émulateur LC2, au plus deux passages par étape. Test au premier plan, jamais en arrière-plan ; aucune capture dans un test. Dès que le banc existe (après E1 et E2), toute preuve passe par lui et la sous-session rend sa page de résumé.
+   d. Ligne dans le CHANGELOG, commit, branche envoyée en ligne. Puis étape suivante, sans attendre Kinder.
+5. Le banc n'arrête jamais un programme qu'il n'a pas démarré et noté (décision 98). Aucune dépendance nouvelle sans accord de Kinder. Le vrai serveur Firebase n'est jamais touché.
+6. Cas d'arrêt : seulement ceux de R12. Une panne de banc (test au-delà de deux fois son budget) se classe, sans enquête sur le code.
+7. Clôture (E7, R11) : N3 par le banc (sous 30 minutes), puis vérification finale par une autre IA dans la même session du banc, en mode démonstration, sur les critères F1 et F2 de 20.2 ; documentation, graphify, envoi de la branche ; fusion seulement sur accord écrit de Kinder, puis son test avec capture.
+```

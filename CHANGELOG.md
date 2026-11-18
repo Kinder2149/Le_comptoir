@@ -1,5 +1,9 @@
 # CHANGELOG — Le Comptoir
 
+## 18/11/2026 — Mission « Banc d'essai » : plan validé (phase 4), Plan prêt différé
+- Plan E1 à E7 (E4 « opus ») et critères de fin F1, F2 validés par Kinder ; PLAN_STOCK_COURSES.md section 20, prompt du chantier en 20.3.
+- « Plan prêt » s'écrira quand le lot A et « Calcul du club » seront clos ou en attente de la capture de Kinder (R29). Aucun code modifié.
+
 ## 18/11/2026 — Mission « Banc d'essai » : réflexion, phases 1 à 3 (figée, pas de plan)
 - Constat sans modification : 43 parcours Android (17 vrais cas N2, 24 doublons de logique N1, 2 fins de mission) et causes des gels de l'émulateur.
 - Tri des idées validé par Kinder ; décisions 93 à 101 figées (mission à part, mesure, budget N3 de 30 minutes, démonstration, séparation des parcours, processus et verrou, page de résumé, contenu de la suite, ordre des missions) ; base de données simulée parquée.
