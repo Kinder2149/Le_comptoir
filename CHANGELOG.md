@@ -1,5 +1,10 @@
 # CHANGELOG — Le Comptoir
 
+## 18/11/2026 — Mission « Banc d'essai » : réflexion, phases 1 à 3 (figée, pas de plan)
+- Constat sans modification : 43 parcours Android (17 vrais cas N2, 24 doublons de logique N1, 2 fins de mission) et causes des gels de l'émulateur.
+- Tri des idées validé par Kinder ; décisions 93 à 101 figées (mission à part, mesure, budget N3 de 30 minutes, démonstration, séparation des parcours, processus et verrou, page de résumé, contenu de la suite, ordre des missions) ; base de données simulée parquée.
+- Aucun code modifié. Prochaine : phase 4 (plan et critères) ; « Plan prêt » après la clôture du lot A et de « Calcul du club » (R29).
+
 ## 12/11/2026 — Lot A (« Prêt pour le tournoi » élargi) : Plan prêt
 - Phase 2 du plan complet : découpage lot A (avant le tournoi) / lot B (après) validé ; le classeur du club garde menu et recettes ; « Quantités par produit » passe en Préparation ; QR de l'association pour la gestion seule ; « Il reste » affiché avec un bouton « Modifier » (constat : il porte les restes d'ingrédients, saisis nulle part ailleurs).
 - Décisions 80 à 84 figées (QR de l'association, badges de rôle, Courses, unités affichées, classeur du club) et critères du lot A A1 à A10 validés par Kinder (PLAN_STOCK_COURSES.md 18.5).
